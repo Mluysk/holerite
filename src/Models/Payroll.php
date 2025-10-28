@@ -13,11 +13,16 @@ final class Payroll
         private ?int $id,
         private int $employeeId,
         private string $referenceMonth,
+        private string $type,
         private float $baseSalary,
         private float $totalAllowances,
         private float $totalDeductions,
         private float $netSalary,
         private DateTimeImmutable $paymentDate,
+        private bool $justCause,
+        private ?int $vacationDays,
+        private ?int $workedDays,
+        private ?int $thirteenthMonths,
         private string $notes,
         private array $items = [],
     ) {
@@ -43,6 +48,11 @@ final class Payroll
         return $this->referenceMonth;
     }
 
+    public function getType(): string
+    {
+        return $this->type;
+    }
+
     public function getBaseSalary(): float
     {
         return $this->baseSalary;
@@ -66,6 +76,26 @@ final class Payroll
     public function getPaymentDate(): DateTimeImmutable
     {
         return $this->paymentDate;
+    }
+
+    public function isJustCause(): bool
+    {
+        return $this->justCause;
+    }
+
+    public function getVacationDays(): ?int
+    {
+        return $this->vacationDays;
+    }
+
+    public function getWorkedDays(): ?int
+    {
+        return $this->workedDays;
+    }
+
+    public function getThirteenthMonths(): ?int
+    {
+        return $this->thirteenthMonths;
     }
 
     public function getNotes(): string

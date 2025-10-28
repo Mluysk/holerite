@@ -6,6 +6,12 @@ $employeeNames = [];
 foreach ($employees as $employee) {
     $employeeNames[$employee->getId() ?? 0] = $employee->getName();
 }
+
+$typeLabels = [
+    'regular' => 'Mensal',
+    'vacation' => 'Férias',
+    'termination' => 'Desligamento',
+];
 ?>
 <section>
     <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
@@ -23,6 +29,7 @@ foreach ($employees as $employee) {
             <thead>
             <tr>
                 <th>Colaborador</th>
+                <th>Tipo</th>
                 <th>Mês de referência</th>
                 <th>Pagamento</th>
                 <th>Salário base</th>
@@ -36,6 +43,7 @@ foreach ($employees as $employee) {
             <?php foreach ($payrolls as $payroll): ?>
                 <tr>
                     <td><?= htmlspecialchars($employeeNames[$payroll->getEmployeeId()] ?? 'Colaborador'); ?></td>
+                    <td><?= htmlspecialchars($typeLabels[$payroll->getType()] ?? ucfirst($payroll->getType())); ?></td>
                     <td><?= htmlspecialchars($payroll->getReferenceMonth()); ?></td>
                     <td><?= $payroll->getPaymentDate()->format('d/m/Y'); ?></td>
                     <td>R$ <?= number_format($payroll->getBaseSalary(), 2, ',', '.'); ?></td>

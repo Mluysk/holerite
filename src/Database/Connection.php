@@ -23,7 +23,12 @@ final class Connection
             throw new RuntimeException('Arquivo de configuração não encontrado.');
         }
 
-        /** @var array{db: array{host: string, port: int, name: string, user: string, password: string, charset: string}} $config */
+        /**
+         * @var array{
+         *     db: array{host: string, port: int, name: string, user: string, password: string, charset: string},
+         *     company?: array<string, string>
+         * } $config
+         */
         $config = require $configPath;
         $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s', $config['db']['host'], $config['db']['port'], $config['db']['name'], $config['db']['charset']);
 

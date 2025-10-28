@@ -52,23 +52,25 @@ final class PayrollRepository
             return null;
         }
 
-        $payroll = $this->hydrate($row);
-        $payroll->setItems($this->findItems($payroll->getId()));
-
-        return $payroll;
+        return $this->hydrate($row);
     }
 
     public function create(Payroll $payroll): Payroll
     {
-        $statement = $this->pdo->prepare('INSERT INTO payrolls (employee_id, reference_month, base_salary, total_allowances, total_deductions, net_salary, payment_date, notes) VALUES (:employee_id, :reference_month, :base_salary, :total_allowances, :total_deductions, :net_salary, :payment_date, :notes)');
+        $statement = $this->pdo->prepare('INSERT INTO payrolls (employee_id, reference_month, type, base_salary, total_allowances, total_deductions, net_salary, payment_date, is_just_cause, vacation_days, worked_days, thirteenth_months, notes) VALUES (:employee_id, :reference_month, :type, :base_salary, :total_allowances, :total_deductions, :net_salary, :payment_date, :is_just_cause, :vacation_days, :worked_days, :thirteenth_months, :notes)');
         $statement->execute([
             'employee_id' => $payroll->getEmployeeId(),
             'reference_month' => $payroll->getReferenceMonth(),
+            'type' => $payroll->getType(),
             'base_salary' => $payroll->getBaseSalary(),
             'total_allowances' => $payroll->getTotalAllowances(),
             'total_deductions' => $payroll->getTotalDeductions(),
             'net_salary' => $payroll->getNetSalary(),
             'payment_date' => $payroll->getPaymentDate()->format('Y-m-d'),
+            'is_just_cause' => $payroll->isJustCause() ? 1 : 0,
+            'vacation_days' => $payroll->getVacationDays(),
+            'worked_days' => $payroll->getWorkedDays(),
+            'thirteenth_months' => $payroll->getThirteenthMonths(),
             'notes' => $payroll->getNotes(),
         ]);
 
@@ -91,11 +93,16 @@ final class PayrollRepository
             (int) $row['id'],
             (int) $row['employee_id'],
             (string) $row['reference_month'],
+            (string) $row['type'],
             (float) $row['base_salary'],
             (float) $row['total_allowances'],
             (float) $row['total_deductions'],
             (float) $row['net_salary'],
             new DateTimeImmutable((string) $row['payment_date']),
+            (bool) $row['is_just_cause'],
+            isset($row['vacation_days']) ? ($row['vacation_days'] !== null ? (int) $row['vacation_days'] : null) : null,
+            isset($row['worked_days']) ? ($row['worked_days'] !== null ? (int) $row['worked_days'] : null) : null,
+            isset($row['thirteenth_months']) ? ($row['thirteenth_months'] !== null ? (int) $row['thirteenth_months'] : null) : null,
             (string) $row['notes'],
             []
         );
