@@ -44,7 +44,7 @@ final class EmployeeRepository
 
     public function create(Employee $employee): Employee
     {
-        $statement = $this->pdo->prepare('INSERT INTO employees (name, email, base_salary, department, position, hire_date) VALUES (:name, :email, :base_salary, :department, :position, :hire_date)');
+        $statement = $this->pdo->prepare('INSERT INTO employees (name, email, base_salary, department, position, hire_date, termination_date) VALUES (:name, :email, :base_salary, :department, :position, :hire_date, :termination_date)');
         $statement->execute([
             'name' => $employee->getName(),
             'email' => $employee->getEmail(),
@@ -52,6 +52,7 @@ final class EmployeeRepository
             'department' => $employee->getDepartment(),
             'position' => $employee->getPosition(),
             'hire_date' => $employee->getHireDate()->format('Y-m-d'),
+            'termination_date' => $employee->getTerminationDate()?->format('Y-m-d'),
         ]);
 
         $employee->setId((int) $this->pdo->lastInsertId());
@@ -61,7 +62,7 @@ final class EmployeeRepository
 
     public function update(Employee $employee): void
     {
-        $statement = $this->pdo->prepare('UPDATE employees SET name = :name, email = :email, base_salary = :base_salary, department = :department, position = :position, hire_date = :hire_date WHERE id = :id');
+        $statement = $this->pdo->prepare('UPDATE employees SET name = :name, email = :email, base_salary = :base_salary, department = :department, position = :position, hire_date = :hire_date, termination_date = :termination_date WHERE id = :id');
         $statement->execute([
             'id' => $employee->getId(),
             'name' => $employee->getName(),
@@ -70,6 +71,7 @@ final class EmployeeRepository
             'department' => $employee->getDepartment(),
             'position' => $employee->getPosition(),
             'hire_date' => $employee->getHireDate()->format('Y-m-d'),
+            'termination_date' => $employee->getTerminationDate()?->format('Y-m-d'),
         ]);
     }
 
@@ -91,7 +93,10 @@ final class EmployeeRepository
             (float) $row['base_salary'],
             (string) $row['department'],
             (string) $row['position'],
-            new DateTimeImmutable((string) $row['hire_date'])
+            new DateTimeImmutable((string) $row['hire_date']),
+            isset($row['termination_date']) && $row['termination_date'] !== null && $row['termination_date'] !== ''
+                ? new DateTimeImmutable((string) $row['termination_date'])
+                : null
         );
     }
 }

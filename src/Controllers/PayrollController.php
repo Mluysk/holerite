@@ -42,10 +42,21 @@ final class PayrollController extends Controller
             return;
         }
 
+        $defaults = [
+            'employee_id' => (int) ($_GET['employee_id'] ?? 0),
+            'type' => (string) ($_GET['type'] ?? 'regular'),
+            'reference_month' => (string) ($_GET['reference_month'] ?? ''),
+            'thirteenth_months' => (int) ($_GET['thirteenth_months'] ?? 12),
+            'vacation_days' => (int) ($_GET['vacation_days'] ?? 30),
+            'worked_days' => (int) ($_GET['worked_days'] ?? 30),
+            'just_cause' => isset($_GET['just_cause']) && in_array(strtolower((string) $_GET['just_cause']), ['1', 'true', 'on', 'yes'], true),
+        ];
+
         $this->render('payrolls/form', [
             'title' => 'Gerar holerite',
             'employees' => $employees,
             'company' => $this->companyRepository->get(),
+            'defaults' => $defaults,
         ]);
     }
 

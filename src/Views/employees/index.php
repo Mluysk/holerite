@@ -36,6 +36,7 @@
                     <td>R$ <?= number_format($employee->getBaseSalary(), 2, ',', '.'); ?></td>
                     <td><?= $employee->getHireDate()->format('d/m/Y'); ?></td>
                     <td class="text-right actions">
+                        <a href="?action=show_employee&id=<?= $employee->getId(); ?>" class="button button-secondary">Detalhes</a>
                         <a href="?action=edit_employee&id=<?= $employee->getId(); ?>" class="button button-secondary">Editar</a>
                         <form method="post" action="?action=delete_employee&id=<?= $employee->getId(); ?>" onsubmit="return confirm('Deseja realmente remover este colaborador?');" style="display:inline;">
                             <button type="submit" class="button button-secondary" style="background:#dc2626;">Excluir</button>

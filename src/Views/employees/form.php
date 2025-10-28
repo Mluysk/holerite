@@ -35,6 +35,11 @@
                 <label for="hire_date">Data de admissão</label>
                 <input type="date" id="hire_date" name="hire_date" value="<?= htmlspecialchars($employee?->getHireDate()->format('Y-m-d') ?? date('Y-m-d')); ?>" required>
             </div>
+            <div>
+                <label for="termination_date">Data de desligamento</label>
+                <input type="date" id="termination_date" name="termination_date" value="<?= htmlspecialchars($employee?->getTerminationDate()?->format('Y-m-d') ?? ''); ?>">
+                <small class="muted">Preencha apenas se o vínculo já tiver sido encerrado.</small>
+            </div>
         </div>
 
         <button type="submit" class="button">Salvar</button>

@@ -11,6 +11,7 @@ $typeLabels = [
     'regular' => 'Mensal',
     'vacation' => 'Férias',
     'termination' => 'Desligamento',
+    'thirteenth' => '13º salário',
 ];
 ?>
 <section>

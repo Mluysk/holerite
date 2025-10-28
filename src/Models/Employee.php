@@ -16,6 +16,7 @@ final class Employee
         private string $department,
         private string $position,
         private DateTimeImmutable $hireDate,
+        private ?DateTimeImmutable $terminationDate = null,
     ) {
     }
 
@@ -87,5 +88,15 @@ final class Employee
     public function setHireDate(DateTimeImmutable $hireDate): void
     {
         $this->hireDate = $hireDate;
+    }
+
+    public function getTerminationDate(): ?DateTimeImmutable
+    {
+        return $this->terminationDate;
+    }
+
+    public function setTerminationDate(?DateTimeImmutable $terminationDate): void
+    {
+        $this->terminationDate = $terminationDate;
     }
 }

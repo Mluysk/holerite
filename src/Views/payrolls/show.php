@@ -25,6 +25,7 @@ $typeLabels = [
     'regular' => 'Mensal',
     'vacation' => 'Férias',
     'termination' => 'Desligamento',
+    'thirteenth' => '13º salário',
 ];
 
 $allowances = [];
@@ -34,6 +35,7 @@ $code = 1;
 $referenceValue = match ($payroll->getType()) {
     'vacation' => ($payroll->getVacationDays() ?? 0) . ' dias',
     'termination' => ($payroll->getWorkedDays() ?? 0) . ' dias',
+    'thirteenth' => ($payroll->getThirteenthMonths() ?? 0) . ' meses',
     default => '1 mês',
 };
 
@@ -85,7 +87,9 @@ $allowances = array_pad($allowances, $maxRows, null);
 $deductions = array_pad($deductions, $maxRows, null);
 
 $employeeCode = str_pad((string) ($employee?->getId() ?? 0), 5, '0', STR_PAD_LEFT);
-$thirteenthAccrual = $thirteenthItem?->getAmount() ?? $payroll->getThirteenthAccrual();
+$thirteenthAccrual = $payroll->getType() === 'thirteenth'
+    ? $payroll->getBaseSalary()
+    : ($thirteenthItem?->getAmount() ?? $payroll->getThirteenthAccrual());
 ?>
 <section>
     <div class="receipt">
@@ -123,6 +127,9 @@ $thirteenthAccrual = $thirteenthItem?->getAmount() ?? $payroll->getThirteenthAcc
                     <span><strong>Dias trabalhados</strong> <?= $payroll->getWorkedDays() ?? 0; ?></span>
                     <span><strong>Meses 13º</strong> <?= $payroll->getThirteenthMonths() ?? 0; ?></span>
                     <span><strong>Justa causa</strong> <?= $payroll->isJustCause() ? 'Sim' : 'Não'; ?></span>
+                <?php elseif ($payroll->getType() === 'thirteenth'): ?>
+                    <span><strong>Meses pagos</strong> <?= $payroll->getThirteenthMonths() ?? 0; ?></span>
+                    <span><strong>Competência</strong> <?= htmlspecialchars($payroll->getReferenceMonth()); ?></span>
                 <?php endif; ?>
             </div>
         </div>

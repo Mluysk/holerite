@@ -1,6 +1,17 @@
 <?php
 /** @var string $title */
 /** @var Holerite\Models\Employee[] $employees */
+/** @var array<string, mixed> $defaults */
+$selectedEmployeeId = (int) ($defaults['employee_id'] ?? 0);
+$selectedType = (string) ($defaults['type'] ?? 'regular');
+$referenceMonth = (string) ($defaults['reference_month'] ?? '');
+if ($referenceMonth === '') {
+    $referenceMonth = date('Y-m');
+}
+$defaultThirteenthMonths = max(1, min(12, (int) ($defaults['thirteenth_months'] ?? 12)));
+$defaultVacationDays = max(1, min(30, (int) ($defaults['vacation_days'] ?? 30)));
+$defaultWorkedDays = max(0, min(30, (int) ($defaults['worked_days'] ?? 30)));
+$defaultJustCause = !empty($defaults['just_cause']);
 ?>
 <section>
     <header style="margin-bottom:1.5rem;">
@@ -15,7 +26,7 @@
                 <select name="employee_id" id="employee_id" required>
                     <option value="">Selecione...</option>
                     <?php foreach ($employees as $employee): ?>
-                        <option value="<?= $employee->getId(); ?>" data-salary="<?= number_format($employee->getBaseSalary(), 2, '.', ''); ?>">
+                        <option value="<?= $employee->getId(); ?>" data-salary="<?= number_format($employee->getBaseSalary(), 2, '.', ''); ?>" <?= $selectedEmployeeId === $employee->getId() ? 'selected' : ''; ?>>
                             <?= htmlspecialchars($employee->getName()); ?> — R$ <?= number_format($employee->getBaseSalary(), 2, ',', '.'); ?>
                         </option>
                     <?php endforeach; ?>
@@ -23,7 +34,7 @@
             </div>
             <div>
                 <label for="reference_month">Mês de referência</label>
-                <input type="month" id="reference_month" name="reference_month" required>
+                <input type="month" id="reference_month" name="reference_month" value="<?= htmlspecialchars($referenceMonth); ?>" required>
             </div>
             <div>
                 <label for="payment_date">Data de pagamento</label>
@@ -32,9 +43,10 @@
             <div>
                 <label for="type">Tipo do holerite</label>
                 <select name="type" id="type">
-                    <option value="regular">Mensal</option>
-                    <option value="vacation">Férias</option>
-                    <option value="termination">Desligamento</option>
+                    <option value="regular" <?= $selectedType === 'regular' ? 'selected' : ''; ?>>Mensal</option>
+                    <option value="vacation" <?= $selectedType === 'vacation' ? 'selected' : ''; ?>>Férias</option>
+                    <option value="termination" <?= $selectedType === 'termination' ? 'selected' : ''; ?>>Desligamento</option>
+                    <option value="thirteenth" <?= $selectedType === 'thirteenth' ? 'selected' : ''; ?>>13º salário</option>
                 </select>
             </div>
         </div>
@@ -44,7 +56,7 @@
             <div class="grid">
                 <div>
                     <label for="vacation_days">Dias de férias</label>
-                    <input type="number" id="vacation_days" name="vacation_days" min="1" max="30" value="30">
+                    <input type="number" id="vacation_days" name="vacation_days" min="1" max="30" value="<?= htmlspecialchars((string) $defaultVacationDays); ?>">
                 </div>
             </div>
             <p class="muted">O sistema calcula automaticamente o 1/3 constitucional sobre o valor proporcional aos dias de férias.</p>
@@ -55,19 +67,30 @@
             <div class="grid">
                 <div>
                     <label for="worked_days">Dias trabalhados no mês</label>
-                    <input type="number" id="worked_days" name="worked_days" min="0" max="30" value="30">
+                    <input type="number" id="worked_days" name="worked_days" min="0" max="30" value="<?= htmlspecialchars((string) $defaultWorkedDays); ?>">
                 </div>
                 <div>
                     <label for="thirteenth_months">Meses para cálculo do 13º</label>
-                    <input type="number" id="thirteenth_months" name="thirteenth_months" min="0" max="12" value="12">
+                    <input type="number" id="thirteenth_months" name="thirteenth_months" min="0" max="12" value="<?= htmlspecialchars((string) $defaultThirteenthMonths); ?>">
                 </div>
             </div>
             <div>
                 <label class="muted" style="display:flex;align-items:center;gap:0.5rem;">
-                    <input type="checkbox" name="just_cause" id="just_cause" value="1">
+                    <input type="checkbox" name="just_cause" id="just_cause" value="1" <?= $defaultJustCause ? 'checked' : ''; ?>>
                     Desligamento por justa causa (remove pagamento de 13º proporcional)
                 </label>
             </div>
+        </div>
+
+        <div id="thirteenth-fields" class="card" style="margin-top:1.5rem; display:none;">
+            <h3 style="margin-top:0;">Informações do 13º salário</h3>
+            <div class="grid">
+                <div>
+                    <label for="thirteenth_months_input">Meses acumulados</label>
+                    <input type="number" id="thirteenth_months_input" min="1" max="12" value="<?= htmlspecialchars((string) $defaultThirteenthMonths); ?>">
+                </div>
+            </div>
+            <p class="muted">O valor bruto será calculado automaticamente com base nos meses selecionados e no salário atual.</p>
         </div>
 
         <div class="grid" style="margin-top:1.5rem;">
@@ -175,6 +198,12 @@
             return base * (days / 30);
         }
 
+        if (type === 'thirteenth') {
+            const monthsInput = document.getElementById('thirteenth_months_input');
+            const months = clamp(parseFloat(monthsInput ? monthsInput.value || '1' : '1'), 1, 12);
+            return base * (months / 12);
+        }
+
         return base;
     }
 
@@ -206,6 +235,12 @@
     function automaticThirteenth(type) {
         if (type === 'regular') {
             return getEmployeeBaseSalary() / 12;
+        }
+
+        if (type === 'thirteenth') {
+            const monthsInput = document.getElementById('thirteenth_months_input');
+            const months = clamp(parseFloat(monthsInput ? monthsInput.value || '1' : '1'), 1, 12);
+            return getEmployeeBaseSalary() * (months / 12);
         }
 
         return 0;
@@ -273,6 +308,16 @@
         const type = document.getElementById('type').value;
         const baseSalary = calculateBaseSalary(type);
 
+        const thirteenthHidden = document.getElementById('thirteenth_months');
+        const thirteenthInput = document.getElementById('thirteenth_months_input');
+        if (thirteenthHidden && thirteenthInput) {
+            if (type === 'thirteenth') {
+                thirteenthHidden.value = thirteenthInput.value || '1';
+            } else if (type === 'termination') {
+                thirteenthInput.value = thirteenthHidden.value || thirteenthInput.value || '1';
+            }
+        }
+
         const allowanceInputs = document.querySelectorAll('input[name="allowance_amount[]"]');
         const deductionInputs = document.querySelectorAll('input[name="deduction_amount[]"]');
 
@@ -313,7 +358,8 @@
                 autoItems.map(item => `<li>${item.label} — <strong>${formatter.format(item.amount)}</strong></li>`).join('') +
                 '</ul>'
             : '';
-        const deductionLine = `<p style="margin:0.75rem 0 0;">Descontos automáticos estimados: INSS <strong>${formatter.format(inss || 0)}</strong> · IRRF <strong>${formatter.format(irrf || 0)}</strong></p>`;
+        const deductionTitle = type === 'thirteenth' ? 'Descontos automáticos estimados (13º)' : 'Descontos automáticos estimados';
+        const deductionLine = `<p style="margin:0.75rem 0 0;">${deductionTitle}: INSS <strong>${formatter.format(inss || 0)}</strong> · IRRF <strong>${formatter.format(irrf || 0)}</strong></p>`;
         automaticDescriptions.innerHTML = allowanceList + deductionLine;
     }
 
@@ -321,13 +367,24 @@
         const type = document.getElementById('type').value;
         const vacationFields = document.getElementById('vacation-fields');
         const terminationFields = document.getElementById('termination-fields');
+        const thirteenthFields = document.getElementById('thirteenth-fields');
 
         vacationFields.style.display = type === 'vacation' ? 'block' : 'none';
         terminationFields.style.display = type === 'termination' ? 'block' : 'none';
+        thirteenthFields.style.display = type === 'thirteenth' ? 'block' : 'none';
 
         document.getElementById('vacation_days').required = type === 'vacation';
         document.getElementById('worked_days').required = type === 'termination';
-        document.getElementById('thirteenth_months').required = type === 'termination';
+        document.getElementById('thirteenth_months').required = type === 'termination' || type === 'thirteenth';
+        document.getElementById('thirteenth_months_input').required = type === 'thirteenth';
+
+        if (type === 'thirteenth') {
+            const thirteenthHidden = document.getElementById('thirteenth_months');
+            const thirteenthInput = document.getElementById('thirteenth_months_input');
+            if (thirteenthHidden && thirteenthInput) {
+                thirteenthHidden.value = thirteenthInput.value || '1';
+            }
+        }
 
         updateSummary();
     }
@@ -336,6 +393,10 @@
     document.getElementById('payroll-form').addEventListener('input', updateSummary);
     document.getElementById('type').addEventListener('change', toggleTypeSections);
     document.getElementById('just_cause').addEventListener('change', updateSummary);
+    document.getElementById('thirteenth_months_input').addEventListener('input', () => {
+        document.getElementById('thirteenth_months').value = document.getElementById('thirteenth_months_input').value;
+        updateSummary();
+    });
 
     toggleTypeSections();
 

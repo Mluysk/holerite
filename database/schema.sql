@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS employees (
     department VARCHAR(150) NOT NULL,
     position VARCHAR(150) NOT NULL,
     hire_date DATE NOT NULL,
+    termination_date DATE NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -31,7 +32,7 @@ CREATE TABLE IF NOT EXISTS payrolls (
     id INT AUTO_INCREMENT PRIMARY KEY,
     employee_id INT NOT NULL,
     reference_month VARCHAR(7) NOT NULL,
-    type ENUM('regular', 'vacation', 'termination') NOT NULL DEFAULT 'regular',
+    type ENUM('regular', 'vacation', 'termination', 'thirteenth') NOT NULL DEFAULT 'regular',
     base_salary DECIMAL(12,2) NOT NULL,
     total_allowances DECIMAL(12,2) NOT NULL DEFAULT 0,
     total_deductions DECIMAL(12,2) NOT NULL DEFAULT 0,

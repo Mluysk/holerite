@@ -77,6 +77,16 @@ final class PayrollService
             }
         }
 
+        if ($type === 'thirteenth') {
+            $thirteenthMonths = $this->sanitizeInt($data['thirteenth_months'] ?? 0, 1, 12, 0);
+
+            if ($thirteenthMonths <= 0) {
+                throw new RuntimeException('Informe a quantidade de meses a considerar para o 13º.');
+            }
+
+            $baseSalaryAmount = $this->roundMoney($employee->getBaseSalary() * $thirteenthMonths / 12);
+        }
+
         if ($type === 'regular') {
             $thirteenthAccrual = $this->roundMoney($employee->getBaseSalary() / 12);
         }
@@ -88,14 +98,31 @@ final class PayrollService
         $salaryContributionBase = $this->roundMoney($baseSalaryAmount + array_reduce($allAllowances, fn (float $carry, PayrollItem $item): float => $carry + $item->getAmount(), 0.0));
 
         $inssAmount = $this->calculateInss($salaryContributionBase);
-        if ($inssAmount > 0) {
-            $automaticDeductions[] = new PayrollItem(null, null, 'INSS', $inssAmount, 'deduction');
+        $irrfBase = 0.0;
+        $irrfAmount = 0.0;
+        if ($type === 'thirteenth') {
+            $irrfBase = $this->roundMoney(max(0, $salaryContributionBase - $inssAmount));
+            $irrfAmount = $this->calculateIrrf($irrfBase);
+        } else {
+            if ($inssAmount > 0) {
+                $automaticDeductions[] = new PayrollItem(null, null, 'INSS', $inssAmount, 'deduction');
+            }
+
+            $irrfBase = $this->roundMoney(max(0, $salaryContributionBase - $inssAmount));
+            $irrfAmount = $this->calculateIrrf($irrfBase);
+            if ($irrfAmount > 0) {
+                $automaticDeductions[] = new PayrollItem(null, null, 'IRRF', $irrfAmount, 'deduction');
+            }
         }
 
-        $irrfBase = $this->roundMoney(max(0, $salaryContributionBase - $inssAmount));
-        $irrfAmount = $this->calculateIrrf($irrfBase);
-        if ($irrfAmount > 0) {
-            $automaticDeductions[] = new PayrollItem(null, null, 'IRRF', $irrfAmount, 'deduction');
+        if ($type === 'thirteenth') {
+            if ($inssAmount > 0) {
+                $automaticDeductions[] = new PayrollItem(null, null, 'INSS 13º', $inssAmount, 'deduction');
+            }
+
+            if (($irrfAmount ?? 0) > 0) {
+                $automaticDeductions[] = new PayrollItem(null, null, 'IRRF 13º', $irrfAmount, 'deduction');
+            }
         }
 
         $fgtsAmount = $this->roundMoney($salaryContributionBase * 0.08);
@@ -160,7 +187,7 @@ final class PayrollService
 
     private function normalizeType(string $type): string
     {
-        $allowed = ['regular', 'vacation', 'termination'];
+        $allowed = ['regular', 'vacation', 'termination', 'thirteenth'];
         return in_array($type, $allowed, true) ? $type : 'regular';
     }
 

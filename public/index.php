@@ -9,6 +9,7 @@ use Holerite\Controllers\PayrollController;
 use Holerite\Repositories\CompanyRepository;
 use Holerite\Repositories\EmployeeRepository;
 use Holerite\Repositories\PayrollRepository;
+use Holerite\Services\EmployeeBenefitService;
 use Holerite\Services\PayrollService;
 
 require __DIR__ . '/../autoload.php';
@@ -18,11 +19,12 @@ session_start();
 $companyRepository = new CompanyRepository();
 $employeeRepository = new EmployeeRepository();
 $payrollRepository = new PayrollRepository();
+$employeeBenefitService = new EmployeeBenefitService();
 $payrollService = new PayrollService($employeeRepository, $payrollRepository);
 
 $dashboardController = new DashboardController($employeeRepository, $payrollRepository);
 $companyController = new CompanyController($companyRepository);
-$employeeController = new EmployeeController($employeeRepository);
+$employeeController = new EmployeeController($employeeRepository, $payrollRepository, $employeeBenefitService);
 $payrollController = new PayrollController($employeeRepository, $payrollRepository, $payrollService, $companyRepository);
 
 $action = $_GET['action'] ?? 'dashboard';
@@ -63,6 +65,11 @@ switch ($action) {
     case 'edit_employee':
         $id = (int) ($_GET['id'] ?? 0);
         $employeeController->edit($id);
+        break;
+
+    case 'show_employee':
+        $id = (int) ($_GET['id'] ?? 0);
+        $employeeController->show($id);
         break;
 
     case 'update_employee':

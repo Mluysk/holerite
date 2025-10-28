@@ -7,12 +7,17 @@ namespace Holerite\Controllers;
 use DateTimeImmutable;
 use Holerite\Models\Employee;
 use Holerite\Repositories\EmployeeRepository;
+use Holerite\Repositories\PayrollRepository;
+use Holerite\Services\EmployeeBenefitService;
 use Throwable;
 
 final class EmployeeController extends Controller
 {
-    public function __construct(private EmployeeRepository $repository)
-    {
+    public function __construct(
+        private EmployeeRepository $repository,
+        private PayrollRepository $payrollRepository,
+        private EmployeeBenefitService $benefitService,
+    ) {
     }
 
     public function index(): void
@@ -44,7 +49,8 @@ final class EmployeeController extends Controller
                 (float) ($data['base_salary'] ?? 0),
                 trim((string) ($data['department'] ?? '')),
                 trim((string) ($data['position'] ?? '')),
-                new DateTimeImmutable((string) ($data['hire_date'] ?? date('Y-m-d')))
+                new DateTimeImmutable((string) ($data['hire_date'] ?? date('Y-m-d'))),
+                $this->buildTerminationDate($data['termination_date'] ?? null)
             );
 
             $this->repository->create($employee);
@@ -90,6 +96,7 @@ final class EmployeeController extends Controller
             $employee->setDepartment(trim((string) ($data['department'] ?? '')));
             $employee->setPosition(trim((string) ($data['position'] ?? '')));
             $employee->setHireDate(new DateTimeImmutable((string) ($data['hire_date'] ?? date('Y-m-d'))));
+            $employee->setTerminationDate($this->buildTerminationDate($data['termination_date'] ?? null));
 
             $this->repository->update($employee);
             $this->flash('success', 'Colaborador atualizado com sucesso.');
@@ -110,5 +117,41 @@ final class EmployeeController extends Controller
         }
 
         $this->redirect('?action=list_employees');
+    }
+
+    public function show(int $id): void
+    {
+        $employee = $this->repository->find($id);
+
+        if ($employee === null) {
+            $this->flash('error', 'Colaborador não encontrado.');
+            $this->redirect('?action=list_employees');
+            return;
+        }
+
+        $payrolls = $this->payrollRepository->findByEmployee($id);
+        $benefits = $this->benefitService->summarize($employee, $payrolls);
+
+        $this->render('employees/show', [
+            'title' => 'Colaborador · ' . $employee->getName(),
+            'employee' => $employee,
+            'payrolls' => $payrolls,
+            'benefits' => $benefits,
+        ]);
+    }
+
+    private function buildTerminationDate(mixed $value): ?DateTimeImmutable
+    {
+        $date = trim((string) ($value ?? ''));
+
+        if ($date === '') {
+            return null;
+        }
+
+        try {
+            return new DateTimeImmutable($date);
+        } catch (Throwable) {
+            return null;
+        }
     }
 }
