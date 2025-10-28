@@ -4,6 +4,8 @@
 /** @var float $totalNet */
 /** @var Holerite\Models\Payroll[] $lastPayrolls */
 /** @var Holerite\Models\Employee[] $employees */
+/** @var array<int, array{period: string, total: float}> $monthlyTotals */
+/** @var array<int, array{period: string, total: float}> $yearlyTotals */
 $employeeNames = [];
 foreach ($employees as $employee) {
     $employeeNames[$employee->getId() ?? 0] = $employee->getName();
@@ -28,6 +30,54 @@ foreach ($employees as $employee) {
             <h3>Folha líquida acumulada</h3>
             <p style="font-size:2rem;margin:0;">R$ <?= number_format($totalNet, 2, ',', '.'); ?></p>
         </div>
+    </div>
+
+    <div class="card" style="margin-top:1.5rem;">
+        <h3 style="margin-top:0;">Totais pagos por mês</h3>
+        <?php if ($monthlyTotals === []): ?>
+            <p class="muted">Os valores mensais aparecerão após os primeiros pagamentos.</p>
+        <?php else: ?>
+            <table>
+                <thead>
+                <tr>
+                    <th>Mês</th>
+                    <th class="text-right">Valor líquido pago</th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($monthlyTotals as $month): ?>
+                    <tr>
+                        <td><?= htmlspecialchars($month['period']); ?></td>
+                        <td class="text-right"><strong>R$ <?= number_format($month['total'], 2, ',', '.'); ?></strong></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
+    </div>
+
+    <div class="card" style="margin-top:1.5rem;">
+        <h3 style="margin-top:0;">Totais pagos por ano</h3>
+        <?php if ($yearlyTotals === []): ?>
+            <p class="muted">Os totais anuais serão exibidos conforme a folha evoluir.</p>
+        <?php else: ?>
+            <table>
+                <thead>
+                <tr>
+                    <th>Ano</th>
+                    <th class="text-right">Valor líquido pago</th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($yearlyTotals as $year): ?>
+                    <tr>
+                        <td><?= htmlspecialchars($year['period']); ?></td>
+                        <td class="text-right"><strong>R$ <?= number_format($year['total'], 2, ',', '.'); ?></strong></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
     </div>
 
     <div class="card" style="margin-top:1.5rem;">
