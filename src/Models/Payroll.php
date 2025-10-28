@@ -23,6 +23,13 @@ final class Payroll
         private ?int $vacationDays,
         private ?int $workedDays,
         private ?int $thirteenthMonths,
+        private float $thirteenthAccrual,
+        private float $inssBase,
+        private float $inssAmount,
+        private float $irrfBase,
+        private float $irrfAmount,
+        private float $fgtsBase,
+        private float $fgtsAmount,
         private string $notes,
         private array $items = [],
     ) {
@@ -96,6 +103,41 @@ final class Payroll
     public function getThirteenthMonths(): ?int
     {
         return $this->thirteenthMonths;
+    }
+
+    public function getThirteenthAccrual(): float
+    {
+        return $this->thirteenthAccrual;
+    }
+
+    public function getInssBase(): float
+    {
+        return $this->inssBase;
+    }
+
+    public function getInssAmount(): float
+    {
+        return $this->inssAmount;
+    }
+
+    public function getIrrfBase(): float
+    {
+        return $this->irrfBase;
+    }
+
+    public function getIrrfAmount(): float
+    {
+        return $this->irrfAmount;
+    }
+
+    public function getFgtsBase(): float
+    {
+        return $this->fgtsBase;
+    }
+
+    public function getFgtsAmount(): float
+    {
+        return $this->fgtsAmount;
     }
 
     public function getNotes(): string

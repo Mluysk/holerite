@@ -25,20 +25,22 @@ Sistema completo de holerites desenvolvido em PHP para execução com XAMPP (Apa
 - Cadastro completo de colaboradores (CRUD)
 - Geração de holerites com proventos e descontos ilimitados
 - Tipos especiais de holerite (mensal, férias com 1/3 constitucional e desligamento com cálculo de 13º proporcional)
-- Cálculo automático de salário líquido
+- Cálculo automático de salário líquido com retenção de INSS, IRRF e depósito de FGTS
+- Controle mensal do 13º salário acumulado
 - Histórico de holerites e painel resumido
 - Impressão em layout profissional inspirado em recibo padrão de holerite
 
 ## Estrutura
 
 - `public/` — ponto de entrada da aplicação.
-- `config/` — configurações do banco de dados e dados básicos da empresa.
+- `config/` — configurações do banco de dados.
+- `src/Views/company/` — formulário para configurar os dados da empresa que serão exibidos no holerite.
 - `src/` — código-fonte da aplicação (controllers, models, repositories, services e views).
 - `database/` — scripts SQL auxiliares.
 
 ## Personalização
 
-Os estilos básicos estão embutidos no layout principal em [`src/Views/layout/base.php`](src/Views/layout/base.php). Ajuste conforme a identidade visual da sua empresa. Os dados da empresa (nome, CNPJ, endereço e telefone) exibidos no holerite podem ser alterados em [`config/config.php`](config/config.php).
+Os estilos básicos estão embutidos no layout principal em [`src/Views/layout/base.php`](src/Views/layout/base.php). Ajuste conforme a identidade visual da sua empresa. Os dados da empresa exibidos no holerite podem ser atualizados pela opção **Empresa** do menu principal (as informações cadastradas ficam no banco de dados).
 
 ## Segurança
 

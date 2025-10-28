@@ -1,22 +1,25 @@
 <?php
 /** @var Holerite\Models\Payroll $payroll */
 /** @var Holerite\Models\Employee|null $employee */
+/** @var Holerite\Models\Company $company */
 
-$configurationPath = __DIR__ . '/../../../config/config.php';
-$companyDefaults = [
-    'name' => 'XYZ Ltda.',
-    'document' => '00.000.000/0001-00',
-    'address' => 'Rua Exemplo, 123 - Centro',
-    'city' => 'São Paulo - SP',
-    'phone' => '(11) 0000-0000',
+$referenceDate = \DateTimeImmutable::createFromFormat('Y-m-d', $payroll->getReferenceMonth() . '-01');
+$monthNames = [
+    '01' => 'janeiro',
+    '02' => 'fevereiro',
+    '03' => 'março',
+    '04' => 'abril',
+    '05' => 'maio',
+    '06' => 'junho',
+    '07' => 'julho',
+    '08' => 'agosto',
+    '09' => 'setembro',
+    '10' => 'outubro',
+    '11' => 'novembro',
+    '12' => 'dezembro',
 ];
-
-if (file_exists($configurationPath)) {
-    $loaded = require $configurationPath;
-    if (is_array($loaded) && isset($loaded['company']) && is_array($loaded['company'])) {
-        $companyDefaults = array_merge($companyDefaults, $loaded['company']);
-    }
-}
+$referenceLabel = $referenceDate ? sprintf('%s-%s', $monthNames[$referenceDate->format('m')] ?? $referenceDate->format('m'), $referenceDate->format('y')) : $payroll->getReferenceMonth();
+$paymentDate = $payroll->getPaymentDate()->format('d/m/Y');
 
 $typeLabels = [
     'regular' => 'Mensal',
@@ -24,24 +27,25 @@ $typeLabels = [
     'termination' => 'Desligamento',
 ];
 
-$referenceLabels = [
-    'regular' => '1 mês',
-    'vacation' => ($payroll->getVacationDays() ?? 0) . ' dias',
-    'termination' => ($payroll->getWorkedDays() ?? 0) . ' dias',
-];
-
 $allowances = [];
 $deductions = [];
 $code = 1;
-$thirteenthAmount = null;
 
-$reference = $referenceLabels[$payroll->getType()] ?? '';
+$referenceValue = match ($payroll->getType()) {
+    'vacation' => ($payroll->getVacationDays() ?? 0) . ' dias',
+    'termination' => ($payroll->getWorkedDays() ?? 0) . ' dias',
+    default => '1 mês',
+};
+
 $allowances[] = [
     'code' => sprintf('%03d', $code++),
     'description' => 'Salário Base',
-    'reference' => $reference,
+    'reference' => $referenceValue,
     'amount' => $payroll->getBaseSalary(),
 ];
+
+$thirteenthItem = null;
+$vacationBonusValue = null;
 
 foreach ($payroll->getItems() as $item) {
     $entry = [
@@ -56,17 +60,21 @@ foreach ($payroll->getItems() as $item) {
         continue;
     }
 
-    if ($thirteenthAmount === null && $item->getType() === 'allowance') {
-        $rawDescription = $item->getDescription();
-        $description = function_exists('mb_strtolower') ? mb_strtolower($rawDescription) : strtolower($rawDescription);
-        if (
-            str_contains($description, '13º')
-            || str_contains($description, '13o')
-            || str_contains($description, 'décimo terceiro')
-            || str_contains($description, 'decimo terceiro')
-        ) {
-            $thirteenthAmount = $item->getAmount();
-        }
+    $normalizedDescription = function_exists('mb_strtolower') ? mb_strtolower($item->getDescription()) : strtolower($item->getDescription());
+    if (
+        $thirteenthItem === null
+        && (
+            str_contains($normalizedDescription, '13º')
+            || str_contains($normalizedDescription, '13o')
+            || str_contains($normalizedDescription, 'decimo terceiro')
+            || str_contains($normalizedDescription, 'décimo terceiro')
+        )
+    ) {
+        $thirteenthItem = $item;
+    }
+
+    if ($vacationBonusValue === null && str_contains($normalizedDescription, '1/3')) {
+        $vacationBonusValue = $item->getAmount();
     }
 
     $allowances[] = $entry;
@@ -75,61 +83,58 @@ foreach ($payroll->getItems() as $item) {
 $maxRows = max(count($allowances), count($deductions));
 $allowances = array_pad($allowances, $maxRows, null);
 $deductions = array_pad($deductions, $maxRows, null);
+
+$employeeCode = str_pad((string) ($employee?->getId() ?? 0), 5, '0', STR_PAD_LEFT);
+$thirteenthAccrual = $thirteenthItem?->getAmount() ?? $payroll->getThirteenthAccrual();
 ?>
 <section>
-    <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
-        <div>
-            <h2 style="margin:0 0 0.25rem 0;">Holerite de <?= htmlspecialchars($employee?->getName() ?? 'Colaborador'); ?></h2>
-            <p class="muted">Referência <?= htmlspecialchars($payroll->getReferenceMonth()); ?> · Pagamento em <?= $payroll->getPaymentDate()->format('d/m/Y'); ?> · <?= htmlspecialchars($typeLabels[$payroll->getType()] ?? ucfirst($payroll->getType())); ?></p>
-        </div>
-        <a href="javascript:window.print();" class="button">Imprimir</a>
-    </header>
-
-    <div class="payroll-slip">
-        <div class="slip-header">
-            <div>
-                <h3><?= htmlspecialchars($companyDefaults['name']); ?></h3>
-                <p><?= htmlspecialchars($companyDefaults['address']); ?></p>
-                <p><?= htmlspecialchars($companyDefaults['city']); ?></p>
-                <p><?= htmlspecialchars($companyDefaults['phone']); ?></p>
+    <div class="receipt">
+        <div class="receipt-header">
+            <div class="receipt-employer">
+                <span class="label">Empregador</span>
+                <strong><?= htmlspecialchars($company->getName()); ?></strong>
+                <span><?= htmlspecialchars($company->getAddress()); ?></span>
+                <span><?= htmlspecialchars($company->getCity()) . ' - ' . htmlspecialchars($company->getState()) . ' · CEP ' . htmlspecialchars($company->getZipCode()); ?></span>
+                <span>CNPJ: <?= htmlspecialchars($company->getDocument()); ?></span>
+                <span>Telefone: <?= htmlspecialchars($company->getPhone()); ?></span>
             </div>
-            <div class="slip-header-right">
-                <p><strong>CNPJ:</strong> <?= htmlspecialchars($companyDefaults['document']); ?></p>
-                <p><strong>Competência:</strong> <?= htmlspecialchars($payroll->getReferenceMonth()); ?></p>
-                <p><strong>Pagamento:</strong> <?= $payroll->getPaymentDate()->format('d/m/Y'); ?></p>
-                <p><strong>Tipo:</strong> <?= htmlspecialchars($typeLabels[$payroll->getType()] ?? ucfirst($payroll->getType())); ?></p>
+            <div class="receipt-period">
+                <span class="label">Recibo de Pagamento de Salário</span>
+                <span>Referente ao mês de <strong><?= htmlspecialchars($referenceLabel); ?></strong></span>
+                <span>Competência: <?= htmlspecialchars($payroll->getReferenceMonth()); ?></span>
+                <span>Pagamento: <?= $paymentDate; ?></span>
+                <span>Tipo: <?= htmlspecialchars($typeLabels[$payroll->getType()] ?? ucfirst($payroll->getType())); ?></span>
             </div>
         </div>
 
-        <div class="slip-employee">
+        <div class="employee-info">
             <div>
-                <p><strong>Código:</strong> <?= str_pad((string) ($employee?->getId() ?? 0), 5, '0', STR_PAD_LEFT); ?></p>
-                <p><strong>Nome:</strong> <?= htmlspecialchars($employee?->getName() ?? ''); ?></p>
-                <p><strong>Função:</strong> <?= htmlspecialchars($employee?->getPosition() ?? ''); ?></p>
+                <span><strong>Código</strong> <?= $employeeCode; ?></span>
+                <span><strong>Nome</strong> <?= htmlspecialchars($employee?->getName() ?? ''); ?></span>
+                <span><strong>Função</strong> <?= htmlspecialchars($employee?->getPosition() ?? ''); ?></span>
+                <span><strong>Departamento</strong> <?= htmlspecialchars($employee?->getDepartment() ?? ''); ?></span>
             </div>
             <div>
-                <p><strong>Departamento:</strong> <?= htmlspecialchars($employee?->getDepartment() ?? ''); ?></p>
-                <p><strong>Admissão:</strong> <?= $employee?->getHireDate()?->format('d/m/Y'); ?></p>
-                <?php if ($payroll->getType() === 'termination'): ?>
-                    <p><strong>Dias trabalhados:</strong> <?= $payroll->getWorkedDays() ?? 0; ?></p>
-                    <p><strong>Meses 13º:</strong> <?= $payroll->getThirteenthMonths() ?? 0; ?></p>
-                    <p><strong>Justa causa:</strong> <?= $payroll->isJustCause() ? 'Sim' : 'Não'; ?></p>
-                <?php elseif ($payroll->getType() === 'vacation'): ?>
-                    <?php $vacationBonusDisplay = $payroll->getBaseSalary() > 0 ? $payroll->getBaseSalary() / 3 : 0; ?>
-                    <p><strong>Dias de férias:</strong> <?= $payroll->getVacationDays() ?? 0; ?></p>
-                    <p><strong>1/3 Constitucional:</strong> R$ <?= number_format($vacationBonusDisplay, 2, ',', '.'); ?></p>
+                <span><strong>Admissão</strong> <?= $employee?->getHireDate()?->format('d/m/Y'); ?></span>
+                <?php if ($payroll->getType() === 'vacation'): ?>
+                    <span><strong>Dias de férias</strong> <?= $payroll->getVacationDays() ?? 0; ?></span>
+                    <span><strong>1/3 Constitucional</strong> R$ <?= number_format($vacationBonusValue ?? ($payroll->getBaseSalary() / 3), 2, ',', '.'); ?></span>
+                <?php elseif ($payroll->getType() === 'termination'): ?>
+                    <span><strong>Dias trabalhados</strong> <?= $payroll->getWorkedDays() ?? 0; ?></span>
+                    <span><strong>Meses 13º</strong> <?= $payroll->getThirteenthMonths() ?? 0; ?></span>
+                    <span><strong>Justa causa</strong> <?= $payroll->isJustCause() ? 'Sim' : 'Não'; ?></span>
                 <?php endif; ?>
             </div>
         </div>
 
-        <table class="slip-table">
+        <table class="items">
             <thead>
             <tr>
                 <th style="width:10%;">Código</th>
                 <th style="width:40%;">Descrição</th>
                 <th style="width:15%;">Referência</th>
-                <th style="width:17%;" class="text-right">Vencimentos (R$)</th>
-                <th style="width:18%;" class="text-right">Descontos (R$)</th>
+                <th style="width:17%;" class="text-right">Vencimentos</th>
+                <th style="width:18%;" class="text-right">Descontos</th>
             </tr>
             </thead>
             <tbody>
@@ -153,146 +158,198 @@ $deductions = array_pad($deductions, $maxRows, null);
             </tr>
             <tr>
                 <th colspan="3" class="text-right">Valor líquido</th>
-                <th colspan="2" class="text-right">R$ <?= number_format($payroll->getNetSalary(), 2, ',', '.'); ?></th>
+                <th colspan="2" class="text-right highlight">R$ <?= number_format($payroll->getNetSalary(), 2, ',', '.'); ?></th>
             </tr>
             </tfoot>
         </table>
 
-        <div class="slip-summary">
+        <div class="resume">
             <div>
-                <p><strong>Total de vencimentos:</strong> R$ <?= number_format($payroll->getBaseSalary() + $payroll->getTotalAllowances(), 2, ',', '.'); ?></p>
-                <p><strong>Total de descontos:</strong> R$ <?= number_format($payroll->getTotalDeductions(), 2, ',', '.'); ?></p>
-                <?php if ($thirteenthAmount !== null): ?>
-                    <p><strong>13º proporcional:</strong> R$ <?= number_format($thirteenthAmount, 2, ',', '.'); ?></p>
-                <?php endif; ?>
+                <span><strong>Total de vencimentos:</strong> R$ <?= number_format($payroll->getBaseSalary() + $payroll->getTotalAllowances(), 2, ',', '.'); ?></span>
+                <span><strong>Total de descontos:</strong> R$ <?= number_format($payroll->getTotalDeductions(), 2, ',', '.'); ?></span>
+                <span><strong>13º acumulado:</strong> R$ <?= number_format($thirteenthAccrual, 2, ',', '.'); ?></span>
             </div>
             <div>
-                <p><strong>Valor líquido recebido:</strong> <span>R$ <?= number_format($payroll->getNetSalary(), 2, ',', '.'); ?></span></p>
-                <p>Declaro ter recebido a importância líquida discriminada neste recibo.</p>
+                <span><strong>Base FGTS:</strong> R$ <?= number_format($payroll->getFgtsBase(), 2, ',', '.'); ?></span>
+                <span><strong>FGTS do mês:</strong> R$ <?= number_format($payroll->getFgtsAmount(), 2, ',', '.'); ?></span>
+            </div>
+            <div>
+                <span><strong>Base INSS:</strong> R$ <?= number_format($payroll->getInssBase(), 2, ',', '.'); ?></span>
+                <span><strong>INSS:</strong> R$ <?= number_format($payroll->getInssAmount(), 2, ',', '.'); ?></span>
+            </div>
+            <div>
+                <span><strong>Base IRRF:</strong> R$ <?= number_format($payroll->getIrrfBase(), 2, ',', '.'); ?></span>
+                <span><strong>IRRF:</strong> R$ <?= number_format($payroll->getIrrfAmount(), 2, ',', '.'); ?></span>
             </div>
         </div>
 
         <?php if ($payroll->getNotes() !== ''): ?>
-            <div class="slip-notes">
+            <div class="notes">
                 <strong>Observações:</strong>
                 <p><?= nl2br(htmlspecialchars($payroll->getNotes())); ?></p>
             </div>
         <?php endif; ?>
 
-        <div class="slip-signature">
-            <div>
-                ___________________________________________<br>
-                <span>Assinatura do colaborador</span>
-            </div>
-            <div>
-                ___________________________________________<br>
-                <span>Assinatura da empresa</span>
+        <div class="acknowledgment">
+            <p>Declaro ter recebido a importância líquida discriminada neste recibo.</p>
+            <div class="signatures">
+                <div>
+                    ___________________________________________<br>
+                    <span>Assinatura do colaborador</span>
+                </div>
+                <div>
+                    ___________________________________________<br>
+                    <span>Assinatura da empresa</span>
+                </div>
             </div>
         </div>
     </div>
 
-    <div style="margin-top:1.5rem;">
+    <div class="actions">
+        <a href="javascript:window.print();" class="button">Imprimir</a>
         <a href="?action=list_payrolls" class="button button-secondary">Voltar</a>
     </div>
 </section>
 
 <style>
-    .payroll-slip {
-        border: 1px solid #d1d5db;
+    .receipt {
+        border: 2px solid #111827;
         padding: 1.5rem;
         background: #fff;
+        font-family: 'Segoe UI', Arial, sans-serif;
         color: #111827;
-        font-family: "Segoe UI", Arial, sans-serif;
+        max-width: 960px;
+        margin: 0 auto;
     }
 
-    .slip-header {
+    .receipt-header {
         display: flex;
         justify-content: space-between;
+        align-items: flex-start;
         border-bottom: 2px solid #111827;
         padding-bottom: 1rem;
         margin-bottom: 1rem;
     }
 
-    .slip-header h3 {
-        margin: 0 0 0.3rem 0;
-    }
-
-    .slip-header-right {
-        text-align: right;
-    }
-
-    .slip-header-right p,
-    .slip-header p {
-        margin: 0.15rem 0;
+    .receipt-employer,
+    .receipt-period {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
         font-size: 0.95rem;
     }
 
-    .slip-employee {
+    .receipt-period {
+        text-align: right;
+        align-items: flex-end;
+    }
+
+    .receipt .label {
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 0.75rem;
+        color: #374151;
+    }
+
+    .employee-info {
         display: flex;
         justify-content: space-between;
         border: 1px solid #d1d5db;
         padding: 0.75rem 1rem;
         margin-bottom: 1rem;
         font-size: 0.95rem;
+        background: #f9fafb;
     }
 
-    .slip-employee p {
-        margin: 0.2rem 0;
+    .employee-info div {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
     }
 
-    .slip-table {
+    .items {
         width: 100%;
         border-collapse: collapse;
         font-size: 0.92rem;
     }
 
-    .slip-table th,
-    .slip-table td {
+    .items th,
+    .items td {
         border: 1px solid #d1d5db;
         padding: 0.5rem;
     }
 
-    .slip-table thead th {
+    .items thead th {
         background: #f3f4f6;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
     }
 
-    .slip-table tfoot th {
+    .items tfoot th {
         background: #f9fafb;
+        font-size: 0.9rem;
     }
 
-    .slip-summary {
-        display: flex;
-        justify-content: space-between;
-        border: 1px solid #d1d5db;
-        margin-top: 1rem;
-        padding: 1rem;
-        font-size: 0.95rem;
-    }
-
-    .slip-summary span {
+    .items .highlight {
         font-size: 1.1rem;
         font-weight: 700;
     }
 
-    .slip-notes {
+    .text-right {
+        text-align: right;
+    }
+
+    .resume {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        border: 1px solid #d1d5db;
+        margin-top: 1rem;
+        padding: 1rem;
+        font-size: 0.9rem;
+        background: #f9fafb;
+    }
+
+    .resume span {
+        display: block;
+        margin-bottom: 0.4rem;
+    }
+
+    .notes {
         border: 1px solid #d1d5db;
         margin-top: 1rem;
         padding: 0.75rem 1rem;
-        background: #f9fafb;
-        font-size: 0.95rem;
+        background: #fff7ed;
+        font-size: 0.9rem;
     }
 
-    .slip-signature {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 2rem;
+    .acknowledgment {
+        margin-top: 1.5rem;
         font-size: 0.9rem;
         text-align: center;
     }
 
-    .slip-signature span {
+    .signatures {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 1.5rem;
+        gap: 2rem;
+    }
+
+    .signatures span {
         display: block;
-        margin-top: 0.3rem;
+        margin-top: 0.35rem;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .actions {
+        margin-top: 1.5rem;
+        display: flex;
+        justify-content: flex-start;
+        gap: 0.75rem;
     }
 
     @media print {
@@ -300,23 +357,21 @@ $deductions = array_pad($deductions, $maxRows, null);
             background: #fff;
         }
 
-        body > header,
-        body > header + main > section > header,
-        body > header + main .button,
-        body > header + main .button-secondary {
+        header,
+        .actions,
+        .button,
+        .button-secondary {
             display: none !important;
         }
 
         main {
-            box-shadow: none;
             margin: 0;
             padding: 0;
+            box-shadow: none;
         }
 
-        .payroll-slip {
+        .receipt {
             border: 1px solid #111827;
-            margin: 0;
-            page-break-inside: avoid;
         }
     }
 </style>

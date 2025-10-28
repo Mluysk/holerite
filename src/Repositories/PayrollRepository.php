@@ -57,7 +57,7 @@ final class PayrollRepository
 
     public function create(Payroll $payroll): Payroll
     {
-        $statement = $this->pdo->prepare('INSERT INTO payrolls (employee_id, reference_month, type, base_salary, total_allowances, total_deductions, net_salary, payment_date, is_just_cause, vacation_days, worked_days, thirteenth_months, notes) VALUES (:employee_id, :reference_month, :type, :base_salary, :total_allowances, :total_deductions, :net_salary, :payment_date, :is_just_cause, :vacation_days, :worked_days, :thirteenth_months, :notes)');
+        $statement = $this->pdo->prepare('INSERT INTO payrolls (employee_id, reference_month, type, base_salary, total_allowances, total_deductions, net_salary, payment_date, is_just_cause, vacation_days, worked_days, thirteenth_months, thirteenth_accrual, inss_base, inss_amount, irrf_base, irrf_amount, fgts_base, fgts_amount, notes) VALUES (:employee_id, :reference_month, :type, :base_salary, :total_allowances, :total_deductions, :net_salary, :payment_date, :is_just_cause, :vacation_days, :worked_days, :thirteenth_months, :thirteenth_accrual, :inss_base, :inss_amount, :irrf_base, :irrf_amount, :fgts_base, :fgts_amount, :notes)');
         $statement->execute([
             'employee_id' => $payroll->getEmployeeId(),
             'reference_month' => $payroll->getReferenceMonth(),
@@ -71,6 +71,13 @@ final class PayrollRepository
             'vacation_days' => $payroll->getVacationDays(),
             'worked_days' => $payroll->getWorkedDays(),
             'thirteenth_months' => $payroll->getThirteenthMonths(),
+            'thirteenth_accrual' => $payroll->getThirteenthAccrual(),
+            'inss_base' => $payroll->getInssBase(),
+            'inss_amount' => $payroll->getInssAmount(),
+            'irrf_base' => $payroll->getIrrfBase(),
+            'irrf_amount' => $payroll->getIrrfAmount(),
+            'fgts_base' => $payroll->getFgtsBase(),
+            'fgts_amount' => $payroll->getFgtsAmount(),
             'notes' => $payroll->getNotes(),
         ]);
 
@@ -103,6 +110,13 @@ final class PayrollRepository
             isset($row['vacation_days']) ? ($row['vacation_days'] !== null ? (int) $row['vacation_days'] : null) : null,
             isset($row['worked_days']) ? ($row['worked_days'] !== null ? (int) $row['worked_days'] : null) : null,
             isset($row['thirteenth_months']) ? ($row['thirteenth_months'] !== null ? (int) $row['thirteenth_months'] : null) : null,
+            (float) ($row['thirteenth_accrual'] ?? 0),
+            (float) ($row['inss_base'] ?? 0),
+            (float) ($row['inss_amount'] ?? 0),
+            (float) ($row['irrf_base'] ?? 0),
+            (float) ($row['irrf_amount'] ?? 0),
+            (float) ($row['fgts_base'] ?? 0),
+            (float) ($row['fgts_amount'] ?? 0),
             (string) $row['notes'],
             []
         );

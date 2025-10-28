@@ -159,6 +159,7 @@
         <a href="?action=dashboard">Dashboard</a>
         <a href="?action=list_employees">Colaboradores</a>
         <a href="?action=list_payrolls">Holerites</a>
+        <a href="?action=edit_company">Empresa</a>
     </nav>
 </header>
 <main>

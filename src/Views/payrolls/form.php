@@ -5,7 +5,7 @@
 <section>
     <header style="margin-bottom:1.5rem;">
         <h2 style="margin:0 0 0.25rem 0;"><?= htmlspecialchars($title); ?></h2>
-        <p class="muted">Selecione o colaborador, defina o tipo de holerite e informe valores adicionais.</p>
+        <p class="muted">Selecione o colaborador, defina o tipo de holerite e informe valores adicionais. O recibo exibirá os dados da empresa <strong><?= htmlspecialchars($company->getName()); ?></strong>.</p>
     </header>
 
     <form method="post" action="?action=store_payroll" id="payroll-form">
@@ -93,7 +93,11 @@
             <p class="muted">Salário base calculado: <strong id="base-salary">R$ 0,00</strong></p>
             <p class="muted">Proventos automáticos: <strong id="auto-allowances">R$ 0,00</strong></p>
             <p class="muted">Proventos manuais: <strong id="total-allowances">R$ 0,00</strong></p>
-            <p class="muted">Descontos: <strong id="total-deductions">R$ 0,00</strong></p>
+            <p class="muted">Descontos manuais: <strong id="total-deductions">R$ 0,00</strong></p>
+            <p class="muted">INSS estimado: <strong id="inss-amount">R$ 0,00</strong> · Base: <strong id="inss-base">R$ 0,00</strong></p>
+            <p class="muted">IRRF estimado: <strong id="irrf-amount">R$ 0,00</strong> · Base: <strong id="irrf-base">R$ 0,00</strong></p>
+            <p class="muted">FGTS do mês: <strong id="fgts-amount">R$ 0,00</strong> · Base: <strong id="fgts-base">R$ 0,00</strong></p>
+            <p class="muted">13º acumulado: <strong id="thirteenth-amount">R$ 0,00</strong></p>
             <p class="muted">Valor líquido estimado: <strong id="net-salary">R$ 0,00</strong></p>
             <div id="automatic-descriptions" class="muted" style="margin-top:0.75rem;"></div>
         </div>
@@ -199,6 +203,72 @@
         return items;
     }
 
+    function automaticThirteenth(type) {
+        if (type === 'regular') {
+            return getEmployeeBaseSalary() / 12;
+        }
+
+        return 0;
+    }
+
+    function calculateInss(base) {
+        if (base <= 0) {
+            return 0;
+        }
+
+        const ranges = [
+            { limit: 1320.0, rate: 0.075 },
+            { limit: 2571.29, rate: 0.09 },
+            { limit: 3856.94, rate: 0.12 },
+            { limit: 7507.49, rate: 0.14 },
+        ];
+
+        let remaining = base;
+        let contribution = 0;
+        let previous = 0;
+
+        for (const range of ranges) {
+            if (remaining <= 0) {
+                break;
+            }
+
+            const span = Math.min(remaining, range.limit - previous);
+            if (span > 0) {
+                contribution += span * range.rate;
+                remaining -= span;
+            }
+
+            previous = range.limit;
+        }
+
+        if (remaining > 0) {
+            contribution += remaining * 0.14;
+        }
+
+        return contribution;
+    }
+
+    function calculateIrrf(base) {
+        if (base <= 0) {
+            return 0;
+        }
+
+        const bands = [
+            { limit: 1903.98, rate: 0, deduction: 0 },
+            { limit: 2826.65, rate: 0.075, deduction: 142.8 },
+            { limit: 3751.05, rate: 0.15, deduction: 354.8 },
+            { limit: 4664.68, rate: 0.225, deduction: 636.13 },
+        ];
+
+        for (const band of bands) {
+            if (base <= band.limit) {
+                return Math.max(0, base * band.rate - band.deduction);
+            }
+        }
+
+        return Math.max(0, base * 0.275 - 869.36);
+    }
+
     function updateSummary() {
         const type = document.getElementById('type').value;
         const baseSalary = calculateBaseSalary(type);
@@ -211,23 +281,40 @@
 
         const autoItems = automaticAllowances(type, baseSalary);
         const autoAllowanceTotal = autoItems.reduce((total, item) => total + item.amount, 0);
+        const contributionBase = baseSalary + autoAllowanceTotal;
+        const inss = calculateInss(contributionBase);
+        const irrfBase = Math.max(0, contributionBase - inss);
+        const irrf = calculateIrrf(irrfBase);
+        const fgts = contributionBase * 0.08;
+        const thirteenthItem = autoItems.find(item => item.label.toLowerCase().includes('13'));
+        const thirteenth = automaticThirteenth(type) || (thirteenthItem ? thirteenthItem.amount : 0);
 
-        const netSalary = baseSalary + manualAllowances + autoAllowanceTotal - manualDeductions;
+        const totalAllowances = manualAllowances + autoAllowanceTotal;
+        const automaticDeductions = inss + irrf;
+        const totalDeductions = manualDeductions + automaticDeductions;
+        const netSalary = baseSalary + totalAllowances - totalDeductions;
 
         document.getElementById('base-salary').textContent = formatter.format(baseSalary || 0);
         document.getElementById('auto-allowances').textContent = formatter.format(autoAllowanceTotal || 0);
         document.getElementById('total-allowances').textContent = formatter.format(manualAllowances || 0);
         document.getElementById('total-deductions').textContent = formatter.format(manualDeductions || 0);
+        document.getElementById('inss-amount').textContent = formatter.format(inss || 0);
+        document.getElementById('inss-base').textContent = formatter.format(contributionBase || 0);
+        document.getElementById('irrf-amount').textContent = formatter.format(irrf || 0);
+        document.getElementById('irrf-base').textContent = formatter.format(irrfBase || 0);
+        document.getElementById('fgts-amount').textContent = formatter.format(fgts || 0);
+        document.getElementById('fgts-base').textContent = formatter.format(contributionBase || 0);
+        document.getElementById('thirteenth-amount').textContent = formatter.format(thirteenth || 0);
         document.getElementById('net-salary').textContent = formatter.format(netSalary || 0);
 
         const automaticDescriptions = document.getElementById('automatic-descriptions');
-        if (autoItems.length > 0) {
-            automaticDescriptions.innerHTML = '<strong>Acréscimos automáticos</strong><ul style="margin:0.5rem 0 0 1.25rem;">' +
+        const allowanceList = autoItems.length > 0
+            ? '<strong>Acréscimos automáticos</strong><ul style="margin:0.5rem 0 0 1.25rem;">' +
                 autoItems.map(item => `<li>${item.label} — <strong>${formatter.format(item.amount)}</strong></li>`).join('') +
-                '</ul>';
-        } else {
-            automaticDescriptions.textContent = '';
-        }
+                '</ul>'
+            : '';
+        const deductionLine = `<p style="margin:0.75rem 0 0;">Descontos automáticos estimados: INSS <strong>${formatter.format(inss || 0)}</strong> · IRRF <strong>${formatter.format(irrf || 0)}</strong></p>`;
+        automaticDescriptions.innerHTML = allowanceList + deductionLine;
     }
 
     function toggleTypeSections() {

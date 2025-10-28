@@ -48,6 +48,7 @@ final class PayrollService
 
         $automaticAllowances = [];
         $automaticDeductions = [];
+        $thirteenthAccrual = 0.0;
 
         if ($type === 'vacation') {
             $vacationDays = $this->sanitizeInt($data['vacation_days'] ?? 30, 1, 30, 30);
@@ -76,10 +77,29 @@ final class PayrollService
             }
         }
 
+        if ($type === 'regular') {
+            $thirteenthAccrual = $this->roundMoney($employee->getBaseSalary() / 12);
+        }
+
         $manualAllowances = $this->createItems($data['allowance_description'] ?? [], $data['allowance_amount'] ?? [], 'allowance');
         $manualDeductions = $this->createItems($data['deduction_description'] ?? [], $data['deduction_amount'] ?? [], 'deduction');
 
         $allAllowances = array_merge($automaticAllowances, $manualAllowances);
+        $salaryContributionBase = $this->roundMoney($baseSalaryAmount + array_reduce($allAllowances, fn (float $carry, PayrollItem $item): float => $carry + $item->getAmount(), 0.0));
+
+        $inssAmount = $this->calculateInss($salaryContributionBase);
+        if ($inssAmount > 0) {
+            $automaticDeductions[] = new PayrollItem(null, null, 'INSS', $inssAmount, 'deduction');
+        }
+
+        $irrfBase = $this->roundMoney(max(0, $salaryContributionBase - $inssAmount));
+        $irrfAmount = $this->calculateIrrf($irrfBase);
+        if ($irrfAmount > 0) {
+            $automaticDeductions[] = new PayrollItem(null, null, 'IRRF', $irrfAmount, 'deduction');
+        }
+
+        $fgtsAmount = $this->roundMoney($salaryContributionBase * 0.08);
+
         $allDeductions = array_merge($automaticDeductions, $manualDeductions);
 
         $totalAllowances = array_reduce($allAllowances, fn (float $carry, PayrollItem $item): float => $carry + $item->getAmount(), 0.0);
@@ -100,6 +120,13 @@ final class PayrollService
             $vacationDays,
             $workedDays,
             $thirteenthMonths,
+            $thirteenthAccrual,
+            $salaryContributionBase,
+            $inssAmount,
+            $irrfBase,
+            $irrfAmount,
+            $salaryContributionBase,
+            $fgtsAmount,
             $notes,
             array_merge($allAllowances, $allDeductions)
         );
@@ -168,5 +195,65 @@ final class PayrollService
     private function roundMoney(float $value): float
     {
         return round($value, 2);
+    }
+
+    private function calculateInss(float $base): float
+    {
+        if ($base <= 0) {
+            return 0.0;
+        }
+
+        $ranges = [
+            [1320.00, 0.075],
+            [2571.29, 0.09],
+            [3856.94, 0.12],
+            [7507.49, 0.14],
+        ];
+
+        $remaining = $base;
+        $contribution = 0.0;
+        $previousLimit = 0.0;
+
+        foreach ($ranges as [$limit, $rate]) {
+            if ($remaining <= 0) {
+                break;
+            }
+
+            $rangeAmount = min($remaining, $limit - $previousLimit);
+            if ($rangeAmount > 0) {
+                $contribution += $rangeAmount * $rate;
+                $remaining -= $rangeAmount;
+            }
+
+            $previousLimit = $limit;
+        }
+
+        if ($remaining > 0) {
+            $contribution += $remaining * 0.14;
+        }
+
+        return $this->roundMoney($contribution);
+    }
+
+    private function calculateIrrf(float $base): float
+    {
+        if ($base <= 0) {
+            return 0.0;
+        }
+
+        $bands = [
+            [1903.98, 0.0, 0.0],
+            [2826.65, 0.075, 142.80],
+            [3751.05, 0.15, 354.80],
+            [4664.68, 0.225, 636.13],
+        ];
+
+        foreach ($bands as [$limit, $rate, $deduction]) {
+            if ($base <= $limit) {
+                return $this->roundMoney(max(0, $base * $rate - $deduction));
+            }
+        }
+
+        return $this->roundMoney(max(0, $base * 0.275 - 869.36));
     }
 }

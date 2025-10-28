@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use Holerite\Controllers\CompanyController;
 use Holerite\Controllers\DashboardController;
 use Holerite\Controllers\EmployeeController;
 use Holerite\Controllers\PayrollController;
+use Holerite\Repositories\CompanyRepository;
 use Holerite\Repositories\EmployeeRepository;
 use Holerite\Repositories\PayrollRepository;
 use Holerite\Services\PayrollService;
@@ -13,19 +15,33 @@ require __DIR__ . '/../autoload.php';
 
 session_start();
 
+$companyRepository = new CompanyRepository();
 $employeeRepository = new EmployeeRepository();
 $payrollRepository = new PayrollRepository();
 $payrollService = new PayrollService($employeeRepository, $payrollRepository);
 
 $dashboardController = new DashboardController($employeeRepository, $payrollRepository);
+$companyController = new CompanyController($companyRepository);
 $employeeController = new EmployeeController($employeeRepository);
-$payrollController = new PayrollController($employeeRepository, $payrollRepository, $payrollService);
+$payrollController = new PayrollController($employeeRepository, $payrollRepository, $payrollService, $companyRepository);
 
 $action = $_GET['action'] ?? 'dashboard';
 
 switch ($action) {
     case 'dashboard':
         $dashboardController->index();
+        break;
+
+    case 'edit_company':
+        $companyController->edit();
+        break;
+
+    case 'update_company':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $companyController->update($_POST);
+        } else {
+            $companyController->edit();
+        }
         break;
 
     case 'list_employees':

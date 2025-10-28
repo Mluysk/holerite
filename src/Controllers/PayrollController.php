@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Holerite\Controllers;
 
+use Holerite\Repositories\CompanyRepository;
 use Holerite\Repositories\EmployeeRepository;
 use Holerite\Repositories\PayrollRepository;
 use Holerite\Services\PayrollService;
@@ -16,6 +17,7 @@ final class PayrollController extends Controller
         private EmployeeRepository $employeeRepository,
         private PayrollRepository $payrollRepository,
         private PayrollService $payrollService,
+        private CompanyRepository $companyRepository,
     ) {
     }
 
@@ -43,6 +45,7 @@ final class PayrollController extends Controller
         $this->render('payrolls/form', [
             'title' => 'Gerar holerite',
             'employees' => $employees,
+            'company' => $this->companyRepository->get(),
         ]);
     }
 
@@ -80,6 +83,7 @@ final class PayrollController extends Controller
             'title' => 'Holerite - ' . ($employee?->getName() ?? 'Colaborador'),
             'payroll' => $payroll,
             'employee' => $employee,
+            'company' => $this->companyRepository->get(),
         ]);
     }
 }
