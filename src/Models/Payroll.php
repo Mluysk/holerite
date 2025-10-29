@@ -18,6 +18,9 @@ final class Payroll
         private float $totalAllowances,
         private float $totalDeductions,
         private float $netSalary,
+        private float $advanceAmount,
+        private float $remainingAmount,
+        private float $valeDeduction,
         private DateTimeImmutable $paymentDate,
         private bool $justCause,
         private ?int $vacationDays,
@@ -79,6 +82,21 @@ final class Payroll
     public function getNetSalary(): float
     {
         return $this->netSalary;
+    }
+
+    public function getAdvanceAmount(): float
+    {
+        return $this->advanceAmount;
+    }
+
+    public function getRemainingAmount(): float
+    {
+        return $this->remainingAmount;
+    }
+
+    public function getValeDeduction(): float
+    {
+        return $this->valeDeduction;
     }
 
     public function getPaymentDate(): DateTimeImmutable

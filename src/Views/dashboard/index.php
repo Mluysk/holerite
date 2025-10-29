@@ -12,6 +12,7 @@
 /** @var array<int, array<int, array{date: DateTimeImmutable|null, payrolls: Holerite\Models\Payroll[]}>> $calendarWeeks */
 /** @var Holerite\Models\Payroll[] $paidMonthlyPayrolls */
 /** @var Holerite\Models\Employee[] $pendingMonthlyEmployees */
+/** @var array{overall: float, currentMonth: float} $valeTotals */
 
 $employeeNames = [];
 foreach ($employees as $employee) {
@@ -77,6 +78,11 @@ if ($hasCharts) {
             <h3>Folha líquida acumulada</h3>
             <strong style="font-size:1.85rem;">R$ <?= number_format($totalNet, 2, ',', '.'); ?></strong>
             <p class="muted" style="margin:0.35rem 0 0 0;">Total já desembolsado em pagamentos líquidos.</p>
+        </article>
+        <article class="stats-card">
+            <h3>Descontos de vale</h3>
+            <strong>R$ <?= number_format($valeTotals['overall'], 2, ',', '.'); ?></strong>
+            <p class="muted" style="margin:0.35rem 0 0 0;">No mês: <strong>R$ <?= number_format($valeTotals['currentMonth'], 2, ',', '.'); ?></strong></p>
         </article>
     </div>
 

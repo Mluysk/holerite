@@ -51,6 +51,9 @@ final class PayrollController extends Controller
             'vacation_days' => (int) ($_GET['vacation_days'] ?? 30),
             'worked_days' => (int) ($_GET['worked_days'] ?? 30),
             'just_cause' => isset($_GET['just_cause']) && in_array(strtolower((string) $_GET['just_cause']), ['1', 'true', 'on', 'yes'], true),
+            'vale_deduction' => (float) ($_GET['vale_deduction'] ?? 0),
+            'advance_amount' => (float) ($_GET['advance_amount'] ?? 0),
+            'remaining_amount' => (float) ($_GET['remaining_amount'] ?? 0),
         ];
 
         $this->render('payrolls/form', [

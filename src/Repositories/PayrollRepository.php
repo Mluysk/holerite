@@ -57,7 +57,7 @@ final class PayrollRepository
 
     public function create(Payroll $payroll): Payroll
     {
-        $statement = $this->pdo->prepare('INSERT INTO payrolls (employee_id, reference_month, type, base_salary, total_allowances, total_deductions, net_salary, payment_date, is_just_cause, vacation_days, worked_days, thirteenth_months, thirteenth_installment, thirteenth_accrual, inss_base, inss_amount, irrf_base, irrf_amount, fgts_base, fgts_amount, notes) VALUES (:employee_id, :reference_month, :type, :base_salary, :total_allowances, :total_deductions, :net_salary, :payment_date, :is_just_cause, :vacation_days, :worked_days, :thirteenth_months, :thirteenth_installment, :thirteenth_accrual, :inss_base, :inss_amount, :irrf_base, :irrf_amount, :fgts_base, :fgts_amount, :notes)');
+        $statement = $this->pdo->prepare('INSERT INTO payrolls (employee_id, reference_month, type, base_salary, total_allowances, total_deductions, net_salary, advance_amount, remaining_amount, vale_deduction, payment_date, is_just_cause, vacation_days, worked_days, thirteenth_months, thirteenth_installment, thirteenth_accrual, inss_base, inss_amount, irrf_base, irrf_amount, fgts_base, fgts_amount, notes) VALUES (:employee_id, :reference_month, :type, :base_salary, :total_allowances, :total_deductions, :net_salary, :advance_amount, :remaining_amount, :vale_deduction, :payment_date, :is_just_cause, :vacation_days, :worked_days, :thirteenth_months, :thirteenth_installment, :thirteenth_accrual, :inss_base, :inss_amount, :irrf_base, :irrf_amount, :fgts_base, :fgts_amount, :notes)');
         $statement->execute([
             'employee_id' => $payroll->getEmployeeId(),
             'reference_month' => $payroll->getReferenceMonth(),
@@ -66,6 +66,9 @@ final class PayrollRepository
             'total_allowances' => $payroll->getTotalAllowances(),
             'total_deductions' => $payroll->getTotalDeductions(),
             'net_salary' => $payroll->getNetSalary(),
+            'advance_amount' => $payroll->getAdvanceAmount(),
+            'remaining_amount' => $payroll->getRemainingAmount(),
+            'vale_deduction' => $payroll->getValeDeduction(),
             'payment_date' => $payroll->getPaymentDate()->format('Y-m-d'),
             'is_just_cause' => $payroll->isJustCause() ? 1 : 0,
             'vacation_days' => $payroll->getVacationDays(),
@@ -106,6 +109,9 @@ final class PayrollRepository
             (float) $row['total_allowances'],
             (float) $row['total_deductions'],
             (float) $row['net_salary'],
+            (float) ($row['advance_amount'] ?? 0),
+            (float) ($row['remaining_amount'] ?? 0),
+            (float) ($row['vale_deduction'] ?? 0),
             new DateTimeImmutable((string) $row['payment_date']),
             (bool) $row['is_just_cause'],
             isset($row['vacation_days']) ? ($row['vacation_days'] !== null ? (int) $row['vacation_days'] : null) : null,

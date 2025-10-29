@@ -45,6 +45,9 @@ if ($type === 'thirteenth') {
 $allowances = [];
 $deductions = [];
 $code = 1;
+$advanceAmount = $payroll->getAdvanceAmount();
+$remainingAmount = $payroll->getRemainingAmount();
+$valeDeductionAmount = $payroll->getValeDeduction();
 
 $referenceValue = match ($payroll->getType()) {
     'vacation' => ($payroll->getVacationDays() ?? 0) . ' dias',
@@ -205,6 +208,11 @@ $thirteenthAccrual = $payroll->getType() === 'thirteenth'
             <div>
                 <span><strong>Base IRRF:</strong> R$ <?= number_format($payroll->getIrrfBase(), 2, ',', '.'); ?></span>
                 <span><strong>IRRF:</strong> R$ <?= number_format($payroll->getIrrfAmount(), 2, ',', '.'); ?></span>
+            </div>
+            <div>
+                <span><strong>Adiantamento (1ª parcela):</strong> R$ <?= number_format($advanceAmount, 2, ',', '.'); ?></span>
+                <span><strong>Pagamento restante:</strong> R$ <?= number_format($remainingAmount, 2, ',', '.'); ?></span>
+                <span><strong>Desconto de vale:</strong> R$ <?= number_format($valeDeductionAmount, 2, ',', '.'); ?></span>
             </div>
         </div>
 

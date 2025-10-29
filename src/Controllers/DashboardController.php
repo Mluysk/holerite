@@ -27,6 +27,8 @@ final class DashboardController extends Controller
         $monthEnd = $currentMonth->modify('last day of this month');
 
         $totalNet = array_reduce($payrolls, fn (float $carry, $payroll): float => $carry + $payroll->getNetSalary(), 0.0);
+        $totalValeDeductions = array_reduce($payrolls, fn (float $carry, $payroll): float => $carry + $payroll->getValeDeduction(), 0.0);
+        $currentMonthVale = 0.0;
         $lastPayrolls = array_slice($payrolls, 0, 5);
 
         $monthlyTotals = $this->aggregateTotals($payrolls, 'monthly');
@@ -41,6 +43,7 @@ final class DashboardController extends Controller
             $monthKey = $paymentDate->format('Y-m');
 
             if ($monthKey === $currentMonthKey) {
+                $currentMonthVale += $payroll->getValeDeduction();
                 $dateKey = $paymentDate->format('Y-m-d');
                 if (!isset($calendarEvents[$dateKey])) {
                     $calendarEvents[$dateKey] = [];
@@ -116,6 +119,10 @@ final class DashboardController extends Controller
             'calendarWeeks' => $calendarWeeks,
             'paidMonthlyPayrolls' => $paidMonthlyPayrolls,
             'pendingMonthlyEmployees' => $pendingMonthlyEmployees,
+            'valeTotals' => [
+                'overall' => $totalValeDeductions,
+                'currentMonth' => $currentMonthVale,
+            ],
         ]);
     }
 
@@ -125,6 +132,7 @@ final class DashboardController extends Controller
 
         $payrolls = $this->payrollRepository->all();
         $totals = $this->aggregateTotals($payrolls, $normalizedScope);
+        $valeBreakdown = $this->aggregateValeTotals($payrolls, $normalizedScope);
 
         $title = $normalizedScope === 'yearly'
             ? 'Relatório anual de pagamentos'
@@ -163,6 +171,7 @@ final class DashboardController extends Controller
         }
 
         $employeeCount = count($employeeIds);
+        $totalVale = array_reduce($payrolls, fn (float $carry, Payroll $payroll): float => $carry + $payroll->getValeDeduction(), 0.0);
 
         $breakdown = [];
 
@@ -195,8 +204,10 @@ final class DashboardController extends Controller
                 'earliest' => $earliestRow,
                 'payrollCount' => $payrollCount,
                 'employeeCount' => $employeeCount,
+                'valeTotal' => $totalVale,
             ],
             'breakdown' => $breakdown,
+            'valeBreakdown' => $valeBreakdown,
         ]);
     }
 
@@ -308,6 +319,40 @@ final class DashboardController extends Controller
 
             $totals[$key]['total'] += $payroll->getNetSalary();
             $totals[$key]['count']++;
+        }
+
+        if ($totals === []) {
+            return [];
+        }
+
+        uksort($totals, static fn (string $a, string $b): int => strcmp($b, $a));
+
+        return array_values($totals);
+    }
+
+    /**
+     * @param array<int, Payroll> $payrolls
+     * @return array<int, array{period: string, total: float}>
+     */
+    private function aggregateValeTotals(array $payrolls, string $scope): array
+    {
+        $normalizedScope = $scope === 'yearly' ? 'yearly' : 'monthly';
+
+        $totals = [];
+
+        foreach ($payrolls as $payroll) {
+            $paymentDate = $payroll->getPaymentDate();
+            $key = $normalizedScope === 'yearly' ? $paymentDate->format('Y') : $paymentDate->format('Y-m');
+            $label = $normalizedScope === 'yearly' ? $key : $paymentDate->format('m/Y');
+
+            if (!isset($totals[$key])) {
+                $totals[$key] = [
+                    'period' => $label,
+                    'total' => 0.0,
+                ];
+            }
+
+            $totals[$key]['total'] += $payroll->getValeDeduction();
         }
 
         if ($totals === []) {

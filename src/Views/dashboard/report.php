@@ -5,8 +5,9 @@ use Holerite\Models\Company;
 /** @var string $scope */
 /** @var array<int, array{period: string, total: float, count: int}> $totals */
 /** @var string $description */
-/** @var array{totalAmount: float, averageAmount: float, periodCount: int, highest: array|null, lowest: array|null, latest: array|null, earliest: array|null, payrollCount: int, employeeCount: int} $summary */
+/** @var array{totalAmount: float, averageAmount: float, periodCount: int, highest: array|null, lowest: array|null, latest: array|null, earliest: array|null, payrollCount: int, employeeCount: int, valeTotal: float} $summary */
 /** @var array<int, array{period: string, total: float, count: int, percentage: float}> $breakdown */
+/** @var array<int, array{period: string, total: float}> $valeBreakdown */
 /** @var string $scopeLabel */
 
 $reportTitle = $scope === 'yearly' ? 'Relatório anual' : 'Relatório mensal';
@@ -20,6 +21,7 @@ $latestRow = $summary['latest'];
 $earliestRow = $summary['earliest'];
 $payrollCount = $summary['payrollCount'];
 $employeeCount = $summary['employeeCount'];
+$valeTotal = $summary['valeTotal'];
 
 $issuedAt = new \DateTimeImmutable('now');
 
@@ -170,6 +172,10 @@ if ($company !== null) {
                     <strong>—</strong>
                 <?php endif; ?>
             </div>
+            <div class="report-summary__card">
+                <span>Descontos de vale</span>
+                <strong>R$ <?= number_format($valeTotal, 2, ',', '.'); ?></strong>
+            </div>
         </section>
 
         <?php if ($periodCount > 0): ?>
@@ -224,6 +230,10 @@ if ($company !== null) {
                             <strong>Participação média</strong>
                             <span><?= $periodCount > 0 ? number_format(100 / $periodCount, 2, ',', '.') : '0,00'; ?>%</span>
                         </li>
+                        <li>
+                            <strong>Vales descontados</strong>
+                            <span>R$ <?= number_format($valeTotal, 2, ',', '.'); ?></span>
+                        </li>
                     </ul>
                 </div>
             </section>
@@ -259,6 +269,37 @@ if ($company !== null) {
                             <th class="text-right"><?= $payrollCount; ?></th>
                             <th class="text-right">R$ <?= number_format($totalAmount, 2, ',', '.'); ?></th>
                             <th class="text-right">100%</th>
+                        </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            <?php endif; ?>
+        </section>
+
+        <section class="report__table" aria-label="Descontos de vale por período">
+            <?php if ($valeBreakdown === []): ?>
+                <p class="report__empty">Nenhum desconto de vale registrado neste escopo.</p>
+            <?php else: ?>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th><?= htmlspecialchars($columnLabel); ?></th>
+                            <th class="text-right">Total de vales</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($valeBreakdown as $row): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($row['period']); ?></td>
+                                <td class="text-right"><strong>R$ <?= number_format($row['total'], 2, ',', '.'); ?></strong></td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                        <tfoot>
+                        <tr>
+                            <th>Total geral</th>
+                            <th class="text-right">R$ <?= number_format($valeTotal, 2, ',', '.'); ?></th>
                         </tr>
                         </tfoot>
                     </table>

@@ -100,6 +100,10 @@ final class PayrollService
 
         $manualAllowances = $this->createItems($data['allowance_description'] ?? [], $data['allowance_amount'] ?? [], 'allowance');
         $manualDeductions = $this->createItems($data['deduction_description'] ?? [], $data['deduction_amount'] ?? [], 'deduction');
+        $valeDeduction = $this->roundMoney((float) ($data['vale_deduction'] ?? 0));
+        if ($valeDeduction < 0) {
+            $valeDeduction = 0.0;
+        }
 
         $allAllowances = array_merge($automaticAllowances, $manualAllowances);
         $allowancesTotal = array_reduce($allAllowances, fn (float $carry, PayrollItem $item): float => $carry + $item->getAmount(), 0.0);
@@ -148,6 +152,10 @@ final class PayrollService
             }
         }
 
+        if ($valeDeduction > 0) {
+            $automaticDeductions[] = new PayrollItem(null, null, 'Desconto de vale', $valeDeduction, 'deduction');
+        }
+
         $fgtsAmount = $this->roundMoney($fgtsBase * 0.08);
 
         $allDeductions = array_merge($automaticDeductions, $manualDeductions);
@@ -155,6 +163,8 @@ final class PayrollService
         $totalAllowances = array_reduce($allAllowances, fn (float $carry, PayrollItem $item): float => $carry + $item->getAmount(), 0.0);
         $totalDeductions = array_reduce($allDeductions, fn (float $carry, PayrollItem $item): float => $carry + $item->getAmount(), 0.0);
         $netSalary = $this->roundMoney($baseSalaryAmount + $totalAllowances - $totalDeductions);
+
+        [$advanceAmount, $remainingAmount] = $this->resolveInstallments($data, $netSalary);
 
         $payroll = new Payroll(
             null,
@@ -165,6 +175,9 @@ final class PayrollService
             $totalAllowances,
             $totalDeductions,
             $netSalary,
+            $advanceAmount,
+            $remainingAmount,
+            $valeDeduction,
             $paymentDate,
             $justCause,
             $vacationDays,
@@ -207,6 +220,59 @@ final class PayrollService
         }
 
         return $items;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array{0: float, 1: float}
+     */
+    private function resolveInstallments(array $data, float $netSalary): array
+    {
+        if ($netSalary <= 0.0) {
+            return [0.0, 0.0];
+        }
+
+        $type = isset($data['type']) ? $this->normalizeType((string) $data['type']) : 'regular';
+        $shouldSplit = $type === 'regular';
+
+        $advanceAmount = $this->roundMoney(max(0.0, (float) ($data['advance_amount'] ?? 0)));
+        $remainingAmount = $this->roundMoney(max(0.0, (float) ($data['remaining_amount'] ?? 0)));
+
+        if ($advanceAmount === 0.0 && $remainingAmount === 0.0) {
+            if ($shouldSplit) {
+                $advanceAmount = $this->roundMoney($netSalary / 2);
+                $remainingAmount = $this->roundMoney($netSalary - $advanceAmount);
+            } else {
+                $remainingAmount = $this->roundMoney($netSalary);
+            }
+
+            return [$advanceAmount, $remainingAmount];
+        }
+
+        if ($advanceAmount > $netSalary) {
+            return [$netSalary, 0.0];
+        }
+
+        if ($remainingAmount > $netSalary) {
+            $remainingAmount = $netSalary;
+        }
+
+        if ($advanceAmount > 0.0 && $remainingAmount === 0.0) {
+            $remainingAmount = $this->roundMoney(max(0.0, $netSalary - $advanceAmount));
+
+            return [$advanceAmount, $remainingAmount];
+        }
+
+        if ($remainingAmount > 0.0 && $advanceAmount === 0.0) {
+            $advanceAmount = $this->roundMoney(max(0.0, $netSalary - $remainingAmount));
+        }
+
+        $total = $this->roundMoney($advanceAmount + $remainingAmount);
+        if (abs($total - $netSalary) > 0.01) {
+            $remainingAmount = $this->roundMoney(max(0.0, $netSalary - $advanceAmount));
+        }
+
+        return [$advanceAmount, $remainingAmount];
     }
 
     private function normalizeType(string $type): string

@@ -3,6 +3,15 @@
 
     const formatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
+    function roundMoney(value) {
+        const numeric = Number.parseFloat(String(value));
+        if (!Number.isFinite(numeric)) {
+            return 0;
+        }
+
+        return Math.round(numeric * 100) / 100;
+    }
+
     function clamp(value, min, max) {
         const numeric = Number.parseFloat(String(value));
         if (Number.isNaN(numeric)) {
@@ -180,6 +189,79 @@
         }, 0);
     }
 
+    function resolveInstallmentsForForm(netSalary) {
+        const advanceInput = document.getElementById('advance_amount');
+        const remainingInput = document.getElementById('remaining_amount');
+        const typeSelect = document.getElementById('type');
+
+        if (!(advanceInput instanceof HTMLInputElement) || !(remainingInput instanceof HTMLInputElement)) {
+            return { advance: 0, remaining: 0 };
+        }
+
+        const netRounded = roundMoney(netSalary);
+        const selectedType = typeSelect instanceof HTMLSelectElement ? typeSelect.value : 'regular';
+        const shouldSplit = selectedType === 'regular';
+
+        let advance = roundMoney(Math.max(0, Number.parseFloat(advanceInput.value || '0') || 0));
+        let remaining = roundMoney(Math.max(0, Number.parseFloat(remainingInput.value || '0') || 0));
+
+        const updateInputs = () => {
+            const formattedAdvance = advance.toFixed(2);
+            if (advanceInput.value !== formattedAdvance) {
+                advanceInput.value = formattedAdvance;
+            }
+
+            const formattedRemaining = remaining.toFixed(2);
+            if (remainingInput.value !== formattedRemaining) {
+                remainingInput.value = formattedRemaining;
+            }
+        };
+
+        if (netRounded <= 0) {
+            advance = 0;
+            remaining = 0;
+            updateInputs();
+            return { advance, remaining };
+        }
+
+        if (advance === 0 && remaining === 0) {
+            if (shouldSplit) {
+                advance = roundMoney(netRounded / 2);
+                remaining = roundMoney(netRounded - advance);
+            } else {
+                advance = 0;
+                remaining = netRounded;
+            }
+
+            updateInputs();
+            return { advance, remaining };
+        }
+
+        if (advance > netRounded) {
+            advance = netRounded;
+            remaining = 0;
+        } else {
+            if (remaining > netRounded) {
+                remaining = netRounded;
+            }
+
+            if (advance > 0 && remaining === 0) {
+                remaining = roundMoney(Math.max(0, netRounded - advance));
+            } else if (remaining > 0 && advance === 0) {
+                advance = roundMoney(Math.max(0, netRounded - remaining));
+            }
+
+            const total = roundMoney(advance + remaining);
+            if (Math.abs(total - netRounded) > 0.01) {
+                remaining = roundMoney(Math.max(0, netRounded - advance));
+            }
+        }
+
+        updateInputs();
+
+        return { advance, remaining };
+    }
+
     function ensurePlaceholder(container) {
         const label = container.dataset.emptyLabel;
         if (!label) {
@@ -270,11 +352,18 @@
         const allowanceInputs = document.querySelectorAll('input[name="allowance_amount[]"]');
         const deductionInputs = document.querySelectorAll('input[name="deduction_amount[]"]');
 
-        const manualAllowances = sumInputs(allowanceInputs);
-        const manualDeductions = sumInputs(deductionInputs);
+        const manualAllowances = roundMoney(sumInputs(allowanceInputs));
+        const manualDeductions = roundMoney(sumInputs(deductionInputs));
+        const valeInput = document.getElementById('vale_deduction');
+        let valeDeduction = 0;
+        if (valeInput instanceof HTMLInputElement) {
+            const parsedVale = Number.parseFloat(valeInput.value || '0');
+            valeDeduction = Number.isFinite(parsedVale) ? Math.max(0, parsedVale) : 0;
+        }
+        valeDeduction = roundMoney(valeDeduction);
 
         const automaticItems = automaticAllowances(type, baseSalary);
-        const automaticTotal = automaticItems.reduce((total, item) => total + item.amount, 0);
+        const automaticTotal = roundMoney(automaticItems.reduce((total, item) => total + item.amount, 0));
         let contributionBase = baseSalary + automaticTotal;
         let fgtsBase = contributionBase;
         let inss = 0;
@@ -304,12 +393,19 @@
             irrf = calculateIrrf(irrfBase);
         }
 
-        const fgts = fgtsBase * 0.08;
+        inss = roundMoney(inss);
+        irrfBase = roundMoney(irrfBase);
+        irrf = roundMoney(irrf);
+        contributionBase = roundMoney(contributionBase);
+        fgtsBase = roundMoney(fgtsBase);
+        let fgts = roundMoney(fgtsBase * 0.08);
+        const thirteenthDisplay = roundMoney(thirteenthTotal);
 
-        const totalAllowances = manualAllowances + automaticTotal;
-        const automaticDeductions = inss + irrf;
-        const totalDeductions = manualDeductions + automaticDeductions;
-        const netSalary = baseSalary + totalAllowances - totalDeductions;
+        const totalAllowances = roundMoney(manualAllowances + automaticTotal);
+        const automaticDeductions = roundMoney(inss + irrf);
+        const totalDeductions = roundMoney(manualDeductions + automaticDeductions + valeDeduction);
+        const netSalary = roundMoney(baseSalary + totalAllowances - totalDeductions);
+        const installments = resolveInstallmentsForForm(netSalary);
 
         const paymentInput = document.getElementById('payment_date');
         if (paymentInput instanceof HTMLInputElement) {
@@ -328,18 +424,21 @@
             }
         };
 
-        setText('base-salary', baseSalary);
+        setText('base-salary', roundMoney(baseSalary));
         setText('auto-allowances', automaticTotal);
         setText('total-allowances', manualAllowances);
         setText('total-deductions', manualDeductions);
+        setText('vale-deduction-total', valeDeduction);
         setText('inss-amount', inss);
         setText('inss-base', contributionBase);
         setText('irrf-amount', irrf);
         setText('irrf-base', irrfBase);
         setText('fgts-amount', fgts);
         setText('fgts-base', fgtsBase);
-        setText('thirteenth-amount', thirteenthTotal);
+        setText('thirteenth-amount', thirteenthDisplay);
         setText('net-salary', netSalary);
+        setText('advance-display', installments.advance);
+        setText('remaining-display', installments.remaining);
 
         const automaticDescriptions = document.getElementById('automatic-descriptions');
         if (automaticDescriptions) {
@@ -352,7 +451,10 @@
                 ? 'Descontos automáticos estimados (13º)'
                 : 'Descontos automáticos estimados';
             const deductionLine = `<p style="margin:0.75rem 0 0;">${deductionTitle}: INSS <strong>${formatter.format(inss)}</strong> · IRRF <strong>${formatter.format(irrf)}</strong></p>`;
-            automaticDescriptions.innerHTML = allowanceList + deductionLine;
+            const valeLine = valeDeduction > 0
+                ? `<p style="margin:0.5rem 0 0;">Desconto de vale informado: <strong>${formatter.format(valeDeduction)}</strong></p>`
+                : '';
+            automaticDescriptions.innerHTML = allowanceList + deductionLine + valeLine;
         }
     }
 

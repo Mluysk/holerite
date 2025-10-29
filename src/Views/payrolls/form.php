@@ -16,6 +16,9 @@ if (!in_array($defaultThirteenthInstallment, ['first', 'second'], true)) {
 $defaultVacationDays = max(1, min(30, (int) ($defaults['vacation_days'] ?? 30)));
 $defaultWorkedDays = max(0, min(30, (int) ($defaults['worked_days'] ?? 30)));
 $defaultJustCause = !empty($defaults['just_cause']);
+$defaultValeDeduction = number_format((float) ($defaults['vale_deduction'] ?? 0), 2, '.', '');
+$defaultAdvanceAmount = number_format((float) ($defaults['advance_amount'] ?? 0), 2, '.', '');
+$defaultRemainingAmount = number_format((float) ($defaults['remaining_amount'] ?? 0), 2, '.', '');
 
 if (!isset($pageScripts) || !is_array($pageScripts)) {
     $pageScripts = [];
@@ -121,6 +124,11 @@ $pageScripts[] = [
             </div>
             <div class="card">
                 <h3 style="margin-top:0;">Descontos</h3>
+                <div style="display:flex;flex-direction:column;gap:0.35rem;margin-bottom:1rem;">
+                    <label for="vale_deduction">Desconto de vale</label>
+                    <input type="number" min="0" step="0.01" id="vale_deduction" name="vale_deduction" value="<?= htmlspecialchars($defaultValeDeduction); ?>" placeholder="0,00">
+                    <p class="muted" style="margin:0;">Informe o total de vales abatidos neste holerite.</p>
+                </div>
                 <div id="deductions" class="dynamic-list" data-empty-label="Nenhum desconto manual informado."></div>
                 <button type="button" class="button dynamic-add" data-target="deductions" data-type="deduction" style="background:#f97316;margin-top:0.5rem;">Adicionar desconto</button>
             </div>
@@ -137,12 +145,30 @@ $pageScripts[] = [
             <p class="muted">Proventos automáticos: <strong id="auto-allowances">R$ 0,00</strong></p>
             <p class="muted">Proventos manuais: <strong id="total-allowances">R$ 0,00</strong></p>
             <p class="muted">Descontos manuais: <strong id="total-deductions">R$ 0,00</strong></p>
+            <p class="muted">Desconto de vale: <strong id="vale-deduction-total">R$ 0,00</strong></p>
             <p class="muted">INSS estimado: <strong id="inss-amount">R$ 0,00</strong> · Base: <strong id="inss-base">R$ 0,00</strong></p>
             <p class="muted">IRRF estimado: <strong id="irrf-amount">R$ 0,00</strong> · Base: <strong id="irrf-base">R$ 0,00</strong></p>
             <p class="muted">FGTS do mês: <strong id="fgts-amount">R$ 0,00</strong> · Base: <strong id="fgts-base">R$ 0,00</strong></p>
             <p class="muted">13º acumulado: <strong id="thirteenth-amount">R$ 0,00</strong></p>
             <p class="muted">Valor líquido estimado: <strong id="net-salary">R$ 0,00</strong></p>
+            <p class="muted">1ª parcela (adiantamento): <strong id="advance-display">R$ 0,00</strong></p>
+            <p class="muted">2ª parcela (restante): <strong id="remaining-display">R$ 0,00</strong></p>
             <div id="automatic-descriptions" class="muted" style="margin-top:0.75rem;"></div>
+        </div>
+
+        <div class="card" style="margin-top:1.5rem;">
+            <h3 style="margin-top:0;">Parcelamento do pagamento</h3>
+            <div class="grid">
+                <div>
+                    <label for="advance_amount">Adiantamento (1ª parcela)</label>
+                    <input type="number" min="0" step="0.01" id="advance_amount" name="advance_amount" value="<?= htmlspecialchars($defaultAdvanceAmount); ?>" placeholder="0,00">
+                </div>
+                <div>
+                    <label for="remaining_amount">Pagamento restante (2ª parcela)</label>
+                    <input type="number" min="0" step="0.01" id="remaining_amount" name="remaining_amount" value="<?= htmlspecialchars($defaultRemainingAmount); ?>" placeholder="0,00">
+                </div>
+            </div>
+            <p class="muted" style="margin:0.75rem 0 0 0;">O sistema ajusta os valores automaticamente para corresponder ao líquido calculado.</p>
         </div>
 
         <button type="submit" class="button" style="margin-top:1.5rem;">Gerar holerite</button>
