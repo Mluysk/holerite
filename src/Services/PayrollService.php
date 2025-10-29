@@ -233,10 +233,17 @@ final class PayrollService
         }
 
         $type = isset($data['type']) ? $this->normalizeType((string) $data['type']) : 'regular';
-        $shouldSplit = $type === 'regular';
+        $hasAdvance = array_key_exists('has_advance', $data)
+            ? $this->normalizeBoolean($data['has_advance'])
+            : ($type === 'regular');
+        $shouldSplit = $hasAdvance && $type === 'regular';
 
         $advanceAmount = $this->roundMoney(max(0.0, (float) ($data['advance_amount'] ?? 0)));
         $remainingAmount = $this->roundMoney(max(0.0, (float) ($data['remaining_amount'] ?? 0)));
+
+        if (!$hasAdvance) {
+            return [0.0, $this->roundMoney($netSalary)];
+        }
 
         if ($advanceAmount === 0.0 && $remainingAmount === 0.0) {
             if ($shouldSplit) {

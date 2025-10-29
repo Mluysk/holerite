@@ -54,6 +54,9 @@ final class PayrollController extends Controller
             'vale_deduction' => (float) ($_GET['vale_deduction'] ?? 0),
             'advance_amount' => (float) ($_GET['advance_amount'] ?? 0),
             'remaining_amount' => (float) ($_GET['remaining_amount'] ?? 0),
+            'has_advance' => isset($_GET['has_advance'])
+                ? in_array(strtolower((string) $_GET['has_advance']), ['1', 'true', 'on', 'yes'], true)
+                : null,
         ];
 
         $this->render('payrolls/form', [

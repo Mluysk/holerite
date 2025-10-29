@@ -57,12 +57,18 @@ $referenceValue = match ($payroll->getType()) {
     default => '1 mês',
 };
 
-$allowances[] = [
+$baseAllowance = [
     'code' => sprintf('%03d', $code++),
     'description' => 'Salário Base',
     'reference' => $referenceValue,
     'amount' => $payroll->getBaseSalary(),
 ];
+
+if ($advanceAmount > 0.0) {
+    $baseAllowance['note'] = 'Adiantamento aplicado — desconto listado ao lado.';
+}
+
+$allowances[] = $baseAllowance;
 
 $thirteenthItem = null;
 $vacationBonusValue = null;
@@ -101,12 +107,14 @@ foreach ($payroll->getItems() as $item) {
 }
 
 if ($advanceAmount > 0.0) {
-    $deductions[] = [
+    $advanceDeduction = [
         'code' => sprintf('%03d', $code++),
         'description' => 'Adiantamento salarial',
         'reference' => '',
         'amount' => $advanceAmount,
     ];
+
+    array_unshift($deductions, $advanceDeduction);
 }
 
 $maxRows = max(count($allowances), count($deductions));
@@ -185,7 +193,16 @@ $thirteenthAccrual = $payroll->getType() === 'thirteenth'
                 <tr>
                     <?php $allowance = $allowances[$row]; ?>
                     <td><?= $allowance ? htmlspecialchars($allowance['code']) : '&nbsp;'; ?></td>
-                    <td><?= $allowance ? htmlspecialchars($allowance['description']) : '&nbsp;'; ?></td>
+                    <td>
+                        <?php if ($allowance): ?>
+                            <span><?= htmlspecialchars($allowance['description']); ?></span>
+                            <?php if (!empty($allowance['note'])): ?>
+                                <small class="item-note">&bull; <?= htmlspecialchars($allowance['note']); ?></small>
+                            <?php endif; ?>
+                        <?php else: ?>
+                            &nbsp;
+                        <?php endif; ?>
+                    </td>
                     <td><?= $allowance ? htmlspecialchars($allowance['reference']) : '&nbsp;'; ?></td>
                     <td class="text-right"><?= $allowance ? 'R$ ' . number_format((float) $allowance['amount'], 2, ',', '.') : '&nbsp;'; ?></td>
                     <?php $deduction = $deductions[$row]; ?>

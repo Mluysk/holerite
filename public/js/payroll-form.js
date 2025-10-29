@@ -82,6 +82,15 @@
         return base;
     }
 
+    function isAdvanceEnabled() {
+        const checkbox = document.getElementById('has_advance');
+        if (!(checkbox instanceof HTMLInputElement)) {
+            return true;
+        }
+
+        return checkbox.checked;
+    }
+
     function automaticAllowances(type, baseSalary) {
         const items = [];
 
@@ -189,18 +198,46 @@
         }, 0);
     }
 
+    function syncAdvanceFields() {
+        const wrapper = document.getElementById('advance-fields');
+        const advanceInput = document.getElementById('advance_amount');
+        const remainingInput = document.getElementById('remaining_amount');
+        const enabled = isAdvanceEnabled();
+
+        if (wrapper instanceof HTMLElement) {
+            wrapper.style.display = enabled ? 'block' : 'none';
+        }
+
+        [advanceInput, remainingInput].forEach((input) => {
+            if (!(input instanceof HTMLInputElement)) {
+                return;
+            }
+
+            input.readOnly = !enabled;
+
+            if (!enabled) {
+                input.value = '0.00';
+            } else if (input.value === '') {
+                input.value = '0.00';
+            }
+        });
+
+        updateSummary();
+    }
+
     function resolveInstallmentsForForm(netSalary) {
         const advanceInput = document.getElementById('advance_amount');
         const remainingInput = document.getElementById('remaining_amount');
         const typeSelect = document.getElementById('type');
+        const advanceEnabled = isAdvanceEnabled();
 
         if (!(advanceInput instanceof HTMLInputElement) || !(remainingInput instanceof HTMLInputElement)) {
-            return { advance: 0, remaining: 0 };
+            return { advance: 0, remaining: 0, enabled: advanceEnabled };
         }
 
         const netRounded = roundMoney(netSalary);
         const selectedType = typeSelect instanceof HTMLSelectElement ? typeSelect.value : 'regular';
-        const shouldSplit = selectedType === 'regular';
+        const shouldSplit = advanceEnabled && selectedType === 'regular';
 
         let advance = roundMoney(Math.max(0, Number.parseFloat(advanceInput.value || '0') || 0));
         let remaining = roundMoney(Math.max(0, Number.parseFloat(remainingInput.value || '0') || 0));
@@ -221,7 +258,14 @@
             advance = 0;
             remaining = 0;
             updateInputs();
-            return { advance, remaining };
+            return { advance, remaining, enabled: advanceEnabled };
+        }
+
+        if (!advanceEnabled) {
+            advance = 0;
+            remaining = netRounded;
+            updateInputs();
+            return { advance, remaining, enabled: false };
         }
 
         if (advance === 0 && remaining === 0) {
@@ -234,7 +278,7 @@
             }
 
             updateInputs();
-            return { advance, remaining };
+            return { advance, remaining, enabled: advanceEnabled };
         }
 
         if (advance > netRounded) {
@@ -259,7 +303,7 @@
 
         updateInputs();
 
-        return { advance, remaining };
+        return { advance, remaining, enabled: advanceEnabled };
     }
 
     function ensurePlaceholder(container) {
@@ -440,6 +484,11 @@
         setText('advance-display', installments.advance);
         setText('remaining-display', installments.remaining);
 
+        const advanceNote = document.getElementById('advance-note');
+        if (advanceNote instanceof HTMLElement) {
+            advanceNote.style.display = installments.enabled ? 'block' : 'none';
+        }
+
         const automaticDescriptions = document.getElementById('automatic-descriptions');
         if (automaticDescriptions) {
             const allowanceList = automaticItems.length > 0
@@ -570,6 +619,11 @@
             thirteenthInstallment.addEventListener('change', updateSummary);
         }
 
+        const advanceToggle = document.getElementById('has_advance');
+        if (advanceToggle instanceof HTMLInputElement) {
+            advanceToggle.addEventListener('change', syncAdvanceFields);
+        }
+
         // Add an initial row to each container for convenience
         dynamicLists.forEach((list) => {
             const type = list.id === 'deductions' ? 'deduction' : 'allowance';
@@ -582,7 +636,7 @@
         }
 
         toggleTypeSections();
-        updateSummary();
+        syncAdvanceFields();
     }
 
     if (document.readyState === 'loading') {

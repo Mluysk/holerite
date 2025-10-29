@@ -1865,6 +1865,19 @@ tr:nth-child(even) td {
     padding: 0.5rem;
 }
 
+.items td > span {
+    display: inline-block;
+}
+
+.items .item-note {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--color-receipt-label);
+    margin-top: 0.15rem;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
 .items thead th {
     background: var(--color-receipt-header-bg);
     text-transform: uppercase;

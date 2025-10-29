@@ -19,6 +19,11 @@ $defaultJustCause = !empty($defaults['just_cause']);
 $defaultValeDeduction = number_format((float) ($defaults['vale_deduction'] ?? 0), 2, '.', '');
 $defaultAdvanceAmount = number_format((float) ($defaults['advance_amount'] ?? 0), 2, '.', '');
 $defaultRemainingAmount = number_format((float) ($defaults['remaining_amount'] ?? 0), 2, '.', '');
+$defaultHasAdvance = $defaults['has_advance'] ?? null;
+if ($defaultHasAdvance === null) {
+    $defaultHasAdvance = $selectedType === 'regular';
+}
+$defaultHasAdvance = (bool) $defaultHasAdvance;
 
 if (!isset($pageScripts) || !is_array($pageScripts)) {
     $pageScripts = [];
@@ -153,19 +158,27 @@ $pageScripts[] = [
             <p class="muted">Valor líquido estimado: <strong id="net-salary">R$ 0,00</strong></p>
             <p class="muted">1ª parcela (adiantamento): <strong id="advance-display">R$ 0,00</strong></p>
             <p class="muted">2ª parcela (restante): <strong id="remaining-display">R$ 0,00</strong></p>
+            <p class="muted" id="advance-note" style="display: <?= $defaultHasAdvance ? 'block' : 'none'; ?>; margin-top:0.5rem;">Com o adiantamento habilitado, o desconto aparecerá logo abaixo do salário base no holerite impresso.</p>
             <div id="automatic-descriptions" class="muted" style="margin-top:0.75rem;"></div>
         </div>
 
         <div class="card" style="margin-top:1.5rem;">
             <h3 style="margin-top:0;">Parcelamento do pagamento</h3>
-            <div class="grid">
-                <div>
-                    <label for="advance_amount">Adiantamento (1ª parcela)</label>
-                    <input type="number" min="0" step="0.01" id="advance_amount" name="advance_amount" value="<?= htmlspecialchars($defaultAdvanceAmount); ?>" placeholder="0,00">
-                </div>
-                <div>
-                    <label for="remaining_amount">Pagamento restante (2ª parcela)</label>
-                    <input type="number" min="0" step="0.01" id="remaining_amount" name="remaining_amount" value="<?= htmlspecialchars($defaultRemainingAmount); ?>" placeholder="0,00">
+            <input type="hidden" name="has_advance" value="0">
+            <label class="muted" for="has_advance" style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;margin-bottom:0;">
+                <input type="checkbox" id="has_advance" name="has_advance" value="1" <?= $defaultHasAdvance ? 'checked' : ''; ?>>
+                Registrar adiantamento salarial (1ª parcela)
+            </label>
+            <div id="advance-fields" style="margin-top:1rem; display: <?= $defaultHasAdvance ? 'block' : 'none'; ?>;">
+                <div class="grid">
+                    <div>
+                        <label for="advance_amount">Adiantamento (1ª parcela)</label>
+                        <input type="number" min="0" step="0.01" id="advance_amount" name="advance_amount" value="<?= htmlspecialchars($defaultAdvanceAmount); ?>" placeholder="0,00">
+                    </div>
+                    <div>
+                        <label for="remaining_amount">Pagamento restante (2ª parcela)</label>
+                        <input type="number" min="0" step="0.01" id="remaining_amount" name="remaining_amount" value="<?= htmlspecialchars($defaultRemainingAmount); ?>" placeholder="0,00">
+                    </div>
                 </div>
             </div>
             <p class="muted" style="margin:0.75rem 0 0 0;">O sistema ajusta os valores automaticamente para corresponder ao líquido calculado.</p>
