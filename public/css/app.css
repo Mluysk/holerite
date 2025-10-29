@@ -1027,6 +1027,22 @@ tr:nth-child(even) td {
     color: var(--color-text);
 }
 
+.calendar-day__markers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0.1rem 0;
+    min-height: 1.1rem;
+}
+
+.calendar-day__marker {
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    background: rgba(var(--color-primary-rgb), 0.75);
+    box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.18);
+}
+
 .calendar-day__list {
     list-style: none;
     padding: 0;

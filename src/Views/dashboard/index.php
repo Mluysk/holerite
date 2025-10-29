@@ -106,15 +106,13 @@ if ($hasCharts) {
                                     <td class="calendar-day<?= $hasPayments ? ' calendar-day--has-payments' : ''; ?>">
                                         <div class="calendar-day__date"><?= htmlspecialchars($cellDate->format('d')); ?></div>
                                         <?php if ($hasPayments): ?>
-                                            <ul class="calendar-day__list">
-                                                <?php foreach ($cellPayrolls as $calendarPayroll): ?>
-                                                    <?php $typeLabel = $typeLabels[$calendarPayroll->getType()] ?? ucfirst($calendarPayroll->getType()); ?>
-                                                    <li>
-                                                        <span class="calendar-day__employee"><?= htmlspecialchars($employeeNames[$calendarPayroll->getEmployeeId()] ?? 'Colaborador'); ?></span>
-                                                        <small class="muted"><?= htmlspecialchars($typeLabel); ?> • R$ <?= number_format($calendarPayroll->getNetSalary(), 2, ',', '.'); ?></small>
-                                                    </li>
-                                                <?php endforeach; ?>
-                                            </ul>
+                                            <?php $paymentCount = count($cellPayrolls); ?>
+                                            <?php $ariaLabel = $paymentCount === 1 ? '1 pagamento registrado' : sprintf('%d pagamentos registrados', $paymentCount); ?>
+                                            <div class="calendar-day__markers" aria-label="<?= htmlspecialchars($ariaLabel); ?>">
+                                                <?php for ($index = 0; $index < $paymentCount; $index++): ?>
+                                                    <span class="calendar-day__marker" role="presentation"></span>
+                                                <?php endfor; ?>
+                                            </div>
                                         <?php else: ?>
                                             <div class="calendar-day__placeholder muted">Sem pagamentos</div>
                                         <?php endif; ?>
