@@ -71,7 +71,7 @@
         });
     }
 
-    function createBarChart(canvasId, dataset, label) {
+    function createLineChart(canvasId, dataset, label) {
         if (!dataset || !Array.isArray(dataset.labels) || dataset.labels.length === 0) {
             return null;
         }
@@ -83,21 +83,34 @@
 
         const style = window.getComputedStyle(document.body);
         const palette = buildPalette(style);
-        const background = palette[0];
+        const primary = palette[0];
         const axisColor = (style.getPropertyValue('--color-text-muted') || '#94a3b8').trim() || '#94a3b8';
+        const ctx = canvas.getContext('2d');
+        let gradient = primary;
+
+        if (ctx) {
+            gradient = ctx.createLinearGradient(0, 0, 0, canvas.height || 300);
+            gradient.addColorStop(0, primary + 'dd');
+            gradient.addColorStop(1, primary + '11');
+        }
 
         return new Chart(canvas, {
-            type: 'bar',
+            type: 'line',
             data: {
                 labels: dataset.labels,
                 datasets: [{
                     label: label,
                     data: dataset.values || [],
-                    backgroundColor: background,
-                    borderColor: background,
-                    borderWidth: 1.5,
-                    borderRadius: 6,
-                    maxBarThickness: 48,
+                    fill: true,
+                    tension: 0.35,
+                    borderColor: primary,
+                    backgroundColor: gradient,
+                    borderWidth: 2.5,
+                    pointBackgroundColor: primary,
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4.5,
+                    pointHoverRadius: 6,
                 }],
             },
             options: {
@@ -150,8 +163,8 @@
 
         createDoughnutChart('monthlyChart', payload.monthly);
         createDoughnutChart('yearlyChart', payload.yearly);
-        createBarChart('monthlyValeChart', payload.monthlyVale, 'Descontos mensais');
-        createBarChart('yearlyValeChart', payload.yearlyVale, 'Descontos anuais');
+        createLineChart('monthlyValePerformanceChart', payload.monthlyVale, 'Descontos mensais');
+        createLineChart('yearlyValePerformanceChart', payload.yearlyVale, 'Descontos anuais');
     }
 
     if (document.readyState === 'loading') {

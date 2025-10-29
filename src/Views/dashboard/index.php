@@ -86,11 +86,22 @@ if ($hasCharts) {
             <strong style="font-size:1.85rem;">R$ <?= number_format($totalNet, 2, ',', '.'); ?></strong>
             <p class="muted" style="margin:0.35rem 0 0 0;">Total já desembolsado em pagamentos líquidos.</p>
         </article>
-        <article class="stats-card">
-            <h3>Descontos de vale</h3>
-            <strong>R$ <?= number_format($valeTotals['overall'], 2, ',', '.'); ?></strong>
-            <p class="muted" style="margin:0.35rem 0 0 0;">Este mês: <strong>R$ <?= number_format($valeTotals['currentMonth'], 2, ',', '.'); ?></strong></p>
-            <p class="muted" style="margin:0.25rem 0 0 0;">No ano: <strong>R$ <?= number_format($valeTotals['currentYear'], 2, ',', '.'); ?></strong></p>
+        <article class="stats-card stats-card--vale">
+            <header>
+                <span class="stats-card__subtitle">Descontos de vale</span>
+                <h3>Total acumulado</h3>
+            </header>
+            <div class="stats-card__value">R$ <?= number_format($valeTotals['overall'], 2, ',', '.'); ?></div>
+            <dl class="stats-card__details">
+                <div>
+                    <dt>Este mês</dt>
+                    <dd>R$ <?= number_format($valeTotals['currentMonth'], 2, ',', '.'); ?></dd>
+                </div>
+                <div>
+                    <dt>No ano</dt>
+                    <dd>R$ <?= number_format($valeTotals['currentYear'], 2, ',', '.'); ?></dd>
+                </div>
+            </dl>
         </article>
     </div>
 
@@ -220,46 +231,102 @@ if ($hasCharts) {
         </section>
     </div>
 
-    <div class="dashboard-charts">
-        <section class="dashboard-chart">
+    <section class="dashboard-vale">
+        <header class="dashboard-vale__header">
             <div>
-                <h3 style="margin:0;">Vale transporte por mês</h3>
-                <p class="muted" style="margin:0.25rem 0 0 0;">Comparativo dos descontos de vale mês a mês.</p>
+                <h2>Controle de vales</h2>
+                <p class="muted">Acompanhe os descontos e o desempenho dos vales mês a mês e ano a ano.</p>
             </div>
-            <?php if ($monthlyValeChart['labels'] === []): ?>
-                <p class="muted">Os descontos mensais de vale aparecerão conforme forem registrados.</p>
-            <?php else: ?>
-                <canvas id="monthlyValeChart"></canvas>
-                <div class="dashboard-legend">
-                    <?php foreach ($monthlyValeTotals as $month): ?>
-                        <div class="dashboard-legend__item">
-                            <small class="muted" style="display:block;"><?= htmlspecialchars($month['period']); ?></small>
-                            <strong>R$ <?= number_format($month['total'], 2, ',', '.'); ?></strong>
+        </header>
+        <div class="dashboard-vale__content">
+            <div class="dashboard-vale__charts">
+                <section class="dashboard-chart dashboard-chart--wide">
+                    <div>
+                        <h3 style="margin:0;">Desempenho mensal de vales</h3>
+                        <p class="muted" style="margin:0.25rem 0 0 0;">Tendência dos descontos ao longo dos meses.</p>
+                    </div>
+                    <?php if ($monthlyValeChart['labels'] === []): ?>
+                        <p class="muted">Os descontos mensais de vale aparecerão conforme forem registrados.</p>
+                    <?php else: ?>
+                        <div class="chart-wrapper">
+                            <canvas id="monthlyValePerformanceChart"></canvas>
                         </div>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
-        </section>
-        <section class="dashboard-chart">
-            <div>
-                <h3 style="margin:0;">Vale transporte por ano</h3>
-                <p class="muted" style="margin:0.25rem 0 0 0;">Evolução dos descontos anuais de vale.</p>
+                    <?php endif; ?>
+                </section>
+                <section class="dashboard-chart dashboard-chart--wide">
+                    <div>
+                        <h3 style="margin:0;">Desempenho anual de vales</h3>
+                        <p class="muted" style="margin:0.25rem 0 0 0;">Comparativo dos descontos entre os anos.</p>
+                    </div>
+                    <?php if ($yearlyValeChart['labels'] === []): ?>
+                        <p class="muted">Os totais anuais de vale aparecerão após os primeiros registros.</p>
+                    <?php else: ?>
+                        <div class="chart-wrapper">
+                            <canvas id="yearlyValePerformanceChart"></canvas>
+                        </div>
+                    <?php endif; ?>
+                </section>
             </div>
-            <?php if ($yearlyValeChart['labels'] === []): ?>
-                <p class="muted">Os totais anuais de vale aparecerão após os primeiros registros.</p>
-            <?php else: ?>
-                <canvas id="yearlyValeChart"></canvas>
-                <div class="dashboard-legend">
-                    <?php foreach ($yearlyValeTotals as $year): ?>
-                        <div class="dashboard-legend__item">
-                            <small class="muted" style="display:block;"><?= htmlspecialchars($year['period']); ?></small>
-                            <strong>R$ <?= number_format($year['total'], 2, ',', '.'); ?></strong>
+            <div class="dashboard-vale__tables">
+                <div class="card">
+                    <h3 style="margin-top:0;">Resumo mensal de vales</h3>
+                    <?php if ($monthlyValeTotals === []): ?>
+                        <p class="muted">Os valores aparecerão após registrar descontos de vale.</p>
+                    <?php else: ?>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                <tr>
+                                    <th>Mês</th>
+                                    <th class="text-right">Valor descontado</th>
+                                    <th class="text-right">Participação</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <?php foreach ($monthlyValeTotals as $index => $month): ?>
+                                    <?php $monthlyShare = $monthlyValeChart['total'] > 0 ? ($monthlyValeChart['percentages'][$index] ?? 0) : 0; ?>
+                                    <tr>
+                                        <td><?= htmlspecialchars($month['period']); ?></td>
+                                        <td class="text-right"><strong>R$ <?= number_format($month['total'], 2, ',', '.'); ?></strong></td>
+                                        <td class="text-right"><span class="tag tag--soft"><?= number_format($monthlyShare, 1, ',', '.'); ?>%</span></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                </tbody>
+                            </table>
                         </div>
-                    <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
-            <?php endif; ?>
-        </section>
-    </div>
+                <div class="card">
+                    <h3 style="margin-top:0;">Resumo anual de vales</h3>
+                    <?php if ($yearlyValeTotals === []): ?>
+                        <p class="muted">Os totais anuais aparecerão após os primeiros registros.</p>
+                    <?php else: ?>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                <tr>
+                                    <th>Ano</th>
+                                    <th class="text-right">Valor descontado</th>
+                                    <th class="text-right">Participação</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <?php foreach ($yearlyValeTotals as $index => $year): ?>
+                                    <?php $yearlyShare = $yearlyValeChart['total'] > 0 ? ($yearlyValeChart['percentages'][$index] ?? 0) : 0; ?>
+                                    <tr>
+                                        <td><?= htmlspecialchars($year['period']); ?></td>
+                                        <td class="text-right"><strong>R$ <?= number_format($year['total'], 2, ',', '.'); ?></strong></td>
+                                        <td class="text-right"><span class="tag tag--soft"><?= number_format($yearlyShare, 1, ',', '.'); ?>%</span></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </section>
 
     <div class="dashboard-tables">
         <div class="card">
