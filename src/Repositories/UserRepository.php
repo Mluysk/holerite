@@ -30,6 +30,54 @@ final class UserRepository
         return $this->hydrate($row);
     }
 
+    public function findById(int $id): ?User
+    {
+        $statement = $this->pdo->prepare('SELECT * FROM users WHERE id = :id LIMIT 1');
+        $statement->execute(['id' => $id]);
+        $row = $statement->fetch();
+
+        if ($row === false) {
+            return null;
+        }
+
+        return $this->hydrate($row);
+    }
+
+    /**
+     * @return User[]
+     */
+    public function all(): array
+    {
+        $statement = $this->pdo->query('SELECT * FROM users ORDER BY username ASC');
+        $rows = $statement->fetchAll();
+
+        if ($rows === false) {
+            return [];
+        }
+
+        return array_map(fn ($row) => $this->hydrate((array) $row), $rows);
+    }
+
+    public function create(string $username, string $passwordHash): User
+    {
+        $statement = $this->pdo->prepare('INSERT INTO users (username, password_hash) VALUES (:username, :password_hash)');
+        $statement->execute([
+            'username' => $username,
+            'password_hash' => $passwordHash,
+        ]);
+
+        return new User((int) $this->pdo->lastInsertId(), $username, $passwordHash);
+    }
+
+    public function updatePassword(int $id, string $passwordHash): void
+    {
+        $statement = $this->pdo->prepare('UPDATE users SET password_hash = :password_hash WHERE id = :id');
+        $statement->execute([
+            'id' => $id,
+            'password_hash' => $passwordHash,
+        ]);
+    }
+
     /**
      * @param array<string, mixed> $row
      */

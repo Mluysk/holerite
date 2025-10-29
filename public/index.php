@@ -26,7 +26,7 @@ $employeeBenefitService = new EmployeeBenefitService();
 $payrollService = new PayrollService($employeeRepository, $payrollRepository);
 
 $dashboardController = new DashboardController($employeeRepository, $payrollRepository);
-$companyController = new CompanyController($companyRepository);
+$companyController = new CompanyController($companyRepository, $userRepository);
 $employeeController = new EmployeeController($employeeRepository, $payrollRepository, $employeeBenefitService);
 $payrollController = new PayrollController($employeeRepository, $payrollRepository, $payrollService, $companyRepository);
 $authController = new AuthController($userRepository);
@@ -73,6 +73,20 @@ switch ($action) {
     case 'update_company':
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $companyController->update($_POST);
+        } else {
+            $companyController->edit();
+        }
+        break;
+    case 'update_password':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $authController->updatePassword($_POST);
+        } else {
+            $companyController->edit();
+        }
+        break;
+    case 'create_user':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $authController->createUser($_POST);
         } else {
             $companyController->edit();
         }

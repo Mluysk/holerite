@@ -44,7 +44,7 @@ $mainClass = isset($layoutClass) && is_string($layoutClass) && trim($layoutClass
                 <a href="?action=dashboard">Dashboard</a>
                 <a href="?action=list_employees">Colaboradores</a>
                 <a href="?action=list_payrolls">Holerites</a>
-                <a href="?action=edit_company">Empresa</a>
+                <a href="?action=edit_company">Configurações</a>
             </nav>
             <div class="layout-session">
                 <span class="layout-session-user">Olá, <?= htmlspecialchars($currentUserName); ?></span>

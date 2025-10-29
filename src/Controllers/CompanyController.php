@@ -6,6 +6,7 @@ namespace Holerite\Controllers;
 
 use Holerite\Models\Company;
 use Holerite\Repositories\CompanyRepository;
+use Holerite\Repositories\UserRepository;
 use RuntimeException;
 use Throwable;
 
@@ -13,16 +14,29 @@ final class CompanyController extends Controller
 {
     public function __construct(
         private CompanyRepository $companyRepository,
+        private UserRepository $userRepository,
     ) {
     }
 
     public function edit(): void
     {
         $company = $this->companyRepository->get();
+        $users = $this->userRepository->all();
+        $currentUser = isset($_SESSION['user']) && is_array($_SESSION['user']) ? $_SESSION['user'] : null;
+
+        $pageScripts = [
+            [
+                'src' => 'js/tabs.js',
+                'defer' => true,
+            ],
+        ];
 
         $this->render('company/form', [
-            'title' => 'Dados da empresa',
+            'title' => 'Configurações',
             'company' => $company,
+            'users' => $users,
+            'currentUser' => $currentUser,
+            'pageScripts' => $pageScripts,
         ]);
     }
 
