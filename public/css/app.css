@@ -401,6 +401,7 @@ a:focus {
 .layout-content.layout-content-auth {
     max-width: 420px;
     padding: 2.5rem 2.25rem;
+    margin-top: 1.25rem;
 }
 
 .flash {
@@ -813,7 +814,7 @@ form textarea::placeholder {
 }
 
 .auth-card__logo {
-    height: 120px;
+    height: 240px;
     width: auto;
 }
 
