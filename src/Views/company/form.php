@@ -201,7 +201,7 @@ if (!in_array($defaultTab, $allowedTabs, true)) {
                 <?php if ($users === []): ?>
                     <p class="muted">Nenhum usuário adicional cadastrado.</p>
                 <?php else: ?>
-                    <div style="overflow-x:auto;">
+                    <div class="table-responsive">
                         <table>
                             <thead>
                             <tr>

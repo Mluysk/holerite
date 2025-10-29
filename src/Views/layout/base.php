@@ -52,7 +52,15 @@ $bodyClasses = trim('theme-' . $themeMode . ' accent-' . $colorPalette);
     </div>
     <?php if ($isAuthenticated): ?>
         <div class="layout-header-actions">
-            <nav class="layout-nav">
+            <button type="button"
+                    class="layout-nav-toggle"
+                    data-nav-toggle
+                    aria-expanded="false"
+                    aria-controls="mainNavigation"
+                    hidden>
+                Menu
+            </button>
+            <nav id="mainNavigation" class="layout-nav is-open" data-nav>
                 <a href="?action=dashboard">Dashboard</a>
                 <a href="?action=list_employees">Colaboradores</a>
                 <a href="?action=list_payrolls">Holerites</a>
@@ -78,7 +86,8 @@ $bodyClasses = trim('theme-' . $themeMode . ' accent-' . $colorPalette);
     <?= $content; ?>
 </main>
 
-<?php foreach ($scriptEntries as $script): ?>
+    <script src="js/navigation.js" defer></script>
+    <?php foreach ($scriptEntries as $script): ?>
     <?php if (is_string($script)): ?>
         <script src="<?= htmlspecialchars($script); ?>" defer></script>
     <?php elseif (is_array($script) && isset($script['inline'])): ?>

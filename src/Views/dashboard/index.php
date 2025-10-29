@@ -210,22 +210,24 @@ if ($hasCharts) {
             <?php if ($monthlyTotals === []): ?>
                 <p class="muted">Os valores mensais aparecerão após os primeiros pagamentos.</p>
             <?php else: ?>
-                <table>
-                    <thead>
-                    <tr>
-                        <th>Mês</th>
-                        <th class="text-right">Valor líquido pago</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach ($monthlyTotals as $month): ?>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
                         <tr>
-                            <td><?= htmlspecialchars($month['period']); ?></td>
-                            <td class="text-right"><strong>R$ <?= number_format($month['total'], 2, ',', '.'); ?></strong></td>
+                            <th>Mês</th>
+                            <th class="text-right">Valor líquido pago</th>
                         </tr>
-                    <?php endforeach; ?>
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($monthlyTotals as $month): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($month['period']); ?></td>
+                                <td class="text-right"><strong>R$ <?= number_format($month['total'], 2, ',', '.'); ?></strong></td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
             <?php endif; ?>
         </div>
         <div class="card">
@@ -233,22 +235,24 @@ if ($hasCharts) {
             <?php if ($yearlyTotals === []): ?>
                 <p class="muted">Os totais anuais serão exibidos conforme a folha evoluir.</p>
             <?php else: ?>
-                <table>
-                    <thead>
-                    <tr>
-                        <th>Ano</th>
-                        <th class="text-right">Valor líquido pago</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach ($yearlyTotals as $year): ?>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
                         <tr>
-                            <td><?= htmlspecialchars($year['period']); ?></td>
-                            <td class="text-right"><strong>R$ <?= number_format($year['total'], 2, ',', '.'); ?></strong></td>
+                            <th>Ano</th>
+                            <th class="text-right">Valor líquido pago</th>
                         </tr>
-                    <?php endforeach; ?>
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($yearlyTotals as $year): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($year['period']); ?></td>
+                                <td class="text-right"><strong>R$ <?= number_format($year['total'], 2, ',', '.'); ?></strong></td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
             <?php endif; ?>
         </div>
     </div>
@@ -258,26 +262,28 @@ if ($hasCharts) {
         <?php if ($lastPayrolls === []): ?>
             <p class="muted">Ainda não há holerites registrados. Que tal gerar o primeiro?</p>
         <?php else: ?>
-            <table>
-                <thead>
-                <tr>
-                    <th>Colaborador</th>
-                    <th>Mês</th>
-                    <th>Pagamento</th>
-                    <th class="text-right">Valor líquido</th>
-                </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($lastPayrolls as $payroll): ?>
+            <div class="table-responsive">
+                <table>
+                    <thead>
                     <tr>
-                        <td><?= htmlspecialchars($employeeNames[$payroll->getEmployeeId()] ?? 'Colaborador'); ?></td>
-                        <td><?= htmlspecialchars($payroll->getReferenceMonth()); ?></td>
-                        <td><?= htmlspecialchars($payroll->getPaymentDate()->format('d/m/Y')); ?></td>
-                        <td class="text-right"><strong>R$ <?= number_format($payroll->getNetSalary(), 2, ',', '.'); ?></strong></td>
+                        <th>Colaborador</th>
+                        <th>Mês</th>
+                        <th>Pagamento</th>
+                        <th class="text-right">Valor líquido</th>
                     </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($lastPayrolls as $payroll): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($employeeNames[$payroll->getEmployeeId()] ?? 'Colaborador'); ?></td>
+                            <td><?= htmlspecialchars($payroll->getReferenceMonth()); ?></td>
+                            <td><?= htmlspecialchars($payroll->getPaymentDate()->format('d/m/Y')); ?></td>
+                            <td class="text-right"><strong>R$ <?= number_format($payroll->getNetSalary(), 2, ',', '.'); ?></strong></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
         <?php endif; ?>
     </div>
 

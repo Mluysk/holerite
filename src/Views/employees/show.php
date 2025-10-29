@@ -37,13 +37,13 @@ $pageScripts[] = [
 ];
 ?>
 <section>
-    <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
-        <div>
-            <h2 style="margin:0 0 0.25rem 0;">Colaborador · <?= htmlspecialchars($employee->getName()); ?></h2>
+    <header class="section-header">
+        <div class="section-header__content">
+            <h2>Colaborador · <?= htmlspecialchars($employee->getName()); ?></h2>
             <p class="muted">Acompanhe a evolução de benefícios obrigatórios e acesse o histórico de holerites.</p>
         </div>
-        <div>
-            <a href="?action=list_employees" class="button button-secondary" style="margin-right:0.5rem;">Voltar</a>
+        <div class="section-header__actions">
+            <a href="?action=list_employees" class="button button-secondary">Voltar</a>
             <a href="?action=edit_employee&id=<?= $employee->getId(); ?>" class="button">Editar cadastro</a>
         </div>
     </header>
@@ -86,7 +86,7 @@ $pageScripts[] = [
                 <?php if ($payrolls === []): ?>
                     <p class="muted">Nenhum holerite foi emitido para este colaborador.</p>
                 <?php else: ?>
-                    <div style="overflow-x:auto;">
+                    <div class="table-responsive">
                         <table>
                             <thead>
                             <tr>
@@ -162,24 +162,26 @@ $pageScripts[] = [
                 <?php if ($thirteenthMonths === []): ?>
                     <p class="muted">Nenhum mês elegível encontrado para o ano selecionado.</p>
                 <?php else: ?>
-                    <table>
-                        <thead>
-                        <tr>
-                            <th>Mês</th>
-                            <th>Dias trabalhados</th>
-                            <th>Conta para o 13º?</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <?php foreach ($thirteenthMonths as $month): ?>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
                             <tr>
-                                <td><?= htmlspecialchars($month['label']); ?></td>
-                                <td><?= (int) ($month['worked_days'] ?? 0); ?></td>
-                                <td><?= !empty($month['counted']) ? 'Sim' : 'Não'; ?></td>
+                                <th>Mês</th>
+                                <th>Dias trabalhados</th>
+                                <th>Conta para o 13º?</th>
                             </tr>
-                        <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                            <?php foreach ($thirteenthMonths as $month): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($month['label']); ?></td>
+                                    <td><?= (int) ($month['worked_days'] ?? 0); ?></td>
+                                    <td><?= !empty($month['counted']) ? 'Sim' : 'Não'; ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>
@@ -190,7 +192,7 @@ $pageScripts[] = [
                 <?php if ($vacationCycles === []): ?>
                     <p class="muted">Nenhum período registrado até o momento.</p>
                 <?php else: ?>
-                    <div style="overflow-x:auto;">
+                    <div class="table-responsive">
                         <table>
                             <thead>
                             <tr>
