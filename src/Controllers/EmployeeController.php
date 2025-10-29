@@ -75,6 +75,7 @@ final class EmployeeController extends Controller
             $entries[] = [
                 'employee' => $employee,
                 'tenure' => $this->formatTenure($employee, $today),
+                'tenureMonths' => $this->calculateTenureMonths($employee, $today),
                 'status' => $this->resolveEmploymentStatus($employee, $today),
                 'payrollSummary' => $payrollSummary,
                 'benefits' => $benefits,
@@ -344,6 +345,23 @@ final class EmployeeController extends Controller
         }
 
         return implode(' e ', $parts);
+    }
+
+    private function calculateTenureMonths(Employee $employee, DateTimeImmutable $asOf): int
+    {
+        $end = $employee->getTerminationDate();
+        if ($end === null || $end > $asOf) {
+            $end = $asOf;
+        }
+
+        $start = $employee->getHireDate();
+        if ($end < $start) {
+            return 0;
+        }
+
+        $interval = $start->diff($end);
+
+        return max(0, ($interval->y * 12) + $interval->m);
     }
 
     private function resolveEmploymentStatus(Employee $employee, DateTimeImmutable $asOf): string
