@@ -21,9 +21,21 @@ final class AuthController extends Controller
             $this->redirect('?action=dashboard');
         }
 
+        $currentHour = (int) date('H');
+        $greeting = $currentHour < 12
+            ? 'Bom dia'
+            : ($currentHour < 18 ? 'Boa tarde' : 'Boa noite');
+
+        $loginName = isset($_SESSION['login_username']) && $_SESSION['login_username'] !== ''
+            ? (string) $_SESSION['login_username']
+            : null;
+
         $this->render('auth/login', [
             'title' => 'Entrar',
             'layoutClass' => 'layout-content layout-content-auth',
+            'greeting' => $greeting,
+            'loginName' => $loginName,
+            'loginUsername' => $loginName,
         ]);
     }
 
@@ -42,12 +54,16 @@ final class AuthController extends Controller
 
         $user = $this->userRepository->findByUsername($username);
 
+        $_SESSION['login_username'] = $username;
+
         if ($user !== null && password_verify($password, $user->getPasswordHash())) {
             session_regenerate_id(true);
             $_SESSION['user'] = [
                 'id' => $user->getId(),
                 'username' => $user->getUsername(),
             ];
+
+            unset($_SESSION['login_username']);
 
             $this->flash('success', 'Login realizado com sucesso.');
             $this->redirect('?action=dashboard');
