@@ -2112,6 +2112,10 @@ tr:nth-child(even) td {
         min-width: 560px;
     }
 
+    .calendar-wrapper .calendar-grid {
+        min-width: 100%;
+    }
+
     th,
     td {
         font-size: 0.85rem;
