@@ -23,6 +23,17 @@ final class CompanyController extends Controller
         'violet' => 'Violeta',
         'amber' => 'Âmbar',
         'rose' => 'Rosé',
+        'black' => 'Preto',
+        'gray' => 'Cinza',
+        'red' => 'Vermelho',
+        'dark-red' => 'Vermelho Escuro',
+        'pink' => 'Rosa',
+        'yellow' => 'Amarelo',
+        'gold' => 'Gold',
+        'rgb' => 'RGB',
+        'light-blue' => 'Azul Claro',
+        'dark-blue' => 'Azul Escuro',
+        'wine' => 'Cor Vinho',
     ];
 
     public function __construct(

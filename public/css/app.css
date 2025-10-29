@@ -134,6 +134,105 @@ body.accent-rose {
     --color-header-end: #fb7185;
 }
 
+body.accent-black {
+    --color-primary: #111827;
+    --color-primary-dark: #030712;
+    --color-primary-rgb: 17, 24, 39;
+    --color-header-start: #030712;
+    --color-header-mid: #111827;
+    --color-header-end: #374151;
+}
+
+body.accent-gray {
+    --color-primary: #6b7280;
+    --color-primary-dark: #4b5563;
+    --color-primary-rgb: 107, 114, 128;
+    --color-header-start: #4b5563;
+    --color-header-mid: #6b7280;
+    --color-header-end: #9ca3af;
+}
+
+body.accent-red {
+    --color-primary: #ef4444;
+    --color-primary-dark: #dc2626;
+    --color-primary-rgb: 239, 68, 68;
+    --color-header-start: #b91c1c;
+    --color-header-mid: #dc2626;
+    --color-header-end: #f87171;
+}
+
+body.accent-dark-red {
+    --color-primary: #991b1b;
+    --color-primary-dark: #7f1d1d;
+    --color-primary-rgb: 153, 27, 27;
+    --color-header-start: #7f1d1d;
+    --color-header-mid: #991b1b;
+    --color-header-end: #ef4444;
+}
+
+body.accent-pink {
+    --color-primary: #ec4899;
+    --color-primary-dark: #db2777;
+    --color-primary-rgb: 236, 72, 153;
+    --color-header-start: #be185d;
+    --color-header-mid: #db2777;
+    --color-header-end: #f472b6;
+}
+
+body.accent-yellow {
+    --color-primary: #facc15;
+    --color-primary-dark: #eab308;
+    --color-primary-rgb: 250, 204, 21;
+    --color-header-start: #ca8a04;
+    --color-header-mid: #eab308;
+    --color-header-end: #fde047;
+}
+
+body.accent-gold {
+    --color-primary: #d4af37;
+    --color-primary-dark: #a47e1b;
+    --color-primary-rgb: 212, 175, 55;
+    --color-header-start: #a16207;
+    --color-header-mid: #d4af37;
+    --color-header-end: #f1c453;
+}
+
+body.accent-rgb {
+    --color-primary: #22d3ee;
+    --color-primary-dark: #0ea5e9;
+    --color-primary-rgb: 34, 211, 238;
+    --color-header-start: #ef4444;
+    --color-header-mid: #22c55e;
+    --color-header-end: #3b82f6;
+}
+
+body.accent-light-blue {
+    --color-primary: #38bdf8;
+    --color-primary-dark: #0ea5e9;
+    --color-primary-rgb: 56, 189, 248;
+    --color-header-start: #0ea5e9;
+    --color-header-mid: #38bdf8;
+    --color-header-end: #bae6fd;
+}
+
+body.accent-dark-blue {
+    --color-primary: #1e3a8a;
+    --color-primary-dark: #1e40af;
+    --color-primary-rgb: 30, 58, 138;
+    --color-header-start: #1e3a8a;
+    --color-header-mid: #1e40af;
+    --color-header-end: #3b82f6;
+}
+
+body.accent-wine {
+    --color-primary: #7f1d4e;
+    --color-primary-dark: #5b0f32;
+    --color-primary-rgb: 127, 29, 78;
+    --color-header-start: #5b0f32;
+    --color-header-mid: #7f1d4e;
+    --color-header-end: #f472b6;
+}
+
 * {
     box-sizing: border-box;
 }
@@ -501,6 +600,66 @@ form textarea::placeholder {
 .swatch-option[data-palette-swatch="rose"] {
     --swatch-color-start: #be123c;
     --swatch-color-end: #fb7185;
+}
+
+.swatch-option[data-palette-swatch="black"] {
+    --swatch-color-start: #030712;
+    --swatch-color-end: #374151;
+}
+
+.swatch-option[data-palette-swatch="gray"] {
+    --swatch-color-start: #4b5563;
+    --swatch-color-end: #9ca3af;
+}
+
+.swatch-option[data-palette-swatch="red"] {
+    --swatch-color-start: #b91c1c;
+    --swatch-color-end: #f87171;
+}
+
+.swatch-option[data-palette-swatch="dark-red"] {
+    --swatch-color-start: #7f1d1d;
+    --swatch-color-end: #ef4444;
+}
+
+.swatch-option[data-palette-swatch="pink"] {
+    --swatch-color-start: #be185d;
+    --swatch-color-end: #f472b6;
+}
+
+.swatch-option[data-palette-swatch="yellow"] {
+    --swatch-color-start: #ca8a04;
+    --swatch-color-end: #fde047;
+}
+
+.swatch-option[data-palette-swatch="gold"] {
+    --swatch-color-start: #a16207;
+    --swatch-color-end: #f1c453;
+}
+
+.swatch-option[data-palette-swatch="rgb"] {
+    --swatch-color-start: #ef4444;
+    --swatch-color-end: #3b82f6;
+    background: linear-gradient(135deg, #ef4444, #22c55e 50%, #3b82f6);
+}
+
+.swatch-option[data-palette-swatch="rgb"] .swatch {
+    background: linear-gradient(135deg, #ef4444, #22c55e 50%, #3b82f6);
+}
+
+.swatch-option[data-palette-swatch="light-blue"] {
+    --swatch-color-start: #0ea5e9;
+    --swatch-color-end: #bae6fd;
+}
+
+.swatch-option[data-palette-swatch="dark-blue"] {
+    --swatch-color-start: #1e3a8a;
+    --swatch-color-end: #3b82f6;
+}
+
+.swatch-option[data-palette-swatch="wine"] {
+    --swatch-color-start: #5b0f32;
+    --swatch-color-end: #f472b6;
 }
 
 .card {

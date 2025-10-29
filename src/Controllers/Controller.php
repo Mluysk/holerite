@@ -76,7 +76,24 @@ abstract class Controller
         $palette = is_string($palette) ? strtolower($palette) : $defaults['colorPalette'];
 
         $allowedThemes = ['light', 'dark'];
-        $allowedPalettes = ['blue', 'emerald', 'violet', 'amber', 'rose'];
+        $allowedPalettes = [
+            'blue',
+            'emerald',
+            'violet',
+            'amber',
+            'rose',
+            'black',
+            'gray',
+            'red',
+            'dark-red',
+            'pink',
+            'yellow',
+            'gold',
+            'rgb',
+            'light-blue',
+            'dark-blue',
+            'wine',
+        ];
 
         if (!in_array($theme, $allowedThemes, true)) {
             $theme = $defaults['themeMode'];

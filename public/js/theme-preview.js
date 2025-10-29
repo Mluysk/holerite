@@ -10,7 +10,24 @@
     }
 
     const themeOptions = ['light', 'dark'];
-    const paletteOptions = ['blue', 'emerald', 'violet', 'amber', 'rose'];
+    const paletteOptions = [
+        'blue',
+        'emerald',
+        'violet',
+        'amber',
+        'rose',
+        'black',
+        'gray',
+        'red',
+        'dark-red',
+        'pink',
+        'yellow',
+        'gold',
+        'rgb',
+        'light-blue',
+        'dark-blue',
+        'wine'
+    ];
 
     function sanitize(value, fallback) {
         return typeof value === 'string' && value.trim() !== '' ? value.trim().toLowerCase() : fallback;
