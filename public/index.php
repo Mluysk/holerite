@@ -129,6 +129,10 @@ switch ($action) {
         $employeeController->index();
         break;
 
+    case 'employee_report':
+        $employeeController->report();
+        break;
+
     case 'create_employee':
         $employeeController->create();
         break;
