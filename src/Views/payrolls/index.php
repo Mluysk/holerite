@@ -44,7 +44,19 @@ $typeLabels = [
             <?php foreach ($payrolls as $payroll): ?>
                 <tr>
                     <td><?= htmlspecialchars($employeeNames[$payroll->getEmployeeId()] ?? 'Colaborador'); ?></td>
-                    <td><?= htmlspecialchars($typeLabels[$payroll->getType()] ?? ucfirst($payroll->getType())); ?></td>
+                    <?php
+                    $type = $payroll->getType();
+                    $label = $typeLabels[$type] ?? ucfirst($type);
+                    if ($type === 'thirteenth') {
+                        $installment = $payroll->getThirteenthInstallment();
+                        if ($installment === 'first') {
+                            $label .= ' (1ª parcela)';
+                        } elseif ($installment === 'second') {
+                            $label .= ' (2ª parcela)';
+                        }
+                    }
+                    ?>
+                    <td><?= htmlspecialchars($label); ?></td>
                     <td><?= htmlspecialchars($payroll->getReferenceMonth()); ?></td>
                     <td><?= $payroll->getPaymentDate()->format('d/m/Y'); ?></td>
                     <td>R$ <?= number_format($payroll->getBaseSalary(), 2, ',', '.'); ?></td>

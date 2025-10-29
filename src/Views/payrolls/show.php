@@ -28,6 +28,20 @@ $typeLabels = [
     'thirteenth' => '13º salário',
 ];
 
+$type = $payroll->getType();
+$typeLabel = $typeLabels[$type] ?? ucfirst($type);
+$thirteenthInstallmentLabel = null;
+if ($type === 'thirteenth') {
+    $installment = $payroll->getThirteenthInstallment();
+    if ($installment === 'first') {
+        $typeLabel .= ' (1ª parcela)';
+        $thirteenthInstallmentLabel = '1ª parcela (adiantamento)';
+    } elseif ($installment === 'second') {
+        $typeLabel .= ' (2ª parcela)';
+        $thirteenthInstallmentLabel = '2ª parcela (liquidação)';
+    }
+}
+
 $allowances = [];
 $deductions = [];
 $code = 1;
@@ -35,7 +49,7 @@ $code = 1;
 $referenceValue = match ($payroll->getType()) {
     'vacation' => ($payroll->getVacationDays() ?? 0) . ' dias',
     'termination' => ($payroll->getWorkedDays() ?? 0) . ' dias',
-    'thirteenth' => ($payroll->getThirteenthMonths() ?? 0) . ' meses',
+    'thirteenth' => ($payroll->getThirteenthMonths() ?? 0) . ' meses' . ($thirteenthInstallmentLabel ? ' · ' . $thirteenthInstallmentLabel : ''),
     default => '1 mês',
 };
 
@@ -88,7 +102,7 @@ $deductions = array_pad($deductions, $maxRows, null);
 
 $employeeCode = str_pad((string) ($employee?->getId() ?? 0), 5, '0', STR_PAD_LEFT);
 $thirteenthAccrual = $payroll->getType() === 'thirteenth'
-    ? $payroll->getBaseSalary()
+    ? $payroll->getThirteenthAccrual()
     : ($thirteenthItem?->getAmount() ?? $payroll->getThirteenthAccrual());
 ?>
 <section>
@@ -107,7 +121,7 @@ $thirteenthAccrual = $payroll->getType() === 'thirteenth'
                 <span>Referente ao mês de <strong><?= htmlspecialchars($referenceLabel); ?></strong></span>
                 <span>Competência: <?= htmlspecialchars($payroll->getReferenceMonth()); ?></span>
                 <span>Pagamento: <?= $paymentDate; ?></span>
-                <span>Tipo: <?= htmlspecialchars($typeLabels[$payroll->getType()] ?? ucfirst($payroll->getType())); ?></span>
+                <span>Tipo: <?= htmlspecialchars($typeLabel); ?></span>
             </div>
         </div>
 
@@ -129,6 +143,10 @@ $thirteenthAccrual = $payroll->getType() === 'thirteenth'
                     <span><strong>Justa causa</strong> <?= $payroll->isJustCause() ? 'Sim' : 'Não'; ?></span>
                 <?php elseif ($payroll->getType() === 'thirteenth'): ?>
                     <span><strong>Meses pagos</strong> <?= $payroll->getThirteenthMonths() ?? 0; ?></span>
+                    <?php if ($thirteenthInstallmentLabel !== null): ?>
+                        <span><strong>Parcela</strong> <?= htmlspecialchars($thirteenthInstallmentLabel); ?></span>
+                    <?php endif; ?>
+                    <span><strong>Total bruto 13º</strong> R$ <?= number_format($payroll->getThirteenthAccrual(), 2, ',', '.'); ?></span>
                     <span><strong>Competência</strong> <?= htmlspecialchars($payroll->getReferenceMonth()); ?></span>
                 <?php endif; ?>
             </div>

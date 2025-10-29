@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS payrolls (
     vacation_days TINYINT UNSIGNED NULL,
     worked_days TINYINT UNSIGNED NULL,
     thirteenth_months TINYINT UNSIGNED NULL,
+    thirteenth_installment ENUM('first', 'second') NULL,
     thirteenth_accrual DECIMAL(12,2) NOT NULL DEFAULT 0,
     inss_base DECIMAL(12,2) NOT NULL DEFAULT 0,
     inss_amount DECIMAL(12,2) NOT NULL DEFAULT 0,

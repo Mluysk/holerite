@@ -59,23 +59,41 @@ final class EmployeeBenefitService
         $monthsPaid = 0;
         $grossPaid = 0.0;
         $netPaid = 0.0;
+        $firstInstallmentGross = 0.0;
+        $secondInstallmentGross = 0.0;
         $thirteenthPayrolls = array_filter(
             $payrolls,
             fn (Payroll $payroll): bool => $payroll->getType() === 'thirteenth' && (int) $payroll->getPaymentDate()->format('Y') === $currentYear
         );
 
         foreach ($thirteenthPayrolls as $payroll) {
-            $monthsPaid += $payroll->getThirteenthMonths() ?? 0;
-            $grossPaid += $payroll->getBaseSalary() + $payroll->getTotalAllowances();
+            $grossValue = $payroll->getBaseSalary() + $payroll->getTotalAllowances();
+            $installment = $payroll->getThirteenthInstallment();
+
+            if ($installment === 'first') {
+                $firstInstallmentGross += $grossValue;
+            } else {
+                $secondInstallmentGross += $grossValue;
+                $monthsPaid += $payroll->getThirteenthMonths() ?? 0;
+            }
+
+            $grossPaid += $grossValue;
             $netPaid += $payroll->getNetSalary();
         }
 
+        $monthsPaid = min($monthsAccrued, $monthsPaid);
         $monthsPending = max(0, $monthsAccrued - $monthsPaid);
         $grossPending = $this->roundMoney($baseSalary * $monthsPending / 12);
+        $firstInstallmentGross = $this->roundMoney($firstInstallmentGross);
+        $secondInstallmentGross = $this->roundMoney($secondInstallmentGross);
+        $grossPaid = $this->roundMoney($grossPaid);
+        $netPaid = $this->roundMoney($netPaid);
 
         $status = 'Sem meses elegíveis no período atual.';
         if ($monthsPending > 0) {
-            if ($monthsAccrued >= 12 || ($termination !== null && (int) $termination->format('Y') === $currentYear)) {
+            if ($firstInstallmentGross > 0 && $monthsPaid === 0) {
+                $status = '2ª parcela pendente. Adiantamento já pago.';
+            } elseif ($monthsAccrued >= 12 || ($termination !== null && (int) $termination->format('Y') === $currentYear)) {
                 $status = 'Pagamento integral disponível para este ano.';
             } else {
                 $status = 'Parcela proporcional liberada para adiantamento.';
@@ -90,13 +108,17 @@ final class EmployeeBenefitService
             'months_paid' => $monthsPaid,
             'months_pending' => $monthsPending,
             'gross_accrued' => $grossAccrued,
-            'gross_paid' => $this->roundMoney($grossPaid),
-            'net_paid' => $this->roundMoney($netPaid),
+            'gross_paid' => $grossPaid,
+            'net_paid' => $netPaid,
             'gross_pending' => $grossPending,
             'status' => $status,
             'eligible' => $monthsPending > 0,
             'months_breakdown' => $monthsBreakdown,
             'default_reference' => sprintf('%d-12', $currentYear),
+            'first_installment_paid' => $firstInstallmentGross,
+            'second_installment_paid' => $secondInstallmentGross,
+            'suggested_installment' => $firstInstallmentGross > 0 ? 'second' : 'first',
+            'suggested_months' => $firstInstallmentGross > 0 ? $monthsAccrued : $monthsPending,
         ];
     }
 

@@ -47,6 +47,7 @@ final class PayrollController extends Controller
             'type' => (string) ($_GET['type'] ?? 'regular'),
             'reference_month' => (string) ($_GET['reference_month'] ?? ''),
             'thirteenth_months' => (int) ($_GET['thirteenth_months'] ?? 12),
+            'thirteenth_installment' => (string) ($_GET['thirteenth_installment'] ?? ''),
             'vacation_days' => (int) ($_GET['vacation_days'] ?? 30),
             'worked_days' => (int) ($_GET['worked_days'] ?? 30),
             'just_cause' => isset($_GET['just_cause']) && in_array(strtolower((string) $_GET['just_cause']), ['1', 'true', 'on', 'yes'], true),

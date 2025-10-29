@@ -21,6 +21,15 @@
         return option ? Number.parseFloat(option.dataset.salary || '0') || 0 : 0;
     }
 
+    function getThirteenthInstallment() {
+        const select = document.getElementById('thirteenth_installment');
+        if (!(select instanceof HTMLSelectElement)) {
+            return 'second';
+        }
+
+        return select.value === 'first' ? 'first' : 'second';
+    }
+
     function calculateBaseSalary(type) {
         const base = getEmployeeBaseSalary();
 
@@ -39,7 +48,8 @@
         if (type === 'thirteenth') {
             const thirteenthMonthsInput = document.getElementById('thirteenth_months_input');
             const months = thirteenthMonthsInput ? clamp(thirteenthMonthsInput.value, 1, 12) : 1;
-            return base * (months / 12);
+            const total = base * (months / 12);
+            return total / 2;
         }
 
         return base;
@@ -247,13 +257,36 @@
 
         const automaticItems = automaticAllowances(type, baseSalary);
         const automaticTotal = automaticItems.reduce((total, item) => total + item.amount, 0);
-        const contributionBase = baseSalary + automaticTotal;
-        const inss = calculateInss(contributionBase);
-        const irrfBase = Math.max(0, contributionBase - inss);
-        const irrf = calculateIrrf(irrfBase);
-        const fgts = contributionBase * 0.08;
+        let contributionBase = baseSalary + automaticTotal;
+        let fgtsBase = contributionBase;
+        let inss = 0;
+        let irrfBase = 0;
+        let irrf = 0;
         const thirteenthItem = automaticItems.find((item) => item.label.toLowerCase().includes('13'));
-        const thirteenth = automaticThirteenth(type) || (thirteenthItem ? thirteenthItem.amount : 0);
+        const thirteenthTotal = automaticThirteenth(type) || (thirteenthItem ? thirteenthItem.amount : 0);
+
+        if (type === 'thirteenth') {
+            const installment = getThirteenthInstallment();
+            if (installment === 'second') {
+                contributionBase = thirteenthTotal;
+                fgtsBase = contributionBase;
+                inss = calculateInss(contributionBase);
+                irrfBase = Math.max(0, contributionBase - inss);
+                irrf = calculateIrrf(irrfBase);
+            } else {
+                contributionBase = baseSalary + automaticTotal;
+                fgtsBase = contributionBase;
+                inss = 0;
+                irrfBase = 0;
+                irrf = 0;
+            }
+        } else {
+            inss = calculateInss(contributionBase);
+            irrfBase = Math.max(0, contributionBase - inss);
+            irrf = calculateIrrf(irrfBase);
+        }
+
+        const fgts = fgtsBase * 0.08;
 
         const totalAllowances = manualAllowances + automaticTotal;
         const automaticDeductions = inss + irrf;
@@ -276,8 +309,8 @@
         setText('irrf-amount', irrf);
         setText('irrf-base', irrfBase);
         setText('fgts-amount', fgts);
-        setText('fgts-base', contributionBase);
-        setText('thirteenth-amount', thirteenth);
+        setText('fgts-base', fgtsBase);
+        setText('thirteenth-amount', thirteenthTotal);
         setText('net-salary', netSalary);
 
         const automaticDescriptions = document.getElementById('automatic-descriptions');
@@ -320,6 +353,7 @@
         const workedInput = document.getElementById('worked_days');
         const thirteenthHidden = document.getElementById('thirteenth_months');
         const thirteenthInput = document.getElementById('thirteenth_months_input');
+        const thirteenthInstallment = document.getElementById('thirteenth_installment');
 
         if (vacationInput instanceof HTMLInputElement) {
             vacationInput.required = type === 'vacation';
@@ -332,6 +366,9 @@
         }
         if (thirteenthInput instanceof HTMLInputElement) {
             thirteenthInput.required = type === 'thirteenth';
+        }
+        if (thirteenthInstallment instanceof HTMLSelectElement) {
+            thirteenthInstallment.required = type === 'thirteenth';
         }
 
         if (type === 'thirteenth' && thirteenthHidden instanceof HTMLInputElement && thirteenthInput instanceof HTMLInputElement) {
@@ -396,6 +433,11 @@
                 }
                 updateSummary();
             });
+        }
+
+        const thirteenthInstallment = document.getElementById('thirteenth_installment');
+        if (thirteenthInstallment instanceof HTMLSelectElement) {
+            thirteenthInstallment.addEventListener('change', updateSummary);
         }
 
         // Add an initial row to each container for convenience

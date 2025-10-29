@@ -9,6 +9,10 @@ if ($referenceMonth === '') {
     $referenceMonth = date('Y-m');
 }
 $defaultThirteenthMonths = max(1, min(12, (int) ($defaults['thirteenth_months'] ?? 12)));
+$defaultThirteenthInstallment = $defaults['thirteenth_installment'] ?? '';
+if (!in_array($defaultThirteenthInstallment, ['first', 'second'], true)) {
+    $defaultThirteenthInstallment = 'second';
+}
 $defaultVacationDays = max(1, min(30, (int) ($defaults['vacation_days'] ?? 30)));
 $defaultWorkedDays = max(0, min(30, (int) ($defaults['worked_days'] ?? 30)));
 $defaultJustCause = !empty($defaults['just_cause']);
@@ -97,6 +101,13 @@ $pageScripts[] = [
                 <div>
                     <label for="thirteenth_months_input">Meses acumulados</label>
                     <input type="number" id="thirteenth_months_input" min="1" max="12" value="<?= htmlspecialchars((string) $defaultThirteenthMonths); ?>">
+                </div>
+                <div>
+                    <label for="thirteenth_installment">Parcela</label>
+                    <select name="thirteenth_installment" id="thirteenth_installment">
+                        <option value="first" <?= $defaultThirteenthInstallment === 'first' ? 'selected' : ''; ?>>1ª parcela (adiantamento)</option>
+                        <option value="second" <?= $defaultThirteenthInstallment === 'second' ? 'selected' : ''; ?>>2ª parcela (liquidação)</option>
+                    </select>
                 </div>
             </div>
             <p class="muted">O valor bruto será calculado automaticamente com base nos meses selecionados e no salário atual.</p>

@@ -23,6 +23,7 @@ final class Payroll
         private ?int $vacationDays,
         private ?int $workedDays,
         private ?int $thirteenthMonths,
+        private ?string $thirteenthInstallment,
         private float $thirteenthAccrual,
         private float $inssBase,
         private float $inssAmount,
@@ -103,6 +104,11 @@ final class Payroll
     public function getThirteenthMonths(): ?int
     {
         return $this->thirteenthMonths;
+    }
+
+    public function getThirteenthInstallment(): ?string
+    {
+        return $this->thirteenthInstallment;
     }
 
     public function getThirteenthAccrual(): float

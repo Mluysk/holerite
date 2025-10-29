@@ -44,11 +44,13 @@ final class PayrollService
         $vacationDays = null;
         $workedDays = null;
         $thirteenthMonths = null;
+        $thirteenthInstallment = null;
         $baseSalaryAmount = $employee->getBaseSalary();
 
         $automaticAllowances = [];
         $automaticDeductions = [];
         $thirteenthAccrual = 0.0;
+        $thirteenthTotalGross = 0.0;
 
         if ($type === 'vacation') {
             $vacationDays = $this->sanitizeInt($data['vacation_days'] ?? 30, 1, 30, 30);
@@ -84,7 +86,10 @@ final class PayrollService
                 throw new RuntimeException('Informe a quantidade de meses a considerar para o 13º.');
             }
 
-            $baseSalaryAmount = $this->roundMoney($employee->getBaseSalary() * $thirteenthMonths / 12);
+            $thirteenthInstallment = $this->normalizeThirteenthInstallment((string) ($data['thirteenth_installment'] ?? 'second'));
+            $thirteenthTotalGross = $this->roundMoney($employee->getBaseSalary() * $thirteenthMonths / 12);
+            $baseSalaryAmount = $this->roundMoney($thirteenthTotalGross / 2);
+            $thirteenthAccrual = $thirteenthTotalGross;
         }
 
         if ($type === 'regular') {
@@ -95,37 +100,53 @@ final class PayrollService
         $manualDeductions = $this->createItems($data['deduction_description'] ?? [], $data['deduction_amount'] ?? [], 'deduction');
 
         $allAllowances = array_merge($automaticAllowances, $manualAllowances);
-        $salaryContributionBase = $this->roundMoney($baseSalaryAmount + array_reduce($allAllowances, fn (float $carry, PayrollItem $item): float => $carry + $item->getAmount(), 0.0));
+        $allowancesTotal = array_reduce($allAllowances, fn (float $carry, PayrollItem $item): float => $carry + $item->getAmount(), 0.0);
 
-        $inssAmount = $this->calculateInss($salaryContributionBase);
+        $defaultContributionBase = $this->roundMoney($baseSalaryAmount + $allowancesTotal);
+        $inssBase = $defaultContributionBase;
+        $fgtsBase = $defaultContributionBase;
+
+        $inssAmount = 0.0;
         $irrfBase = 0.0;
         $irrfAmount = 0.0;
+
         if ($type === 'thirteenth') {
-            $irrfBase = $this->roundMoney(max(0, $salaryContributionBase - $inssAmount));
-            $irrfAmount = $this->calculateIrrf($irrfBase);
+            $withholdThirteenthTaxes = $thirteenthInstallment === 'second';
+            if ($withholdThirteenthTaxes) {
+                $inssBase = $this->roundMoney($thirteenthTotalGross);
+                $fgtsBase = $inssBase;
+                $inssAmount = $this->calculateInss($inssBase);
+                $irrfBase = $this->roundMoney(max(0, $inssBase - $inssAmount));
+                $irrfAmount = $this->calculateIrrf($irrfBase);
+            } else {
+                $inssBase = $defaultContributionBase;
+                $fgtsBase = 0.0;
+            }
         } else {
+            $inssAmount = $this->calculateInss($inssBase);
+            $irrfBase = $this->roundMoney(max(0, $inssBase - $inssAmount));
+            $irrfAmount = $this->calculateIrrf($irrfBase);
+
             if ($inssAmount > 0) {
                 $automaticDeductions[] = new PayrollItem(null, null, 'INSS', $inssAmount, 'deduction');
             }
 
-            $irrfBase = $this->roundMoney(max(0, $salaryContributionBase - $inssAmount));
-            $irrfAmount = $this->calculateIrrf($irrfBase);
             if ($irrfAmount > 0) {
                 $automaticDeductions[] = new PayrollItem(null, null, 'IRRF', $irrfAmount, 'deduction');
             }
         }
 
-        if ($type === 'thirteenth') {
+        if ($type === 'thirteenth' && $thirteenthInstallment === 'second') {
             if ($inssAmount > 0) {
                 $automaticDeductions[] = new PayrollItem(null, null, 'INSS 13º', $inssAmount, 'deduction');
             }
 
-            if (($irrfAmount ?? 0) > 0) {
+            if ($irrfAmount > 0) {
                 $automaticDeductions[] = new PayrollItem(null, null, 'IRRF 13º', $irrfAmount, 'deduction');
             }
         }
 
-        $fgtsAmount = $this->roundMoney($salaryContributionBase * 0.08);
+        $fgtsAmount = $this->roundMoney($fgtsBase * 0.08);
 
         $allDeductions = array_merge($automaticDeductions, $manualDeductions);
 
@@ -147,12 +168,13 @@ final class PayrollService
             $vacationDays,
             $workedDays,
             $thirteenthMonths,
+            $thirteenthInstallment,
             $thirteenthAccrual,
-            $salaryContributionBase,
+            $inssBase,
             $inssAmount,
             $irrfBase,
             $irrfAmount,
-            $salaryContributionBase,
+            $fgtsBase,
             $fgtsAmount,
             $notes,
             array_merge($allAllowances, $allDeductions)
@@ -189,6 +211,13 @@ final class PayrollService
     {
         $allowed = ['regular', 'vacation', 'termination', 'thirteenth'];
         return in_array($type, $allowed, true) ? $type : 'regular';
+    }
+
+    private function normalizeThirteenthInstallment(string $installment): string
+    {
+        $installment = strtolower(trim($installment));
+
+        return in_array($installment, ['first', 'second'], true) ? $installment : 'second';
     }
 
     private function normalizeBoolean(mixed $value): bool

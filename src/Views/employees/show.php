@@ -6,7 +6,12 @@
 $thirteenth = $benefits['thirteenth'] ?? [];
 $vacations = $benefits['vacations'] ?? ['cycles' => []];
 $thirteenthMonths = $thirteenth['months_breakdown'] ?? [];
-$thirteenthEligible = $thirteenth['eligible'] ?? false;
+$firstInstallmentPaid = (float) ($thirteenth['first_installment_paid'] ?? 0);
+$secondInstallmentPaid = (float) ($thirteenth['second_installment_paid'] ?? 0);
+$suggestedMonths = (int) ($thirteenth['suggested_months'] ?? 0);
+if ($suggestedMonths <= 0) {
+    $suggestedMonths = (int) ($thirteenth['months_accrued'] ?? 0);
+}
 $vacationCycles = $vacations['cycles'] ?? [];
 $terminationDate = $employee->getTerminationDate();
 
@@ -94,8 +99,20 @@ $pageScripts[] = [
                             </thead>
                             <tbody>
                             <?php foreach ($payrolls as $payroll): ?>
+                                <?php
+                                $type = $payroll->getType();
+                                $label = $typeLabels[$type] ?? ucfirst($type);
+                                if ($type === 'thirteenth') {
+                                    $installment = $payroll->getThirteenthInstallment();
+                                    if ($installment === 'first') {
+                                        $label .= ' (1ª parcela)';
+                                    } elseif ($installment === 'second') {
+                                        $label .= ' (2ª parcela)';
+                                    }
+                                }
+                                ?>
                                 <tr>
-                                    <td><?= htmlspecialchars($typeLabels[$payroll->getType()] ?? ucfirst($payroll->getType())); ?></td>
+                                    <td><?= htmlspecialchars($label); ?></td>
                                     <td><?= htmlspecialchars($payroll->getReferenceMonth()); ?></td>
                                     <td><?= htmlspecialchars($payroll->getPaymentDate()->format('d/m/Y')); ?></td>
                                     <td>R$ <?= number_format($payroll->getNetSalary(), 2, ',', '.'); ?></td>
@@ -122,14 +139,19 @@ $pageScripts[] = [
                     </div>
                     <div>
                         <p><strong>Total bruto acumulado:</strong> R$ <?= number_format((float) ($thirteenth['gross_accrued'] ?? 0), 2, ',', '.'); ?></p>
-                        <p><strong>Total pago:</strong> R$ <?= number_format((float) ($thirteenth['gross_paid'] ?? 0), 2, ',', '.'); ?></p>
+                        <p><strong>1ª parcela paga:</strong> R$ <?= number_format($firstInstallmentPaid, 2, ',', '.'); ?></p>
+                        <p><strong>2ª parcela paga (bruta):</strong> R$ <?= number_format($secondInstallmentPaid, 2, ',', '.'); ?></p>
+                        <p><strong>Total bruto pago:</strong> R$ <?= number_format((float) ($thirteenth['gross_paid'] ?? 0), 2, ',', '.'); ?></p>
                         <p><strong>Líquido pago:</strong> R$ <?= number_format((float) ($thirteenth['net_paid'] ?? 0), 2, ',', '.'); ?></p>
                     </div>
                     <div>
                         <p><strong>Saldo a pagar:</strong> R$ <?= number_format((float) ($thirteenth['gross_pending'] ?? 0), 2, ',', '.'); ?></p>
                         <p><strong>Status:</strong> <?= htmlspecialchars($thirteenth['status'] ?? ''); ?></p>
-                        <?php if ($thirteenthEligible && ($thirteenth['months_pending'] ?? 0) > 0): ?>
-                            <a href="?action=create_payroll&employee_id=<?= $employee->getId(); ?>&type=thirteenth&reference_month=<?= htmlspecialchars($thirteenth['default_reference'] ?? $today->format('Y-m')); ?>&thirteenth_months=<?= (int) ($thirteenth['months_pending'] ?? 0); ?>" class="button" style="margin-top:0.5rem;">Gerar pagamento do 13º</a>
+                        <?php if (($thirteenth['months_accrued'] ?? 0) > 0 && $firstInstallmentPaid <= 0): ?>
+                            <a href="?action=create_payroll&employee_id=<?= $employee->getId(); ?>&type=thirteenth&reference_month=<?= htmlspecialchars($thirteenth['default_reference'] ?? $today->format('Y-m')); ?>&thirteenth_months=<?= max(1, $suggestedMonths); ?>&thirteenth_installment=first" class="button" style="margin-top:0.5rem;">Gerar 1ª parcela do 13º</a>
+                        <?php endif; ?>
+                        <?php if ($firstInstallmentPaid > 0 && ($thirteenth['months_pending'] ?? 0) > 0): ?>
+                            <a href="?action=create_payroll&employee_id=<?= $employee->getId(); ?>&type=thirteenth&reference_month=<?= htmlspecialchars($thirteenth['default_reference'] ?? $today->format('Y-m')); ?>&thirteenth_months=<?= max(1, $suggestedMonths); ?>&thirteenth_installment=second" class="button button-secondary" style="margin-top:0.5rem;">Gerar 2ª parcela do 13º</a>
                         <?php endif; ?>
                     </div>
                 </div>
