@@ -25,6 +25,13 @@ $userRepository = new UserRepository();
 $employeeBenefitService = new EmployeeBenefitService();
 $payrollService = new PayrollService($employeeRepository, $payrollRepository);
 
+$activeCompany = $companyRepository->get();
+$GLOBALS['holerite_company'] = $activeCompany;
+$GLOBALS['holerite_appearance'] = [
+    'themeMode' => $activeCompany->getThemeMode(),
+    'colorPalette' => $activeCompany->getColorPalette(),
+];
+
 $dashboardController = new DashboardController($employeeRepository, $payrollRepository);
 $companyController = new CompanyController($companyRepository, $userRepository);
 $employeeController = new EmployeeController($employeeRepository, $payrollRepository, $employeeBenefitService);

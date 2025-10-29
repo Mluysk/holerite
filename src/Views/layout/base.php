@@ -13,6 +13,14 @@ $mainClass = isset($layoutClass) && is_string($layoutClass) && trim($layoutClass
     ? $layoutClass
     : 'layout-content';
 
+$themeMode = isset($appearance['themeMode']) && is_string($appearance['themeMode']) ? $appearance['themeMode'] : 'light';
+$colorPalette = isset($appearance['colorPalette']) && is_string($appearance['colorPalette']) ? $appearance['colorPalette'] : 'blue';
+
+$themeMode = in_array($themeMode, ['light', 'dark'], true) ? $themeMode : 'light';
+$colorPalette = preg_match('/^[a-z0-9_-]+$/', $colorPalette) ? $colorPalette : 'blue';
+
+$bodyClasses = trim('theme-' . $themeMode . ' accent-' . $colorPalette);
+
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -33,7 +41,7 @@ $mainClass = isset($layoutClass) && is_string($layoutClass) && trim($layoutClass
         <?php endif; ?>
     <?php endforeach; ?>
 </head>
-<body>
+<body class="<?= htmlspecialchars($bodyClasses); ?>" data-theme-mode="<?= htmlspecialchars($themeMode); ?>" data-color-palette="<?= htmlspecialchars($colorPalette); ?>">
 <header class="layout-header">
     <div class="brand">
         <h1 class="brand-title">Holerite</h1>

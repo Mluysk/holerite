@@ -20,5 +20,7 @@ return [
         'zip_code' => '01000-000',
         'phone' => '(11) 0000-0000',
         'email' => 'contato@xyz.com.br',
+        'theme_mode' => 'light',
+        'color_palette' => 'blue',
     ],
 ];

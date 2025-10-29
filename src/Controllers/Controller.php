@@ -25,6 +25,7 @@ abstract class Controller
         $pageScripts = $params['pageScripts'] ?? [];
         $pageStyles = $params['pageStyles'] ?? [];
         $layoutClass = $params['layoutClass'] ?? 'layout-content';
+        $appearanceParam = $params['appearance'] ?? null;
 
         extract($params, EXTR_OVERWRITE);
 
@@ -44,11 +45,51 @@ abstract class Controller
             $layoutClass = 'layout-content';
         }
 
+        $appearance = $this->resolveAppearance($appearanceParam ?? ($GLOBALS['holerite_appearance'] ?? null));
+
         ob_start();
         require $viewPath;
         $content = ob_get_clean() ?: '';
 
         require $layoutPath;
+    }
+
+    /**
+     * @param mixed $source
+     * @return array{themeMode: string, colorPalette: string}
+     */
+    private function resolveAppearance($source): array
+    {
+        $defaults = [
+            'themeMode' => 'light',
+            'colorPalette' => 'blue',
+        ];
+
+        if (!is_array($source)) {
+            return $defaults;
+        }
+
+        $theme = $source['themeMode'] ?? $source['theme_mode'] ?? $defaults['themeMode'];
+        $palette = $source['colorPalette'] ?? $source['color_palette'] ?? $defaults['colorPalette'];
+
+        $theme = is_string($theme) ? strtolower($theme) : $defaults['themeMode'];
+        $palette = is_string($palette) ? strtolower($palette) : $defaults['colorPalette'];
+
+        $allowedThemes = ['light', 'dark'];
+        $allowedPalettes = ['blue', 'emerald', 'violet', 'amber', 'rose'];
+
+        if (!in_array($theme, $allowedThemes, true)) {
+            $theme = $defaults['themeMode'];
+        }
+
+        if (!in_array($palette, $allowedPalettes, true)) {
+            $palette = $defaults['colorPalette'];
+        }
+
+        return [
+            'themeMode' => $theme,
+            'colorPalette' => $palette,
+        ];
     }
 
     protected function redirect(string $path): void

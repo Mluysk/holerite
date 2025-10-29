@@ -12,6 +12,19 @@ use Throwable;
 
 final class CompanyController extends Controller
 {
+    private const THEME_MODES = [
+        'light' => 'Claro',
+        'dark' => 'Escuro',
+    ];
+
+    private const COLOR_PALETTES = [
+        'blue' => 'Azul',
+        'emerald' => 'Esmeralda',
+        'violet' => 'Violeta',
+        'amber' => 'Âmbar',
+        'rose' => 'Rosé',
+    ];
+
     public function __construct(
         private CompanyRepository $companyRepository,
         private UserRepository $userRepository,
@@ -29,6 +42,10 @@ final class CompanyController extends Controller
                 'src' => 'js/tabs.js',
                 'defer' => true,
             ],
+            [
+                'src' => 'js/theme-preview.js',
+                'defer' => true,
+            ],
         ];
 
         $this->render('company/form', [
@@ -36,6 +53,12 @@ final class CompanyController extends Controller
             'company' => $company,
             'users' => $users,
             'currentUser' => $currentUser,
+            'themeModes' => self::THEME_MODES,
+            'colorPalettes' => self::COLOR_PALETTES,
+            'appearance' => [
+                'themeMode' => $company->getThemeMode(),
+                'colorPalette' => $company->getColorPalette(),
+            ],
             'pageScripts' => $pageScripts,
         ]);
     }
@@ -73,6 +96,8 @@ final class CompanyController extends Controller
         $zip = trim((string) ($data['zip_code'] ?? ''));
         $phone = trim((string) ($data['phone'] ?? ''));
         $email = trim((string) ($data['email'] ?? ''));
+        $themeMode = strtolower((string) ($data['theme_mode'] ?? ''));
+        $colorPalette = strtolower((string) ($data['color_palette'] ?? ''));
 
         if ($name === '' || $document === '' || $address === '' || $city === '' || $state === '' || $zip === '' || $phone === '' || $email === '') {
             throw new RuntimeException('Preencha todos os campos obrigatórios.');
@@ -86,6 +111,17 @@ final class CompanyController extends Controller
         $company->setZipCode($zip);
         $company->setPhone($phone);
         $company->setEmail($email);
+
+        if (!array_key_exists($themeMode, self::THEME_MODES)) {
+            $themeMode = 'light';
+        }
+
+        if (!array_key_exists($colorPalette, self::COLOR_PALETTES)) {
+            $colorPalette = 'blue';
+        }
+
+        $company->setThemeMode($themeMode);
+        $company->setColorPalette($colorPalette);
 
         return $company;
     }

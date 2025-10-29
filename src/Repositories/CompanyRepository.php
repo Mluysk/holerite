@@ -40,7 +40,7 @@ final class CompanyRepository
     public function save(Company $company): Company
     {
         if ($company->getId() === null) {
-            $statement = $this->pdo->prepare('INSERT INTO companies (name, document, address, city, state, zip_code, phone, email) VALUES (:name, :document, :address, :city, :state, :zip_code, :phone, :email)');
+            $statement = $this->pdo->prepare('INSERT INTO companies (name, document, address, city, state, zip_code, phone, email, theme_mode, color_palette) VALUES (:name, :document, :address, :city, :state, :zip_code, :phone, :email, :theme_mode, :color_palette)');
             $statement->execute([
                 'name' => $company->getName(),
                 'document' => $company->getDocument(),
@@ -50,13 +50,15 @@ final class CompanyRepository
                 'zip_code' => $company->getZipCode(),
                 'phone' => $company->getPhone(),
                 'email' => $company->getEmail(),
+                'theme_mode' => $company->getThemeMode(),
+                'color_palette' => $company->getColorPalette(),
             ]);
 
             $company->setId((int) $this->pdo->lastInsertId());
             return $company;
         }
 
-        $statement = $this->pdo->prepare('UPDATE companies SET name = :name, document = :document, address = :address, city = :city, state = :state, zip_code = :zip_code, phone = :phone, email = :email WHERE id = :id');
+        $statement = $this->pdo->prepare('UPDATE companies SET name = :name, document = :document, address = :address, city = :city, state = :state, zip_code = :zip_code, phone = :phone, email = :email, theme_mode = :theme_mode, color_palette = :color_palette WHERE id = :id');
         $statement->execute([
             'id' => $company->getId(),
             'name' => $company->getName(),
@@ -67,6 +69,8 @@ final class CompanyRepository
             'zip_code' => $company->getZipCode(),
             'phone' => $company->getPhone(),
             'email' => $company->getEmail(),
+            'theme_mode' => $company->getThemeMode(),
+            'color_palette' => $company->getColorPalette(),
         ]);
 
         return $company;
@@ -87,6 +91,8 @@ final class CompanyRepository
             (string) ($row['zip_code'] ?? $this->defaults['zip_code']),
             (string) ($row['phone'] ?? $this->defaults['phone']),
             (string) ($row['email'] ?? $this->defaults['email']),
+            (string) ($row['theme_mode'] ?? $this->defaults['theme_mode']),
+            (string) ($row['color_palette'] ?? $this->defaults['color_palette']),
         );
     }
 
@@ -102,6 +108,8 @@ final class CompanyRepository
             $this->defaults['zip_code'],
             $this->defaults['phone'],
             $this->defaults['email'],
+            $this->defaults['theme_mode'],
+            $this->defaults['color_palette'],
         );
     }
 
@@ -120,6 +128,8 @@ final class CompanyRepository
             'zip_code' => '00000-000',
             'phone' => '(00) 0000-0000',
             'email' => 'contato@empresa.com',
+            'theme_mode' => 'light',
+            'color_palette' => 'blue',
         ];
 
         if (!file_exists($configPath)) {

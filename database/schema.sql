@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS companies (
     zip_code VARCHAR(12) NOT NULL,
     phone VARCHAR(30) NOT NULL,
     email VARCHAR(150) NOT NULL,
+    theme_mode ENUM('light', 'dark') NOT NULL DEFAULT 'light',
+    color_palette VARCHAR(20) NOT NULL DEFAULT 'blue',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

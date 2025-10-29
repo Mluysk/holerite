@@ -1,10 +1,12 @@
 (function () {
     'use strict';
 
-    const palette = [
-        '#2563eb', '#f97316', '#22c55e', '#a855f7', '#14b8a6',
-        '#ef4444', '#0ea5e9', '#6366f1', '#f59e0b', '#8b5cf6'
-    ];
+    function buildPalette(style) {
+        const accent = (style.getPropertyValue('--color-primary') || '').trim() || '#2563eb';
+        const fallback = ['#f97316', '#22c55e', '#a855f7', '#14b8a6', '#ef4444', '#0ea5e9', '#6366f1', '#f59e0b', '#8b5cf6'];
+
+        return [accent].concat(fallback);
+    }
 
     function parsePayload() {
         const element = document.getElementById('dashboard-data');
@@ -31,7 +33,10 @@
             return null;
         }
 
+        const style = window.getComputedStyle(document.body);
+        const palette = buildPalette(style);
         const colors = dataset.labels.map((_, index) => palette[index % palette.length]);
+        const borderColor = (style.getPropertyValue('--color-surface') || '#ffffff').trim() || '#ffffff';
 
         return new Chart(canvas, {
             type: 'doughnut',
@@ -41,7 +46,7 @@
                     data: dataset.values || [],
                     backgroundColor: colors,
                     borderWidth: 2,
-                    borderColor: '#ffffff'
+                    borderColor: borderColor
                 }]
             },
             options: {

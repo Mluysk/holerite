@@ -3,9 +3,13 @@
 /** @var Holerite\Models\Company $company */
 /** @var Holerite\Models\User[] $users */
 /** @var array{id?: int, username?: string}|null $currentUser */
+/** @var array<string, string> $themeModes */
+/** @var array<string, string> $colorPalettes */
 
 $activeUserId = $currentUser['id'] ?? null;
 $activeUsername = isset($currentUser['username']) ? (string) $currentUser['username'] : '';
+$selectedThemeMode = $company->getThemeMode();
+$selectedColorPalette = $company->getColorPalette();
 ?>
 <section>
     <header style="margin-bottom:1.5rem;">
@@ -25,7 +29,7 @@ $activeUsername = isset($currentUser['username']) ? (string) $currentUser['usern
                 <h3 style="margin-top:0;">Identidade da empresa</h3>
                 <p class="muted" style="margin-top:0;">Essas informações aparecerão em todos os holerites emitidos.</p>
 
-                <form method="post" action="?action=update_company" style="margin-top:1rem;">
+                <form method="post" action="?action=update_company" style="margin-top:1rem;" data-theme-form>
                     <div class="grid">
                         <div>
                             <label for="name">Razão social</label>
@@ -67,6 +71,42 @@ $activeUsername = isset($currentUser['username']) ? (string) $currentUser['usern
                         <div>
                             <label for="email">E-mail</label>
                             <input type="email" name="email" id="email" value="<?= htmlspecialchars($company->getEmail()); ?>" required>
+                        </div>
+                    </div>
+
+                    <div class="appearance-card">
+                        <h4 class="appearance-title">Aparência do sistema</h4>
+                        <p class="muted" style="margin-top:0;">Escolha como o painel será exibido para todos os usuários.</p>
+
+                        <div class="appearance-grid">
+                            <div class="appearance-group">
+                                <span class="appearance-label">Modo</span>
+                                <div class="appearance-options appearance-options--pills" data-theme-options>
+                                    <?php foreach ($themeModes as $key => $label): ?>
+                                        <?php $themeId = 'theme-mode-' . $key; ?>
+                                        <div class="option-pill">
+                                            <input type="radio" name="theme_mode" id="<?= htmlspecialchars($themeId); ?>" value="<?= htmlspecialchars($key); ?>" <?php if ($selectedThemeMode === $key): ?>checked<?php endif; ?>>
+                                            <label for="<?= htmlspecialchars($themeId); ?>"><?= htmlspecialchars($label); ?></label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+
+                            <div class="appearance-group">
+                                <span class="appearance-label">Cor de destaque</span>
+                                <div class="appearance-options appearance-options--swatches" data-palette-options>
+                                    <?php foreach ($colorPalettes as $key => $label): ?>
+                                        <?php $paletteId = 'palette-' . $key; ?>
+                                        <div class="swatch-option" data-palette-swatch="<?= htmlspecialchars($key); ?>">
+                                            <input type="radio" name="color_palette" id="<?= htmlspecialchars($paletteId); ?>" value="<?= htmlspecialchars($key); ?>" <?php if ($selectedColorPalette === $key): ?>checked<?php endif; ?>>
+                                            <label for="<?= htmlspecialchars($paletteId); ?>">
+                                                <span class="swatch"></span>
+                                                <span class="swatch-label"><?= htmlspecialchars($label); ?></span>
+                                            </label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

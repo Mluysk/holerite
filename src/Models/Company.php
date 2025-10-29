@@ -16,6 +16,8 @@ final class Company
         private string $zipCode,
         private string $phone,
         private string $email,
+        private string $themeMode,
+        private string $colorPalette,
     ) {
     }
 
@@ -107,5 +109,25 @@ final class Company
     public function setEmail(string $email): void
     {
         $this->email = $email;
+    }
+
+    public function getThemeMode(): string
+    {
+        return $this->themeMode;
+    }
+
+    public function setThemeMode(string $themeMode): void
+    {
+        $this->themeMode = $themeMode;
+    }
+
+    public function getColorPalette(): string
+    {
+        return $this->colorPalette;
+    }
+
+    public function setColorPalette(string $colorPalette): void
+    {
+        $this->colorPalette = $colorPalette;
     }
 }
