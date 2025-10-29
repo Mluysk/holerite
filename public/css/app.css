@@ -640,7 +640,26 @@ form textarea::placeholder {
 .swatch-option[data-palette-swatch="rgb"] {
     --swatch-color-start: #ef4444;
     --swatch-color-end: #3b82f6;
+}
+
+.swatch-option[data-palette-swatch="rgb"] label {
+    position: relative;
+    overflow: hidden;
+}
+
+.swatch-option[data-palette-swatch="rgb"] label::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
     background: linear-gradient(135deg, #ef4444, #22c55e 50%, #3b82f6);
+    opacity: 0.18;
+    pointer-events: none;
+}
+
+.swatch-option[data-palette-swatch="rgb"] input:checked + label::before,
+.swatch-option[data-palette-swatch="rgb"] input:focus + label::before {
+    opacity: 0.28;
 }
 
 .swatch-option[data-palette-swatch="rgb"] .swatch {
