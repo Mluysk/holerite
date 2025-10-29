@@ -35,7 +35,8 @@ final class PayrollService
             throw new RuntimeException('Informe o mês de referência.');
         }
 
-        $paymentDate = new DateTimeImmutable((string) ($data['payment_date'] ?? date('Y-m-d')));
+        $paymentDateInput = (string) ($data['payment_date'] ?? date('Y-m-d'));
+        $paymentDate = new DateTimeImmutable($paymentDateInput);
         $notes = trim((string) ($data['notes'] ?? ''));
 
         $type = $this->normalizeType((string) ($data['type'] ?? 'regular'));
@@ -90,6 +91,7 @@ final class PayrollService
             $thirteenthTotalGross = $this->roundMoney($employee->getBaseSalary() * $thirteenthMonths / 12);
             $baseSalaryAmount = $this->roundMoney($thirteenthTotalGross / 2);
             $thirteenthAccrual = $thirteenthTotalGross;
+            $paymentDate = $this->resolveThirteenthPaymentDate($referenceMonth, $thirteenthInstallment);
         }
 
         if ($type === 'regular') {
@@ -218,6 +220,18 @@ final class PayrollService
         $installment = strtolower(trim($installment));
 
         return in_array($installment, ['first', 'second'], true) ? $installment : 'second';
+    }
+
+    private function resolveThirteenthPaymentDate(string $referenceMonth, string $installment): DateTimeImmutable
+    {
+        $day = $installment === 'first' ? '05' : '20';
+        $date = DateTimeImmutable::createFromFormat('Y-m-d', sprintf('%s-%s', $referenceMonth, $day));
+
+        if ($date === false) {
+            throw new RuntimeException('Mês de referência inválido para o 13º.');
+        }
+
+        return $date;
     }
 
     private function normalizeBoolean(mixed $value): bool

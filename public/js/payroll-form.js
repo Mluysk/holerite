@@ -30,6 +30,24 @@
         return select.value === 'first' ? 'first' : 'second';
     }
 
+    function getReferenceMonth() {
+        const input = document.getElementById('reference_month');
+        if (!(input instanceof HTMLInputElement)) {
+            return '';
+        }
+
+        return input.value || '';
+    }
+
+    function resolveThirteenthPaymentDate(referenceMonth, installment) {
+        if (typeof referenceMonth !== 'string' || !/^\d{4}-\d{2}$/.test(referenceMonth)) {
+            return '';
+        }
+
+        const day = installment === 'first' ? '05' : '20';
+        return `${referenceMonth}-${day}`;
+    }
+
     function calculateBaseSalary(type) {
         const base = getEmployeeBaseSalary();
 
@@ -292,6 +310,16 @@
         const automaticDeductions = inss + irrf;
         const totalDeductions = manualDeductions + automaticDeductions;
         const netSalary = baseSalary + totalAllowances - totalDeductions;
+
+        const paymentInput = document.getElementById('payment_date');
+        if (paymentInput instanceof HTMLInputElement) {
+            if (type === 'thirteenth') {
+                const resolvedDate = resolveThirteenthPaymentDate(getReferenceMonth(), getThirteenthInstallment());
+                if (resolvedDate) {
+                    paymentInput.value = resolvedDate;
+                }
+            }
+        }
 
         const setText = (id, value) => {
             const element = document.getElementById(id);
