@@ -1649,6 +1649,89 @@ tr:nth-child(even) td {
     }
 }
 
+@media (max-width: 640px) {
+    .layout-content {
+        margin: 1rem;
+        padding: 1.5rem;
+    }
+
+    .section-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1.25rem;
+    }
+
+    .section-header__actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .section-header__actions .button,
+    .section-header__actions .button-secondary {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .grid {
+        grid-template-columns: 1fr;
+    }
+
+    .card {
+        padding: 1.25rem;
+    }
+
+    .dashboard-hero {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-hero__metrics {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-calendar__header {
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: flex-start;
+    }
+
+    .calendar-grid th,
+    .calendar-grid td {
+        font-size: 0.85rem;
+    }
+
+    .calendar-grid .calendar-day {
+        min-height: 3.5rem;
+    }
+
+    .table-responsive {
+        margin: 0 -1.5rem;
+        padding: 0 1.5rem;
+    }
+
+    .table-responsive table {
+        min-width: 500px;
+    }
+
+    .layout-session {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .auth-card {
+        padding: 1.75rem 1.5rem;
+    }
+
+    .auth-card__header {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .auth-card__logo {
+        height: 158px;
+    }
+}
+
 .dashboard-recent {
     margin-top: 2rem;
 }
