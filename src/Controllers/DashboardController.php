@@ -24,15 +24,19 @@ final class DashboardController extends Controller
 
         $currentMonth = new DateTimeImmutable('first day of this month');
         $currentMonthKey = $currentMonth->format('Y-m');
+        $currentYearKey = $currentMonth->format('Y');
         $monthEnd = $currentMonth->modify('last day of this month');
 
         $totalNet = array_reduce($payrolls, fn (float $carry, $payroll): float => $carry + $payroll->getNetSalary(), 0.0);
         $totalValeDeductions = array_reduce($payrolls, fn (float $carry, $payroll): float => $carry + $payroll->getValeDeduction(), 0.0);
         $currentMonthVale = 0.0;
+        $currentYearVale = 0.0;
         $lastPayrolls = array_slice($payrolls, 0, 5);
 
         $monthlyTotals = $this->aggregateTotals($payrolls, 'monthly');
         $yearlyTotals = $this->aggregateTotals($payrolls, 'yearly');
+        $monthlyValeTotals = $this->aggregateValeTotals($payrolls, 'monthly');
+        $yearlyValeTotals = $this->aggregateValeTotals($payrolls, 'yearly');
 
         $calendarEvents = [];
         $paidRegularPayrolls = [];
@@ -41,6 +45,7 @@ final class DashboardController extends Controller
             $paymentDate = $payroll->getPaymentDate();
 
             $monthKey = $paymentDate->format('Y-m');
+            $yearKey = $paymentDate->format('Y');
 
             if ($monthKey === $currentMonthKey) {
                 $currentMonthVale += $payroll->getValeDeduction();
@@ -54,10 +59,16 @@ final class DashboardController extends Controller
                     $paidRegularPayrolls[$payroll->getEmployeeId()] = $payroll;
                 }
             }
+
+            if ($yearKey === $currentYearKey) {
+                $currentYearVale += $payroll->getValeDeduction();
+            }
         }
 
         $monthlyChart = $this->buildChartPayload($monthlyTotals);
         $yearlyChart = $this->buildChartPayload($yearlyTotals);
+        $monthlyValeChart = $this->buildChartPayload($monthlyValeTotals);
+        $yearlyValeChart = $this->buildChartPayload($yearlyValeTotals);
 
         $calendarWeeks = $this->buildCalendarWeeks($currentMonth, $calendarEvents);
 
@@ -113,8 +124,12 @@ final class DashboardController extends Controller
             'employees' => $employees,
             'monthlyTotals' => $monthlyTotals,
             'yearlyTotals' => $yearlyTotals,
+            'monthlyValeTotals' => $monthlyValeTotals,
+            'yearlyValeTotals' => $yearlyValeTotals,
             'monthlyChart' => $monthlyChart,
             'yearlyChart' => $yearlyChart,
+            'monthlyValeChart' => $monthlyValeChart,
+            'yearlyValeChart' => $yearlyValeChart,
             'calendarMonth' => $currentMonth,
             'calendarWeeks' => $calendarWeeks,
             'paidMonthlyPayrolls' => $paidMonthlyPayrolls,
@@ -122,6 +137,7 @@ final class DashboardController extends Controller
             'valeTotals' => [
                 'overall' => $totalValeDeductions,
                 'currentMonth' => $currentMonthVale,
+                'currentYear' => $currentYearVale,
             ],
         ]);
     }

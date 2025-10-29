@@ -13,6 +13,7 @@ if ($suggestedMonths <= 0) {
     $suggestedMonths = (int) ($thirteenth['months_accrued'] ?? 0);
 }
 $vacationCycles = $vacations['cycles'] ?? [];
+$vacationNotices = $vacations['upcoming_notices'] ?? [];
 $terminationDate = $employee->getTerminationDate();
 
 $today = new DateTimeImmutable('today');
@@ -62,6 +63,17 @@ $pageScripts[] = [
         </div>
 
         <div class="tab-content active" id="tab-overview">
+            <?php if ($vacationNotices !== [] && $terminationDate === null): ?>
+                <div class="flash flash-warning" style="margin-bottom:1.5rem;">
+                    <strong>Atenção:</strong> este colaborador terá direito a férias em breve.
+                    <ul class="muted" style="margin:0.5rem 0 0 1rem;">
+                        <?php foreach ($vacationNotices as $notice): ?>
+                            <li>Período aquisitivo #<?= (int) $notice['index']; ?> completa em <?= htmlspecialchars($notice['available_on']->format('d/m/Y')); ?>.</li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            <?php endif; ?>
+
             <div class="grid">
                 <div class="card">
                     <h3 style="margin-top:0;">Informações cadastrais</h3>
@@ -215,7 +227,12 @@ $pageScripts[] = [
                                     <td><?= htmlspecialchars($cycle['concession_end']->format('d/m/Y')); ?></td>
                                     <td><?= (int) $cycle['worked_months']; ?></td>
                                     <td><?= number_format((float) $cycle['accrued_days'], 1, ',', '.'); ?></td>
-                                    <td><?= htmlspecialchars($cycle['status']); ?></td>
+                                    <td>
+                                        <?= htmlspecialchars($cycle['status']); ?>
+                                        <?php if (!empty($cycle['notice'])): ?>
+                                            <span class="badge badge--soon">Disponível em breve</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td class="text-right">
                                         <?php if (!empty($cycle['eligible'])): ?>
                                             <a href="?action=create_payroll&employee_id=<?= $employee->getId(); ?>&type=vacation&reference_month=<?= htmlspecialchars($cycle['suggested_reference'] ?? $today->format('Y-m')); ?>&vacation_days=30" class="button button-secondary">Gerar férias</a>

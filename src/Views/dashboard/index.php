@@ -8,11 +8,15 @@
 /** @var array<int, array{period: string, total: float, count: int}> $yearlyTotals */
 /** @var array{labels: array<int, string>, values: array<int, float>, percentages: array<int, float>, total: float} $monthlyChart */
 /** @var array{labels: array<int, string>, values: array<int, float>, percentages: array<int, float>, total: float} $yearlyChart */
+/** @var array<int, array{period: string, total: float}> $monthlyValeTotals */
+/** @var array<int, array{period: string, total: float}> $yearlyValeTotals */
+/** @var array{labels: array<int, string>, values: array<int, float>, percentages: array<int, float>, total: float} $monthlyValeChart */
+/** @var array{labels: array<int, string>, values: array<int, float>, percentages: array<int, float>, total: float} $yearlyValeChart */
 /** @var DateTimeImmutable $calendarMonth */
 /** @var array<int, array<int, array{date: DateTimeImmutable|null, payrolls: Holerite\Models\Payroll[]}>> $calendarWeeks */
 /** @var Holerite\Models\Payroll[] $paidMonthlyPayrolls */
 /** @var Holerite\Models\Employee[] $pendingMonthlyEmployees */
-/** @var array{overall: float, currentMonth: float} $valeTotals */
+/** @var array{overall: float, currentMonth: float, currentYear: float} $valeTotals */
 
 $employeeNames = [];
 foreach ($employees as $employee) {
@@ -28,7 +32,10 @@ $typeLabels = [
 
 $weekDays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 
-$hasCharts = $monthlyChart['labels'] !== [] || $yearlyChart['labels'] !== [];
+$hasCharts = $monthlyChart['labels'] !== []
+    || $yearlyChart['labels'] !== []
+    || $monthlyValeChart['labels'] !== []
+    || $yearlyValeChart['labels'] !== [];
 
 if (!isset($pageScripts) || !is_array($pageScripts)) {
     $pageScripts = [];
@@ -82,7 +89,8 @@ if ($hasCharts) {
         <article class="stats-card">
             <h3>Descontos de vale</h3>
             <strong>R$ <?= number_format($valeTotals['overall'], 2, ',', '.'); ?></strong>
-            <p class="muted" style="margin:0.35rem 0 0 0;">No mês: <strong>R$ <?= number_format($valeTotals['currentMonth'], 2, ',', '.'); ?></strong></p>
+            <p class="muted" style="margin:0.35rem 0 0 0;">Este mês: <strong>R$ <?= number_format($valeTotals['currentMonth'], 2, ',', '.'); ?></strong></p>
+            <p class="muted" style="margin:0.25rem 0 0 0;">No ano: <strong>R$ <?= number_format($valeTotals['currentYear'], 2, ',', '.'); ?></strong></p>
         </article>
     </div>
 
@@ -212,6 +220,47 @@ if ($hasCharts) {
         </section>
     </div>
 
+    <div class="dashboard-charts">
+        <section class="dashboard-chart">
+            <div>
+                <h3 style="margin:0;">Vale transporte por mês</h3>
+                <p class="muted" style="margin:0.25rem 0 0 0;">Comparativo dos descontos de vale mês a mês.</p>
+            </div>
+            <?php if ($monthlyValeChart['labels'] === []): ?>
+                <p class="muted">Os descontos mensais de vale aparecerão conforme forem registrados.</p>
+            <?php else: ?>
+                <canvas id="monthlyValeChart"></canvas>
+                <div class="dashboard-legend">
+                    <?php foreach ($monthlyValeTotals as $month): ?>
+                        <div class="dashboard-legend__item">
+                            <small class="muted" style="display:block;"><?= htmlspecialchars($month['period']); ?></small>
+                            <strong>R$ <?= number_format($month['total'], 2, ',', '.'); ?></strong>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </section>
+        <section class="dashboard-chart">
+            <div>
+                <h3 style="margin:0;">Vale transporte por ano</h3>
+                <p class="muted" style="margin:0.25rem 0 0 0;">Evolução dos descontos anuais de vale.</p>
+            </div>
+            <?php if ($yearlyValeChart['labels'] === []): ?>
+                <p class="muted">Os totais anuais de vale aparecerão após os primeiros registros.</p>
+            <?php else: ?>
+                <canvas id="yearlyValeChart"></canvas>
+                <div class="dashboard-legend">
+                    <?php foreach ($yearlyValeTotals as $year): ?>
+                        <div class="dashboard-legend__item">
+                            <small class="muted" style="display:block;"><?= htmlspecialchars($year['period']); ?></small>
+                            <strong>R$ <?= number_format($year['total'], 2, ',', '.'); ?></strong>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </section>
+    </div>
+
     <div class="dashboard-tables">
         <div class="card">
             <h3 style="margin-top:0;">Totais pagos por mês</h3>
@@ -297,7 +346,12 @@ if ($hasCharts) {
 
     <?php if ($hasCharts): ?>
         <script id="dashboard-data" type="application/json">
-            <?= json_encode(['monthly' => $monthlyChart, 'yearly' => $yearlyChart], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
+            <?= json_encode([
+                'monthly' => $monthlyChart,
+                'yearly' => $yearlyChart,
+                'monthlyVale' => $monthlyValeChart,
+                'yearlyVale' => $yearlyValeChart,
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
         </script>
     <?php endif; ?>
 </section>

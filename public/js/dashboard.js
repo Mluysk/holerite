@@ -71,6 +71,77 @@
         });
     }
 
+    function createBarChart(canvasId, dataset, label) {
+        if (!dataset || !Array.isArray(dataset.labels) || dataset.labels.length === 0) {
+            return null;
+        }
+
+        const canvas = document.getElementById(canvasId);
+        if (!(canvas instanceof HTMLCanvasElement)) {
+            return null;
+        }
+
+        const style = window.getComputedStyle(document.body);
+        const palette = buildPalette(style);
+        const background = palette[0];
+        const axisColor = (style.getPropertyValue('--color-text-muted') || '#94a3b8').trim() || '#94a3b8';
+
+        return new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: dataset.labels,
+                datasets: [{
+                    label: label,
+                    data: dataset.values || [],
+                    backgroundColor: background,
+                    borderColor: background,
+                    borderWidth: 1.5,
+                    borderRadius: 6,
+                    maxBarThickness: 48,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                const rawValue = typeof context.raw === 'number' ? context.raw : 0;
+                                return `R$ ${rawValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: axisColor,
+                        },
+                        grid: {
+                            display: false,
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            color: axisColor,
+                            callback: function (value) {
+                                if (typeof value !== 'number') {
+                                    return value;
+                                }
+                                return `R$ ${value.toLocaleString('pt-BR')}`;
+                            }
+                        },
+                        grid: {
+                            color: axisColor + '22',
+                        }
+                    }
+                }
+            }
+        });
+    }
+
     function bootstrap() {
         const payload = parsePayload();
         if (!payload || typeof Chart === 'undefined') {
@@ -79,6 +150,8 @@
 
         createDoughnutChart('monthlyChart', payload.monthly);
         createDoughnutChart('yearlyChart', payload.yearly);
+        createBarChart('monthlyValeChart', payload.monthlyVale, 'Descontos mensais');
+        createBarChart('yearlyValeChart', payload.yearlyVale, 'Descontos anuais');
     }
 
     if (document.readyState === 'loading') {

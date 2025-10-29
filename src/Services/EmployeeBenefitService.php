@@ -128,6 +128,7 @@ final class EmployeeBenefitService
     private function calculateVacations(Employee $employee, DateTimeImmutable $asOf): array
     {
         $cycles = [];
+        $upcomingNotices = [];
         $termination = $employee->getTerminationDate();
         $cycleStart = $employee->getHireDate();
 
@@ -162,6 +163,18 @@ final class EmployeeBenefitService
                 $status = 'Período futuro';
             }
 
+            $notice = false;
+            if (!$eligible && $status === 'Em aquisição' && $asOf <= $acquisitionEnd) {
+                $daysUntilEligibility = (int) $asOf->diff($acquisitionEnd)->format('%a');
+                if ($daysUntilEligibility <= 30) {
+                    $notice = true;
+                    $upcomingNotices[] = [
+                        'index' => $index,
+                        'available_on' => $acquisitionEnd,
+                    ];
+                }
+            }
+
             $cycles[] = [
                 'index' => $index,
                 'acquisition_start' => $cycleStart,
@@ -172,6 +185,7 @@ final class EmployeeBenefitService
                 'status' => $status,
                 'eligible' => $eligible,
                 'suggested_reference' => $eligible ? $acquisitionEnd->format('Y-m') : null,
+                'notice' => $notice,
             ];
 
             $cycleStart = $cycleStart->add(new DateInterval('P1Y'));
@@ -179,6 +193,7 @@ final class EmployeeBenefitService
 
         return [
             'cycles' => $cycles,
+            'upcoming_notices' => $upcomingNotices,
         ];
     }
 
