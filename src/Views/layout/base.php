@@ -7,6 +7,11 @@
 
 $styleEntries = is_array($pageStyles) ? $pageStyles : [];
 $scriptEntries = is_array($pageScripts) ? $pageScripts : [];
+$isAuthenticated = isset($_SESSION['user']) && is_array($_SESSION['user']);
+$currentUserName = $isAuthenticated ? (string) ($_SESSION['user']['username'] ?? '') : '';
+$mainClass = isset($layoutClass) && is_string($layoutClass) && trim($layoutClass) !== ''
+    ? $layoutClass
+    : 'layout-content';
 
 ?>
 <!DOCTYPE html>
@@ -33,14 +38,22 @@ $scriptEntries = is_array($pageScripts) ? $pageScripts : [];
     <div class="brand">
         <h1 class="brand-title">Holerite</h1>
     </div>
-    <nav class="layout-nav">
-        <a href="?action=dashboard">Dashboard</a>
-        <a href="?action=list_employees">Colaboradores</a>
-        <a href="?action=list_payrolls">Holerites</a>
-        <a href="?action=edit_company">Empresa</a>
-    </nav>
+    <?php if ($isAuthenticated): ?>
+        <div class="layout-header-actions">
+            <nav class="layout-nav">
+                <a href="?action=dashboard">Dashboard</a>
+                <a href="?action=list_employees">Colaboradores</a>
+                <a href="?action=list_payrolls">Holerites</a>
+                <a href="?action=edit_company">Empresa</a>
+            </nav>
+            <div class="layout-session">
+                <span class="layout-session-user">Olá, <?= htmlspecialchars($currentUserName); ?></span>
+                <a class="layout-session-logout" href="?action=logout">Sair</a>
+            </div>
+        </div>
+    <?php endif; ?>
 </header>
-<main class="layout-content">
+<main class="<?= htmlspecialchars($mainClass); ?>">
     <?php if (!empty($_SESSION['flash'])): ?>
         <?php foreach ($_SESSION['flash'] as $type => $messages): ?>
             <?php foreach ($messages as $message): ?>

@@ -3,12 +3,14 @@
 declare(strict_types=1);
 
 use Holerite\Controllers\CompanyController;
+use Holerite\Controllers\AuthController;
 use Holerite\Controllers\DashboardController;
 use Holerite\Controllers\EmployeeController;
 use Holerite\Controllers\PayrollController;
 use Holerite\Repositories\CompanyRepository;
 use Holerite\Repositories\EmployeeRepository;
 use Holerite\Repositories\PayrollRepository;
+use Holerite\Repositories\UserRepository;
 use Holerite\Services\EmployeeBenefitService;
 use Holerite\Services\PayrollService;
 
@@ -19,6 +21,7 @@ session_start();
 $companyRepository = new CompanyRepository();
 $employeeRepository = new EmployeeRepository();
 $payrollRepository = new PayrollRepository();
+$userRepository = new UserRepository();
 $employeeBenefitService = new EmployeeBenefitService();
 $payrollService = new PayrollService($employeeRepository, $payrollRepository);
 
@@ -26,10 +29,39 @@ $dashboardController = new DashboardController($employeeRepository, $payrollRepo
 $companyController = new CompanyController($companyRepository);
 $employeeController = new EmployeeController($employeeRepository, $payrollRepository, $employeeBenefitService);
 $payrollController = new PayrollController($employeeRepository, $payrollRepository, $payrollService, $companyRepository);
+$authController = new AuthController($userRepository);
 
 $action = $_GET['action'] ?? 'dashboard';
+$isAuthenticated = isset($_SESSION['user']) && is_array($_SESSION['user']);
+$publicActions = ['login', 'authenticate'];
+
+if (!$isAuthenticated && !in_array($action, $publicActions, true)) {
+    header('Location: ?action=login');
+    exit;
+}
+
+if ($isAuthenticated && in_array($action, ['login', 'authenticate'], true)) {
+    header('Location: ?action=dashboard');
+    exit;
+}
 
 switch ($action) {
+    case 'login':
+        $authController->loginForm();
+        break;
+
+    case 'authenticate':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $authController->authenticate($_POST);
+        } else {
+            $authController->loginForm();
+        }
+        break;
+
+    case 'logout':
+        $authController->logout();
+        break;
+
     case 'dashboard':
         $dashboardController->index();
         break;

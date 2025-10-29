@@ -20,6 +20,15 @@ Sistema completo de holerites desenvolvido em PHP para execução com XAMPP (Apa
 3. Ajuste as credenciais do banco em [`config/config.php`](config/config.php) caso necessário.
 4. Acesse `http://localhost/holerite/public/` no navegador.
 
+## Autenticação
+
+O sistema exige login para acessar as áreas internas. Após executar o script [`database/schema.sql`](database/schema.sql), um usuário administrador padrão é criado com as credenciais:
+
+- **Usuário:** `admin`
+- **Senha:** `admin123`
+
+Altere a senha diretamente na tabela `users` após o primeiro acesso para aumentar a segurança.
+
 ## Funcionalidades
 
 - Cadastro completo de colaboradores (CRUD)
@@ -46,4 +55,4 @@ O cabeçalho utiliza apenas o nome da aplicação, evitando dependências de arq
 
 ## Segurança
 
-Esta aplicação é um exemplo educacional. Para uso em produção, considere adicionar autenticação, controles de acesso e logs de auditoria.
+Esta aplicação é um exemplo educacional. Para uso em produção, complemente a autenticação com políticas de senha mais rígidas, controle de acessos por perfil e registros de auditoria.

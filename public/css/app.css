@@ -74,6 +74,43 @@ a:focus {
     opacity: 0.95;
 }
 
+.layout-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1.75rem;
+}
+
+.layout-session {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #bfdbfe;
+    font-weight: 600;
+}
+
+.layout-session-user {
+    font-size: 0.95rem;
+}
+
+.layout-session-logout {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.45rem 0.9rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    color: #0f172a;
+    background: #e0f2fe;
+    font-weight: 600;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.layout-session-logout:hover,
+.layout-session-logout:focus {
+    background: #bfdbfe;
+    color: #0f172a;
+}
+
 .layout-content {
     max-width: 1150px;
     margin: 2rem auto 3rem;
@@ -81,6 +118,11 @@ a:focus {
     padding: 2.25rem;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-card);
+}
+
+.layout-content.layout-content-auth {
+    max-width: 420px;
+    padding: 2.5rem 2.25rem;
 }
 
 .flash {
@@ -200,6 +242,34 @@ form textarea:focus {
 .table-responsive {
     width: 100%;
     overflow-x: auto;
+}
+
+.auth-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.auth-card {
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.25);
+}
+
+.auth-card h2 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+.auth-card .form-group {
+    margin-bottom: 1.25rem;
+}
+
+.auth-card .button {
+    width: 100%;
+    justify-content: center;
 }
 
 table {

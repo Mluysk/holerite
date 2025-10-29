@@ -24,6 +24,7 @@ abstract class Controller
         $pageTitle = $params['title'] ?? 'Holerite';
         $pageScripts = $params['pageScripts'] ?? [];
         $pageStyles = $params['pageStyles'] ?? [];
+        $layoutClass = $params['layoutClass'] ?? 'layout-content';
 
         extract($params, EXTR_OVERWRITE);
 
@@ -37,6 +38,10 @@ abstract class Controller
 
         if (!is_array($pageStyles)) {
             $pageStyles = [];
+        }
+
+        if (!isset($layoutClass) || !is_string($layoutClass) || trim($layoutClass) === '') {
+            $layoutClass = 'layout-content';
         }
 
         ob_start();
