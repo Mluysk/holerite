@@ -20,6 +20,8 @@ $themeMode = in_array($themeMode, ['light', 'dark'], true) ? $themeMode : 'light
 $colorPalette = preg_match('/^[a-z0-9_-]+$/', $colorPalette) ? $colorPalette : 'blue';
 
 $bodyClasses = trim('theme-' . $themeMode . ' accent-' . $colorPalette);
+$footerYear = (new DateTimeImmutable('now', new DateTimeZone('America/Sao_Paulo')))->format('Y');
+$footerSignature = sprintf('Holerite GO! ® %s Created by Mystic Designer', $footerYear);
 
 ?>
 <!DOCTYPE html>
@@ -85,6 +87,10 @@ $bodyClasses = trim('theme-' . $themeMode . ' accent-' . $colorPalette);
 
     <?= $content; ?>
 </main>
+
+<footer class="layout-footer">
+    <?= htmlspecialchars($footerSignature); ?>
+</footer>
 
     <script src="js/navigation.js" defer></script>
     <?php foreach ($scriptEntries as $script): ?>
