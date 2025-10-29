@@ -45,6 +45,7 @@ if ($type === 'thirteenth') {
 $allowances = [];
 $deductions = [];
 $code = 1;
+
 $advanceAmount = $payroll->getAdvanceAmount();
 $remainingAmount = $payroll->getRemainingAmount();
 $valeDeductionAmount = $payroll->getValeDeduction();
@@ -99,18 +100,32 @@ foreach ($payroll->getItems() as $item) {
     $allowances[] = $entry;
 }
 
+if ($advanceAmount > 0.0) {
+    $deductions[] = [
+        'code' => sprintf('%03d', $code++),
+        'description' => 'Adiantamento salarial',
+        'reference' => '',
+        'amount' => $advanceAmount,
+    ];
+}
+
 $maxRows = max(count($allowances), count($deductions));
 $allowances = array_pad($allowances, $maxRows, null);
 $deductions = array_pad($deductions, $maxRows, null);
+
+$grossTotal = $payroll->getBaseSalary() + $payroll->getTotalAllowances();
+$displayTotalDeductions = $payroll->getTotalDeductions() + $advanceAmount;
+$netWithAdvance = $grossTotal - $displayTotalDeductions;
+$netOriginal = $payroll->getNetSalary();
 
 $employeeCode = str_pad((string) ($employee?->getId() ?? 0), 5, '0', STR_PAD_LEFT);
 $thirteenthAccrual = $payroll->getType() === 'thirteenth'
     ? $payroll->getThirteenthAccrual()
     : ($thirteenthItem?->getAmount() ?? $payroll->getThirteenthAccrual());
 ?>
-<section>
+<section class="receipt-wrapper">
     <div class="receipt">
-        <div class="receipt-header">
+        <header class="receipt-header">
             <div class="receipt-employer">
                 <span class="label">Empregador</span>
                 <strong><?= htmlspecialchars($company->getName()); ?></strong>
@@ -126,31 +141,31 @@ $thirteenthAccrual = $payroll->getType() === 'thirteenth'
                 <span>Pagamento: <?= $paymentDate; ?></span>
                 <span>Tipo: <?= htmlspecialchars($typeLabel); ?></span>
             </div>
-        </div>
+        </header>
 
-        <div class="employee-info">
+        <div class="receipt-meta">
             <div>
-                <span><strong>Código</strong> <?= $employeeCode; ?></span>
-                <span><strong>Nome</strong> <?= htmlspecialchars($employee?->getName() ?? ''); ?></span>
-                <span><strong>Função</strong> <?= htmlspecialchars($employee?->getPosition() ?? ''); ?></span>
-                <span><strong>Departamento</strong> <?= htmlspecialchars($employee?->getDepartment() ?? ''); ?></span>
+                <span><strong>Código:</strong> <?= $employeeCode; ?></span>
+                <span><strong>Nome do funcionário:</strong> <?= htmlspecialchars($employee?->getName() ?? ''); ?></span>
+                <span><strong>Departamento:</strong> <?= htmlspecialchars($employee?->getDepartment() ?? ''); ?></span>
             </div>
             <div>
-                <span><strong>Admissão</strong> <?= $employee?->getHireDate()?->format('d/m/Y'); ?></span>
+                <span><strong>Função:</strong> <?= htmlspecialchars($employee?->getPosition() ?? ''); ?></span>
+                <span><strong>Admissão:</strong> <?= $employee?->getHireDate()?->format('d/m/Y'); ?></span>
                 <?php if ($payroll->getType() === 'vacation'): ?>
-                    <span><strong>Dias de férias</strong> <?= $payroll->getVacationDays() ?? 0; ?></span>
-                    <span><strong>1/3 Constitucional</strong> R$ <?= number_format($vacationBonusValue ?? ($payroll->getBaseSalary() / 3), 2, ',', '.'); ?></span>
+                    <span><strong>Dias de férias:</strong> <?= $payroll->getVacationDays() ?? 0; ?></span>
+                    <span><strong>1/3 Constitucional:</strong> R$ <?= number_format($vacationBonusValue ?? ($payroll->getBaseSalary() / 3), 2, ',', '.'); ?></span>
                 <?php elseif ($payroll->getType() === 'termination'): ?>
-                    <span><strong>Dias trabalhados</strong> <?= $payroll->getWorkedDays() ?? 0; ?></span>
-                    <span><strong>Meses 13º</strong> <?= $payroll->getThirteenthMonths() ?? 0; ?></span>
-                    <span><strong>Justa causa</strong> <?= $payroll->isJustCause() ? 'Sim' : 'Não'; ?></span>
+                    <span><strong>Dias trabalhados:</strong> <?= $payroll->getWorkedDays() ?? 0; ?></span>
+                    <span><strong>Meses 13º:</strong> <?= $payroll->getThirteenthMonths() ?? 0; ?></span>
+                    <span><strong>Justa causa:</strong> <?= $payroll->isJustCause() ? 'Sim' : 'Não'; ?></span>
                 <?php elseif ($payroll->getType() === 'thirteenth'): ?>
-                    <span><strong>Meses pagos</strong> <?= $payroll->getThirteenthMonths() ?? 0; ?></span>
+                    <span><strong>Meses pagos:</strong> <?= $payroll->getThirteenthMonths() ?? 0; ?></span>
                     <?php if ($thirteenthInstallmentLabel !== null): ?>
-                        <span><strong>Parcela</strong> <?= htmlspecialchars($thirteenthInstallmentLabel); ?></span>
+                        <span><strong>Parcela:</strong> <?= htmlspecialchars($thirteenthInstallmentLabel); ?></span>
                     <?php endif; ?>
-                    <span><strong>Total bruto 13º</strong> R$ <?= number_format($payroll->getThirteenthAccrual(), 2, ',', '.'); ?></span>
-                    <span><strong>Competência</strong> <?= htmlspecialchars($payroll->getReferenceMonth()); ?></span>
+                    <span><strong>Total bruto 13º:</strong> R$ <?= number_format($payroll->getThirteenthAccrual(), 2, ',', '.'); ?></span>
+                    <span><strong>Competência:</strong> <?= htmlspecialchars($payroll->getReferenceMonth()); ?></span>
                 <?php endif; ?>
             </div>
         </div>
@@ -158,11 +173,11 @@ $thirteenthAccrual = $payroll->getType() === 'thirteenth'
         <table class="items">
             <thead>
             <tr>
-                <th style="width:10%;">Código</th>
-                <th style="width:40%;">Descrição</th>
-                <th style="width:15%;">Referência</th>
-                <th style="width:17%;" class="text-right">Vencimentos</th>
-                <th style="width:18%;" class="text-right">Descontos</th>
+                <th style="width: 12%;">Código</th>
+                <th style="width: 44%;">Descrição</th>
+                <th style="width: 16%;">Referência</th>
+                <th style="width: 14%;" class="text-right">Vencimentos</th>
+                <th style="width: 14%;" class="text-right">Descontos</th>
             </tr>
             </thead>
             <tbody>
@@ -180,39 +195,84 @@ $thirteenthAccrual = $payroll->getType() === 'thirteenth'
             </tbody>
             <tfoot>
             <tr>
-                <th colspan="3" class="text-right">Totais</th>
-                <th class="text-right">R$ <?= number_format($payroll->getBaseSalary() + $payroll->getTotalAllowances(), 2, ',', '.'); ?></th>
-                <th class="text-right">R$ <?= number_format($payroll->getTotalDeductions(), 2, ',', '.'); ?></th>
+                <th colspan="3" class="text-right">Total de vencimentos</th>
+                <th class="text-right">R$ <?= number_format($grossTotal, 2, ',', '.'); ?></th>
+                <th class="text-right">&nbsp;</th>
             </tr>
             <tr>
-                <th colspan="3" class="text-right">Valor líquido</th>
-                <th colspan="2" class="text-right highlight">R$ <?= number_format($payroll->getNetSalary(), 2, ',', '.'); ?></th>
+                <th colspan="3" class="text-right">Total de descontos</th>
+                <th class="text-right">&nbsp;</th>
+                <th class="text-right">R$ <?= number_format($displayTotalDeductions, 2, ',', '.'); ?></th>
+            </tr>
+            <tr>
+                <th colspan="3" class="text-right">Valor líquido a receber</th>
+                <th colspan="2" class="text-right highlight">R$ <?= number_format($netWithAdvance, 2, ',', '.'); ?></th>
             </tr>
             </tfoot>
         </table>
 
-        <div class="resume">
+        <div class="receipt-summary">
             <div>
-                <span><strong>Total de vencimentos:</strong> R$ <?= number_format($payroll->getBaseSalary() + $payroll->getTotalAllowances(), 2, ',', '.'); ?></span>
-                <span><strong>Total de descontos:</strong> R$ <?= number_format($payroll->getTotalDeductions(), 2, ',', '.'); ?></span>
-                <span><strong>13º acumulado:</strong> R$ <?= number_format($thirteenthAccrual, 2, ',', '.'); ?></span>
+                <span>Total de vencimentos</span>
+                <strong>R$ <?= number_format($grossTotal, 2, ',', '.'); ?></strong>
             </div>
             <div>
-                <span><strong>Base FGTS:</strong> R$ <?= number_format($payroll->getFgtsBase(), 2, ',', '.'); ?></span>
-                <span><strong>FGTS do mês:</strong> R$ <?= number_format($payroll->getFgtsAmount(), 2, ',', '.'); ?></span>
+                <span>Total de descontos</span>
+                <strong>R$ <?= number_format($displayTotalDeductions, 2, ',', '.'); ?></strong>
+            </div>
+            <div class="highlight">
+                <span>Importância líquida a receber</span>
+                <strong>R$ <?= number_format($netWithAdvance, 2, ',', '.'); ?></strong>
             </div>
             <div>
-                <span><strong>Base INSS:</strong> R$ <?= number_format($payroll->getInssBase(), 2, ',', '.'); ?></span>
-                <span><strong>INSS:</strong> R$ <?= number_format($payroll->getInssAmount(), 2, ',', '.'); ?></span>
+                <span>Valor líquido do período</span>
+                <strong>R$ <?= number_format($netOriginal, 2, ',', '.'); ?></strong>
+            </div>
+        </div>
+
+        <div class="receipt-bases">
+            <div>
+                <span>Base FGTS</span>
+                <strong>R$ <?= number_format($payroll->getFgtsBase(), 2, ',', '.'); ?></strong>
             </div>
             <div>
-                <span><strong>Base IRRF:</strong> R$ <?= number_format($payroll->getIrrfBase(), 2, ',', '.'); ?></span>
-                <span><strong>IRRF:</strong> R$ <?= number_format($payroll->getIrrfAmount(), 2, ',', '.'); ?></span>
+                <span>FGTS do mês</span>
+                <strong>R$ <?= number_format($payroll->getFgtsAmount(), 2, ',', '.'); ?></strong>
             </div>
             <div>
-                <span><strong>Adiantamento (1ª parcela):</strong> R$ <?= number_format($advanceAmount, 2, ',', '.'); ?></span>
-                <span><strong>Pagamento restante:</strong> R$ <?= number_format($remainingAmount, 2, ',', '.'); ?></span>
-                <span><strong>Desconto de vale:</strong> R$ <?= number_format($valeDeductionAmount, 2, ',', '.'); ?></span>
+                <span>Base INSS</span>
+                <strong>R$ <?= number_format($payroll->getInssBase(), 2, ',', '.'); ?></strong>
+            </div>
+            <div>
+                <span>INSS</span>
+                <strong>R$ <?= number_format($payroll->getInssAmount(), 2, ',', '.'); ?></strong>
+            </div>
+            <div>
+                <span>Base IRRF</span>
+                <strong>R$ <?= number_format($payroll->getIrrfBase(), 2, ',', '.'); ?></strong>
+            </div>
+            <div>
+                <span>IRRF</span>
+                <strong>R$ <?= number_format($payroll->getIrrfAmount(), 2, ',', '.'); ?></strong>
+            </div>
+            <div>
+                <span>13º acumulado</span>
+                <strong>R$ <?= number_format($thirteenthAccrual, 2, ',', '.'); ?></strong>
+            </div>
+        </div>
+
+        <div class="receipt-installments">
+            <div>
+                <span>Adiantamento (1ª parcela)</span>
+                <strong>R$ <?= number_format($advanceAmount, 2, ',', '.'); ?></strong>
+            </div>
+            <div>
+                <span>Pagamento restante</span>
+                <strong>R$ <?= number_format($remainingAmount, 2, ',', '.'); ?></strong>
+            </div>
+            <div>
+                <span>Desconto de vale</span>
+                <strong>R$ <?= number_format($valeDeductionAmount, 2, ',', '.'); ?></strong>
             </div>
         </div>
 

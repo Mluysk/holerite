@@ -1812,15 +1812,15 @@ tr:nth-child(even) td {
     align-items: flex-start;
     border-bottom: 2px solid var(--color-receipt-border);
     padding-bottom: 1rem;
-    margin-bottom: 1rem;
-    gap: 1rem;
+    margin-bottom: 1.25rem;
+    gap: 1.5rem;
 }
 
 .receipt-employer,
 .receipt-period {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.3rem;
     font-size: 0.95rem;
 }
 
@@ -1836,21 +1836,21 @@ tr:nth-child(even) td {
     color: var(--color-receipt-label);
 }
 
-.employee-info {
+.receipt-meta {
     display: flex;
     justify-content: space-between;
     border: 1px solid var(--color-receipt-section-border);
-    padding: 0.75rem 1rem;
-    margin-bottom: 1rem;
+    padding: 0.85rem 1rem;
+    margin-bottom: 1.25rem;
     font-size: 0.95rem;
     background: var(--color-resume-bg);
     gap: 1.5rem;
 }
 
-.employee-info div {
+.receipt-meta div {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.35rem;
 }
 
 .items {
@@ -1878,24 +1878,60 @@ tr:nth-child(even) td {
 }
 
 .items .highlight {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     font-weight: 700;
 }
 
-.resume {
+.receipt-summary {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 1rem;
+    gap: 0.85rem;
     border: 1px solid var(--color-receipt-section-border);
-    margin-top: 1rem;
-    padding: 1rem;
+    margin-top: 1.25rem;
+    padding: 1rem 1.25rem;
     font-size: 0.9rem;
     background: var(--color-resume-bg);
 }
 
-.resume span {
-    display: block;
-    margin-bottom: 0.4rem;
+.receipt-summary div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.receipt-summary .highlight {
+    background: var(--color-surface);
+    border: 1px solid var(--color-receipt-border);
+    padding: 0.75rem 1rem;
+}
+
+.receipt-bases {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+    border: 1px solid var(--color-receipt-section-border);
+    margin-top: 1.25rem;
+    padding: 1rem 1.25rem;
+    font-size: 0.88rem;
+    background: var(--color-resume-bg);
+}
+
+.receipt-bases div,
+.receipt-installments div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.receipt-installments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    border: 1px solid var(--color-receipt-section-border);
+    margin-top: 1.25rem;
+    padding: 1rem 1.25rem;
+    font-size: 0.88rem;
+    background: var(--color-resume-bg);
 }
 
 .notes {
@@ -2041,7 +2077,7 @@ tr:nth-child(even) td {
     }
 
     .receipt-header,
-    .employee-info,
+    .receipt-meta,
     .signatures {
         flex-direction: column;
         text-align: left;
@@ -2092,7 +2128,9 @@ tr:nth-child(even) td {
     .dashboard-metrics,
     .dashboard-charts,
     .dashboard-legend,
-    .appearance-grid {
+    .appearance-grid,
+    .receipt-summary,
+    .receipt-bases {
         grid-template-columns: 1fr;
     }
 
@@ -2121,6 +2159,10 @@ tr:nth-child(even) td {
     .section-header__actions .button {
         width: 100%;
         justify-content: center;
+    }
+
+    .receipt-installments {
+        flex-direction: column;
     }
 
     table {
