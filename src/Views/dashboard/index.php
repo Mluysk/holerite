@@ -8,11 +8,24 @@
 /** @var array<int, array{period: string, total: float}> $yearlyTotals */
 /** @var array{labels: array<int, string>, values: array<int, float>, percentages: array<int, float>, total: float} $monthlyChart */
 /** @var array{labels: array<int, string>, values: array<int, float>, percentages: array<int, float>, total: float} $yearlyChart */
+/** @var DateTimeImmutable $calendarMonth */
+/** @var array<int, array<int, array{date: DateTimeImmutable|null, payrolls: Holerite\Models\Payroll[]}>> $calendarWeeks */
+/** @var Holerite\Models\Payroll[] $paidMonthlyPayrolls */
+/** @var Holerite\Models\Employee[] $pendingMonthlyEmployees */
 
 $employeeNames = [];
 foreach ($employees as $employee) {
     $employeeNames[$employee->getId() ?? 0] = $employee->getName();
 }
+
+$typeLabels = [
+    'regular' => 'Mensal',
+    'vacation' => 'Férias',
+    'termination' => 'Rescisão',
+    'thirteenth' => '13º Salário',
+];
+
+$weekDays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 
 $hasCharts = $monthlyChart['labels'] !== [] || $yearlyChart['labels'] !== [];
 
@@ -61,6 +74,91 @@ if ($hasCharts) {
             <strong style="font-size:1.85rem;">R$ <?= number_format($totalNet, 2, ',', '.'); ?></strong>
             <p class="muted" style="margin:0.35rem 0 0 0;">Total já desembolsado em pagamentos líquidos.</p>
         </article>
+    </div>
+
+    <div class="dashboard-schedule">
+        <div class="card dashboard-calendar-card">
+            <div class="dashboard-calendar-card__header">
+                <div>
+                    <h3 style="margin:0;">Calendário de pagamentos</h3>
+                    <p class="muted" style="margin:0.35rem 0 0 0;">Pagamentos registrados em <?= htmlspecialchars($calendarMonth->format('m/Y')); ?>.</p>
+                </div>
+            </div>
+            <div class="calendar-wrapper">
+                <table class="calendar-grid">
+                    <thead>
+                    <tr>
+                        <?php foreach ($weekDays as $weekDay): ?>
+                            <th><?= htmlspecialchars($weekDay); ?></th>
+                        <?php endforeach; ?>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($calendarWeeks as $week): ?>
+                        <tr>
+                            <?php foreach ($week as $cell): ?>
+                                <?php if ($cell['date'] === null): ?>
+                                    <td class="calendar-day calendar-day--empty"></td>
+                                <?php else: ?>
+                                    <?php $cellDate = $cell['date']; ?>
+                                    <?php $cellPayrolls = $cell['payrolls']; ?>
+                                    <?php $hasPayments = $cellPayrolls !== []; ?>
+                                    <td class="calendar-day<?= $hasPayments ? ' calendar-day--has-payments' : ''; ?>">
+                                        <div class="calendar-day__date"><?= htmlspecialchars($cellDate->format('d')); ?></div>
+                                        <?php if ($hasPayments): ?>
+                                            <ul class="calendar-day__list">
+                                                <?php foreach ($cellPayrolls as $calendarPayroll): ?>
+                                                    <?php $typeLabel = $typeLabels[$calendarPayroll->getType()] ?? ucfirst($calendarPayroll->getType()); ?>
+                                                    <li>
+                                                        <span class="calendar-day__employee"><?= htmlspecialchars($employeeNames[$calendarPayroll->getEmployeeId()] ?? 'Colaborador'); ?></span>
+                                                        <small class="muted"><?= htmlspecialchars($typeLabel); ?> • R$ <?= number_format($calendarPayroll->getNetSalary(), 2, ',', '.'); ?></small>
+                                                    </li>
+                                                <?php endforeach; ?>
+                                            </ul>
+                                        <?php else: ?>
+                                            <div class="calendar-day__placeholder muted">Sem pagamentos</div>
+                                        <?php endif; ?>
+                                    </td>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="dashboard-status">
+            <div class="card dashboard-status__card">
+                <h3 style="margin-top:0;">Pagamentos mensais efetuados</h3>
+                <?php if ($paidMonthlyPayrolls === []): ?>
+                    <p class="muted">Nenhum pagamento mensal registrado neste mês.</p>
+                <?php else: ?>
+                    <ul class="status-list">
+                        <?php foreach ($paidMonthlyPayrolls as $payroll): ?>
+                            <li>
+                                <strong><?= htmlspecialchars($employeeNames[$payroll->getEmployeeId()] ?? 'Colaborador'); ?></strong>
+                                <small class="muted"><?= htmlspecialchars($payroll->getPaymentDate()->format('d/m/Y')); ?> • R$ <?= number_format($payroll->getNetSalary(), 2, ',', '.'); ?></small>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
+            </div>
+            <div class="card dashboard-status__card">
+                <h3 style="margin-top:0;">Pagamentos mensais pendentes</h3>
+                <?php if ($pendingMonthlyEmployees === []): ?>
+                    <p class="muted">Todos os colaboradores receberam este mês.</p>
+                <?php else: ?>
+                    <ul class="status-list status-list--pending">
+                        <?php foreach ($pendingMonthlyEmployees as $pendingEmployee): ?>
+                            <li>
+                                <strong><?= htmlspecialchars($pendingEmployee->getName()); ?></strong>
+                                <small class="muted">Salário base: R$ <?= number_format($pendingEmployee->getBaseSalary(), 2, ',', '.'); ?></small>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
+            </div>
+        </div>
     </div>
 
     <div class="dashboard-charts">
