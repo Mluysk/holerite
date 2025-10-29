@@ -84,6 +84,13 @@ switch ($action) {
             $companyController->edit();
         }
         break;
+    case 'update_username':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $authController->updateUsername($_POST);
+        } else {
+            $companyController->edit();
+        }
+        break;
     case 'create_user':
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $authController->createUser($_POST);

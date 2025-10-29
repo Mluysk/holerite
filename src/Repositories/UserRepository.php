@@ -78,6 +78,15 @@ final class UserRepository
         ]);
     }
 
+    public function updateUsername(int $id, string $username): void
+    {
+        $statement = $this->pdo->prepare('UPDATE users SET username = :username WHERE id = :id');
+        $statement->execute([
+            'id' => $id,
+            'username' => $username,
+        ]);
+    }
+
     /**
      * @param array<string, mixed> $row
      */

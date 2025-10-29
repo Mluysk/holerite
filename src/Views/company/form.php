@@ -77,6 +77,22 @@ $activeUsername = isset($currentUser['username']) ? (string) $currentUser['usern
 
         <div class="tab-content" id="tab-password">
             <div class="card">
+                <h3 style="margin-top:0;">Editar nome de usuário</h3>
+                <p class="muted" style="margin-top:0;">Atualize como você aparece ao entrar no sistema.</p>
+
+                <form method="post" action="?action=update_username" style="margin-top:1rem;">
+                    <div class="grid">
+                        <div>
+                            <label for="edit_username">Nome de usuário</label>
+                            <input type="text" name="username" id="edit_username" minlength="3" value="<?= htmlspecialchars($activeUsername); ?>" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="button">Salvar nome de usuário</button>
+                </form>
+            </div>
+
+            <div class="card" style="margin-top:1.5rem;">
                 <h3 style="margin-top:0;">Atualize sua senha</h3>
                 <p class="muted" style="margin-top:0;">Altere a senha utilizada pelo usuário <strong><?= htmlspecialchars($activeUsername); ?></strong> para manter o acesso seguro.</p>
 

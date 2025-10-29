@@ -112,6 +112,52 @@ final class AuthController extends Controller
     /**
      * @param array<string, mixed> $data
      */
+    public function updateUsername(array $data): void
+    {
+        $userId = $this->currentUserId();
+        $username = trim((string) ($data['username'] ?? ''));
+
+        if ($username === '') {
+            $this->flash('error', 'Informe um nome de usuário.');
+            $this->redirect('?action=edit_company');
+        }
+
+        if (strlen($username) < 3) {
+            $this->flash('error', 'O nome de usuário deve ter pelo menos 3 caracteres.');
+            $this->redirect('?action=edit_company');
+        }
+
+        try {
+            $currentUser = $this->userRepository->findById($userId);
+
+            if ($currentUser === null) {
+                throw new RuntimeException('Usuário não encontrado.');
+            }
+
+            $existing = $this->userRepository->findByUsername($username);
+
+            if ($existing !== null && $existing->getId() !== $currentUser->getId()) {
+                throw new RuntimeException('Já existe um usuário com este nome.');
+            }
+
+            if ($currentUser->getUsername() !== $username) {
+                $this->userRepository->updateUsername($userId, $username);
+                $_SESSION['user']['username'] = $username;
+            }
+
+            $this->flash('success', 'Nome de usuário atualizado com sucesso.');
+        } catch (RuntimeException $exception) {
+            $this->flash('error', $exception->getMessage());
+        } catch (Throwable $exception) {
+            $this->flash('error', 'Não foi possível atualizar o usuário: ' . $exception->getMessage());
+        }
+
+        $this->redirect('?action=edit_company');
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
     public function createUser(array $data): void
     {
         $username = trim((string) ($data['username'] ?? ''));
