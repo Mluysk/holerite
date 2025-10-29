@@ -9,18 +9,33 @@
             return;
         }
 
+        function showTab(target) {
+            if (!target) {
+                return;
+            }
+
+            buttons.forEach((candidate) => {
+                const candidateTarget = candidate.getAttribute('data-tab');
+                candidate.classList.toggle('active', candidateTarget === target);
+            });
+
+            sections.forEach((section) => {
+                const shouldShow = section.id === `tab-${target}`;
+                section.classList.toggle('active', shouldShow);
+            });
+        }
+
+        const configuredDefault = container.getAttribute('data-default-tab');
+        const activeButton = container.querySelector('.tab-button.active');
+        const fallbackTab = buttons[0].getAttribute('data-tab');
+        const initialTab = configuredDefault || (activeButton ? activeButton.getAttribute('data-tab') : null) || fallbackTab;
+
+        showTab(initialTab);
+
         buttons.forEach((button) => {
             button.addEventListener('click', () => {
                 const target = button.getAttribute('data-tab');
-
-                buttons.forEach((candidate) => {
-                    candidate.classList.toggle('active', candidate === button);
-                });
-
-                sections.forEach((section) => {
-                    const shouldShow = section.id === `tab-${target}`;
-                    section.classList.toggle('active', shouldShow);
-                });
+                showTab(target);
             });
         });
     }

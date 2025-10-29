@@ -36,6 +36,11 @@ final class CompanyController extends Controller
         $company = $this->companyRepository->get();
         $users = $this->userRepository->all();
         $currentUser = isset($_SESSION['user']) && is_array($_SESSION['user']) ? $_SESSION['user'] : null;
+        $requestedTab = isset($_GET['tab']) ? strtolower((string) $_GET['tab']) : 'company';
+        $allowedTabs = ['company', 'appearance', 'password', 'users'];
+        if (!in_array($requestedTab, $allowedTabs, true)) {
+            $requestedTab = 'company';
+        }
 
         $pageScripts = [
             [
@@ -59,6 +64,7 @@ final class CompanyController extends Controller
                 'themeMode' => $company->getThemeMode(),
                 'colorPalette' => $company->getColorPalette(),
             ],
+            'defaultTab' => $requestedTab,
             'pageScripts' => $pageScripts,
         ]);
     }
@@ -86,6 +92,54 @@ final class CompanyController extends Controller
     /**
      * @param array<string, mixed> $data
      */
+    public function updateThemeMode(array $data): void
+    {
+        $company = $this->companyRepository->get();
+        $themeMode = strtolower((string) ($data['theme_mode'] ?? ''));
+
+        if (!array_key_exists($themeMode, self::THEME_MODES)) {
+            $this->flash('error', 'Selecione um modo de exibição válido.');
+            $this->redirect('?action=edit_company&tab=appearance');
+        }
+
+        try {
+            $company->setThemeMode($themeMode);
+            $this->companyRepository->save($company);
+            $this->flash('success', 'Modo de exibição atualizado com sucesso.');
+        } catch (Throwable $exception) {
+            $this->flash('error', 'Não foi possível atualizar o modo: ' . $exception->getMessage());
+        }
+
+        $this->redirect('?action=edit_company&tab=appearance');
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    public function updateColorPalette(array $data): void
+    {
+        $company = $this->companyRepository->get();
+        $colorPalette = strtolower((string) ($data['color_palette'] ?? ''));
+
+        if (!array_key_exists($colorPalette, self::COLOR_PALETTES)) {
+            $this->flash('error', 'Selecione uma paleta de cores válida.');
+            $this->redirect('?action=edit_company&tab=appearance');
+        }
+
+        try {
+            $company->setColorPalette($colorPalette);
+            $this->companyRepository->save($company);
+            $this->flash('success', 'Paleta de cores atualizada com sucesso.');
+        } catch (Throwable $exception) {
+            $this->flash('error', 'Não foi possível atualizar a paleta: ' . $exception->getMessage());
+        }
+
+        $this->redirect('?action=edit_company&tab=appearance');
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
     private function fillCompany(Company $company, array $data): Company
     {
         $name = trim((string) ($data['name'] ?? ''));
@@ -96,8 +150,16 @@ final class CompanyController extends Controller
         $zip = trim((string) ($data['zip_code'] ?? ''));
         $phone = trim((string) ($data['phone'] ?? ''));
         $email = trim((string) ($data['email'] ?? ''));
-        $themeMode = strtolower((string) ($data['theme_mode'] ?? ''));
-        $colorPalette = strtolower((string) ($data['color_palette'] ?? ''));
+        $themeModeInput = strtolower((string) ($data['theme_mode'] ?? ''));
+        $colorPaletteInput = strtolower((string) ($data['color_palette'] ?? ''));
+
+        $themeMode = array_key_exists($themeModeInput, self::THEME_MODES)
+            ? $themeModeInput
+            : $company->getThemeMode();
+
+        $colorPalette = array_key_exists($colorPaletteInput, self::COLOR_PALETTES)
+            ? $colorPaletteInput
+            : $company->getColorPalette();
 
         if ($name === '' || $document === '' || $address === '' || $city === '' || $state === '' || $zip === '' || $phone === '' || $email === '') {
             throw new RuntimeException('Preencha todos os campos obrigatórios.');
@@ -111,14 +173,6 @@ final class CompanyController extends Controller
         $company->setZipCode($zip);
         $company->setPhone($phone);
         $company->setEmail($email);
-
-        if (!array_key_exists($themeMode, self::THEME_MODES)) {
-            $themeMode = 'light';
-        }
-
-        if (!array_key_exists($colorPalette, self::COLOR_PALETTES)) {
-            $colorPalette = 'blue';
-        }
 
         $company->setThemeMode($themeMode);
         $company->setColorPalette($colorPalette);

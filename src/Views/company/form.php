@@ -5,11 +5,17 @@
 /** @var array{id?: int, username?: string}|null $currentUser */
 /** @var array<string, string> $themeModes */
 /** @var array<string, string> $colorPalettes */
+/** @var string $defaultTab */
 
 $activeUserId = $currentUser['id'] ?? null;
 $activeUsername = isset($currentUser['username']) ? (string) $currentUser['username'] : '';
 $selectedThemeMode = $company->getThemeMode();
 $selectedColorPalette = $company->getColorPalette();
+$defaultTab = isset($defaultTab) && is_string($defaultTab) ? $defaultTab : 'company';
+$allowedTabs = ['company', 'appearance', 'password', 'users'];
+if (!in_array($defaultTab, $allowedTabs, true)) {
+    $defaultTab = 'company';
+}
 ?>
 <section>
     <header style="margin-bottom:1.5rem;">
@@ -17,19 +23,20 @@ $selectedColorPalette = $company->getColorPalette();
         <p class="muted">Personalize os dados da empresa e gerencie o acesso dos usuários.</p>
     </header>
 
-    <div class="tab-container">
+    <div class="tab-container" data-default-tab="<?= htmlspecialchars($defaultTab); ?>">
         <div class="tab-nav">
-            <button type="button" class="tab-button active" data-tab="company">Dados da empresa</button>
-            <button type="button" class="tab-button" data-tab="password">Alterar senha</button>
-            <button type="button" class="tab-button" data-tab="users">Usuários</button>
+            <button type="button" class="tab-button<?php if ($defaultTab === 'company'): ?> active<?php endif; ?>" data-tab="company">Dados da empresa</button>
+            <button type="button" class="tab-button<?php if ($defaultTab === 'appearance'): ?> active<?php endif; ?>" data-tab="appearance">Aparência</button>
+            <button type="button" class="tab-button<?php if ($defaultTab === 'password'): ?> active<?php endif; ?>" data-tab="password">Alterar senha</button>
+            <button type="button" class="tab-button<?php if ($defaultTab === 'users'): ?> active<?php endif; ?>" data-tab="users">Usuários</button>
         </div>
 
-        <div class="tab-content active" id="tab-company">
+        <div class="tab-content<?php if ($defaultTab === 'company'): ?> active<?php endif; ?>" id="tab-company">
             <div class="card">
                 <h3 style="margin-top:0;">Identidade da empresa</h3>
                 <p class="muted" style="margin-top:0;">Essas informações aparecerão em todos os holerites emitidos.</p>
 
-                <form method="post" action="?action=update_company" style="margin-top:1rem;" data-theme-form>
+                <form method="post" action="?action=update_company" style="margin-top:1rem;">
                     <div class="grid">
                         <div>
                             <label for="name">Razão social</label>
@@ -74,48 +81,55 @@ $selectedColorPalette = $company->getColorPalette();
                         </div>
                     </div>
 
-                    <div class="appearance-card">
-                        <h4 class="appearance-title">Aparência do sistema</h4>
-                        <p class="muted" style="margin-top:0;">Escolha como o painel será exibido para todos os usuários.</p>
-
-                        <div class="appearance-grid">
-                            <div class="appearance-group">
-                                <span class="appearance-label">Modo</span>
-                                <div class="appearance-options appearance-options--pills" data-theme-options>
-                                    <?php foreach ($themeModes as $key => $label): ?>
-                                        <?php $themeId = 'theme-mode-' . $key; ?>
-                                        <div class="option-pill">
-                                            <input type="radio" name="theme_mode" id="<?= htmlspecialchars($themeId); ?>" value="<?= htmlspecialchars($key); ?>" <?php if ($selectedThemeMode === $key): ?>checked<?php endif; ?>>
-                                            <label for="<?= htmlspecialchars($themeId); ?>"><?= htmlspecialchars($label); ?></label>
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
-                            </div>
-
-                            <div class="appearance-group">
-                                <span class="appearance-label">Cor de destaque</span>
-                                <div class="appearance-options appearance-options--swatches" data-palette-options>
-                                    <?php foreach ($colorPalettes as $key => $label): ?>
-                                        <?php $paletteId = 'palette-' . $key; ?>
-                                        <div class="swatch-option" data-palette-swatch="<?= htmlspecialchars($key); ?>">
-                                            <input type="radio" name="color_palette" id="<?= htmlspecialchars($paletteId); ?>" value="<?= htmlspecialchars($key); ?>" <?php if ($selectedColorPalette === $key): ?>checked<?php endif; ?>>
-                                            <label for="<?= htmlspecialchars($paletteId); ?>">
-                                                <span class="swatch"></span>
-                                                <span class="swatch-label"><?= htmlspecialchars($label); ?></span>
-                                            </label>
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                     <button type="submit" class="button">Salvar dados da empresa</button>
                 </form>
             </div>
         </div>
 
-        <div class="tab-content" id="tab-password">
+        <div class="tab-content<?php if ($defaultTab === 'appearance'): ?> active<?php endif; ?>" id="tab-appearance">
+            <div class="card">
+                <h3 style="margin-top:0;">Modo de exibição</h3>
+                <p class="muted" style="margin-top:0;">Defina se o painel deve usar tema claro ou escuro para todos os usuários.</p>
+
+                <form method="post" action="?action=update_theme_mode" style="margin-top:1rem;" data-theme-mode-form>
+                    <div class="appearance-options appearance-options--pills" data-theme-options>
+                        <?php foreach ($themeModes as $key => $label): ?>
+                            <?php $themeId = 'theme-mode-' . $key; ?>
+                            <div class="option-pill">
+                                <input type="radio" name="theme_mode" id="<?= htmlspecialchars($themeId); ?>" value="<?= htmlspecialchars($key); ?>" <?php if ($selectedThemeMode === $key): ?>checked<?php endif; ?>>
+                                <label for="<?= htmlspecialchars($themeId); ?>"><?= htmlspecialchars($label); ?></label>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <button type="submit" class="button">Aplicar modo</button>
+                </form>
+            </div>
+
+            <div class="card" style="margin-top:1.5rem;">
+                <h3 style="margin-top:0;">Paleta de cores</h3>
+                <p class="muted" style="margin-top:0;">Escolha a cor principal que será utilizada nos destaques do sistema.</p>
+
+                <form method="post" action="?action=update_color_palette" style="margin-top:1rem;" data-color-palette-form>
+                    <div class="appearance-options appearance-options--swatches" data-palette-options>
+                        <?php foreach ($colorPalettes as $key => $label): ?>
+                            <?php $paletteId = 'palette-' . $key; ?>
+                            <div class="swatch-option" data-palette-swatch="<?= htmlspecialchars($key); ?>">
+                                <input type="radio" name="color_palette" id="<?= htmlspecialchars($paletteId); ?>" value="<?= htmlspecialchars($key); ?>" <?php if ($selectedColorPalette === $key): ?>checked<?php endif; ?>>
+                                <label for="<?= htmlspecialchars($paletteId); ?>">
+                                    <span class="swatch"></span>
+                                    <span class="swatch-label"><?= htmlspecialchars($label); ?></span>
+                                </label>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <button type="submit" class="button">Aplicar paleta</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="tab-content<?php if ($defaultTab === 'password'): ?> active<?php endif; ?>" id="tab-password">
             <div class="card">
                 <h3 style="margin-top:0;">Editar nome de usuário</h3>
                 <p class="muted" style="margin-top:0;">Atualize como você aparece ao entrar no sistema.</p>
@@ -157,7 +171,7 @@ $selectedColorPalette = $company->getColorPalette();
             </div>
         </div>
 
-        <div class="tab-content" id="tab-users">
+        <div class="tab-content<?php if ($defaultTab === 'users'): ?> active<?php endif; ?>" id="tab-users">
             <div class="card">
                 <h3 style="margin-top:0;">Contas de acesso</h3>
                 <p class="muted" style="margin-top:0;">Crie novos usuários para compartilhar o sistema com outros responsáveis.</p>

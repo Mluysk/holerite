@@ -1,12 +1,14 @@
 (function () {
     'use strict';
 
-    const form = document.querySelector('[data-theme-form]');
-    if (!form) {
+    const body = document.body;
+    const themeForm = document.querySelector('[data-theme-mode-form]');
+    const paletteForm = document.querySelector('[data-color-palette-form]');
+
+    if (!themeForm && !paletteForm) {
         return;
     }
 
-    const body = document.body;
     const themeOptions = ['light', 'dark'];
     const paletteOptions = ['blue', 'emerald', 'violet', 'amber', 'rose'];
 
@@ -14,9 +16,12 @@
         return typeof value === 'string' && value.trim() !== '' ? value.trim().toLowerCase() : fallback;
     }
 
+    let currentTheme = sanitize(body.getAttribute('data-theme-mode'), 'light');
+    let currentPalette = sanitize(body.getAttribute('data-color-palette'), 'blue');
+
     function applyAppearance(theme, palette) {
-        const nextTheme = sanitize(theme, body.getAttribute('data-theme-mode') || 'light');
-        const nextPalette = sanitize(palette, body.getAttribute('data-color-palette') || 'blue');
+        const nextTheme = sanitize(theme, currentTheme);
+        const nextPalette = sanitize(palette, currentPalette);
 
         themeOptions.forEach(function (option) {
             body.classList.remove('theme-' + option);
@@ -25,29 +30,48 @@
             body.classList.remove('accent-' + option);
         });
 
-        body.classList.add('theme-' + (themeOptions.includes(nextTheme) ? nextTheme : 'light'));
-        body.classList.add('accent-' + (paletteOptions.includes(nextPalette) ? nextPalette : 'blue'));
+        const appliedTheme = themeOptions.includes(nextTheme) ? nextTheme : 'light';
+        const appliedPalette = paletteOptions.includes(nextPalette) ? nextPalette : 'blue';
 
-        body.setAttribute('data-theme-mode', nextTheme);
-        body.setAttribute('data-color-palette', nextPalette);
+        body.classList.add('theme-' + appliedTheme);
+        body.classList.add('accent-' + appliedPalette);
+
+        body.setAttribute('data-theme-mode', appliedTheme);
+        body.setAttribute('data-color-palette', appliedPalette);
+
+        currentTheme = appliedTheme;
+        currentPalette = appliedPalette;
     }
 
-    function currentSelection() {
-        const themeInput = form.querySelector('input[name="theme_mode"]:checked');
-        const paletteInput = form.querySelector('input[name="color_palette"]:checked');
+    function handleThemeChange() {
+        if (!themeForm) {
+            return;
+        }
 
-        return {
-            theme: themeInput ? themeInput.value : null,
-            palette: paletteInput ? paletteInput.value : null,
-        };
+        const input = themeForm.querySelector('input[name="theme_mode"]:checked');
+        const value = input ? input.value : null;
+        currentTheme = sanitize(value, currentTheme);
+        applyAppearance(currentTheme, currentPalette);
     }
 
-    function handleChange() {
-        const selection = currentSelection();
-        applyAppearance(selection.theme, selection.palette);
+    function handlePaletteChange() {
+        if (!paletteForm) {
+            return;
+        }
+
+        const input = paletteForm.querySelector('input[name="color_palette"]:checked');
+        const value = input ? input.value : null;
+        currentPalette = sanitize(value, currentPalette);
+        applyAppearance(currentTheme, currentPalette);
     }
 
-    form.addEventListener('change', handleChange);
+    if (themeForm) {
+        themeForm.addEventListener('change', handleThemeChange);
+    }
 
-    handleChange();
+    if (paletteForm) {
+        paletteForm.addEventListener('change', handlePaletteChange);
+    }
+
+    applyAppearance(currentTheme, currentPalette);
 })();

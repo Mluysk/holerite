@@ -84,6 +84,20 @@ switch ($action) {
             $companyController->edit();
         }
         break;
+    case 'update_theme_mode':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $companyController->updateThemeMode($_POST);
+        } else {
+            $companyController->edit();
+        }
+        break;
+    case 'update_color_palette':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $companyController->updateColorPalette($_POST);
+        } else {
+            $companyController->edit();
+        }
+        break;
     case 'update_password':
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $authController->updatePassword($_POST);
