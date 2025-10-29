@@ -3,7 +3,10 @@
 ?>
 <section class="auth-wrapper">
     <div class="auth-card">
-        <h2>Entrar</h2>
+        <div class="auth-card__header">
+            <h2>Entrar</h2>
+            <img src="img/logo2.png" alt="JP Fábrica de Salgados" class="auth-card__logo">
+        </div>
         <form method="post" action="?action=authenticate" autocomplete="off">
             <div class="form-group">
                 <label for="username">Usuário</label>
