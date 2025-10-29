@@ -44,7 +44,8 @@ $bodyClasses = trim('theme-' . $themeMode . ' accent-' . $colorPalette);
 <body class="<?= htmlspecialchars($bodyClasses); ?>" data-theme-mode="<?= htmlspecialchars($themeMode); ?>" data-color-palette="<?= htmlspecialchars($colorPalette); ?>">
 <header class="layout-header">
     <div class="brand">
-        <h1 class="brand-title">Holerite</h1>
+        <img src="img/logo.png" alt="JP Fábrica de Salgados" class="brand-logo">
+        <h1 class="brand-title">JP Fábrica de Salgados</h1>
     </div>
     <?php if ($isAuthenticated): ?>
         <div class="layout-header-actions">
