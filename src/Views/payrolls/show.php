@@ -42,10 +42,6 @@ if ($type === 'thirteenth') {
     }
 }
 
-$allowances = [];
-$deductions = [];
-$code = 1;
-
 $advanceAmount = $payroll->getAdvanceAmount();
 $remainingAmount = $payroll->getRemainingAmount();
 $valeDeductionAmount = $payroll->getValeDeduction();
@@ -57,256 +53,188 @@ $referenceValue = match ($payroll->getType()) {
     default => '1 mês',
 };
 
-$baseAllowance = [
-    'code' => sprintf('%03d', $code++),
-    'description' => 'Salário Base',
-    'reference' => $referenceValue,
-    'amount' => $payroll->getBaseSalary(),
-];
+$items = [];
+$code = 1;
+$appendItem = static function (array &$items, int &$code, string $description, string $reference, ?float $allowance, ?float $deduction, ?string $note = null): void {
+    $items[] = [
+        'code' => sprintf('%03d', $code++),
+        'description' => $description,
+        'reference' => $reference,
+        'allowance' => $allowance,
+        'deduction' => $deduction,
+        'note' => $note,
+    ];
+};
 
-if ($advanceAmount > 0.0) {
-    $baseAllowance['note'] = 'Adiantamento aplicado — desconto listado ao lado.';
-}
-
-$allowances[] = $baseAllowance;
-
-$thirteenthItem = null;
-$vacationBonusValue = null;
+$salaryNote = $advanceAmount > 0.0 ? 'Adiantamento habilitado — desconto listado ao lado.' : null;
+$appendItem($items, $code, 'Salário base', $referenceValue, $payroll->getBaseSalary(), null, $salaryNote);
 
 foreach ($payroll->getItems() as $item) {
-    $entry = [
-        'code' => sprintf('%03d', $code++),
-        'description' => $item->getDescription(),
-        'reference' => '',
-        'amount' => $item->getAmount(),
-    ];
-
     if ($item->getType() === 'deduction') {
-        $deductions[] = $entry;
+        $appendItem($items, $code, $item->getDescription(), '', null, $item->getAmount());
         continue;
     }
 
-    $normalizedDescription = function_exists('mb_strtolower') ? mb_strtolower($item->getDescription()) : strtolower($item->getDescription());
-    if (
-        $thirteenthItem === null
-        && (
-            str_contains($normalizedDescription, '13º')
-            || str_contains($normalizedDescription, '13o')
-            || str_contains($normalizedDescription, 'decimo terceiro')
-            || str_contains($normalizedDescription, 'décimo terceiro')
-        )
-    ) {
-        $thirteenthItem = $item;
-    }
-
-    if ($vacationBonusValue === null && str_contains($normalizedDescription, '1/3')) {
-        $vacationBonusValue = $item->getAmount();
-    }
-
-    $allowances[] = $entry;
+    $appendItem($items, $code, $item->getDescription(), '', $item->getAmount(), null);
 }
 
 if ($advanceAmount > 0.0) {
-    $advanceDeduction = [
-        'code' => sprintf('%03d', $code++),
-        'description' => 'Adiantamento salarial',
-        'reference' => '',
-        'amount' => $advanceAmount,
-    ];
-
-    array_unshift($deductions, $advanceDeduction);
+    $appendItem($items, $code, 'Adiantamento salarial', '', null, $advanceAmount);
 }
 
-$maxRows = max(count($allowances), count($deductions));
-$allowances = array_pad($allowances, $maxRows, null);
-$deductions = array_pad($deductions, $maxRows, null);
+if ($valeDeductionAmount > 0.0) {
+    $appendItem($items, $code, 'Desconto de vale', '', null, $valeDeductionAmount);
+}
 
 $grossTotal = $payroll->getBaseSalary() + $payroll->getTotalAllowances();
-$displayTotalDeductions = $payroll->getTotalDeductions() + $advanceAmount;
+$displayTotalDeductions = $payroll->getTotalDeductions() + $advanceAmount + $valeDeductionAmount;
 $netWithAdvance = $grossTotal - $displayTotalDeductions;
 $netOriginal = $payroll->getNetSalary();
 
 $employeeCode = str_pad((string) ($employee?->getId() ?? 0), 5, '0', STR_PAD_LEFT);
-$thirteenthAccrual = $payroll->getType() === 'thirteenth'
-    ? $payroll->getThirteenthAccrual()
-    : ($thirteenthItem?->getAmount() ?? $payroll->getThirteenthAccrual());
+$employeeDepartment = $employee?->getDepartment() ?? '';
+$employeeFunction = $employee?->getPosition() ?? '';
+$employeeCbo = $employeeDepartment !== '' ? $employeeDepartment : '-';
+
+$messages = [];
+if ($advanceAmount > 0.0) {
+    $messages[] = 'Adiantamento: R$ ' . number_format($advanceAmount, 2, ',', '.');
+    $messages[] = 'Pagamento restante: R$ ' . number_format($remainingAmount, 2, ',', '.');
+}
+if ($valeDeductionAmount > 0.0) {
+    $messages[] = 'Vale transporte/alimentação: R$ ' . number_format($valeDeductionAmount, 2, ',', '.');
+}
+if ($payroll->getNotes() !== '') {
+    $messages[] = nl2br(htmlspecialchars($payroll->getNotes()));
+}
+if ($typeLabel) {
+    $messages[] = 'Tipo de folha: ' . htmlspecialchars($typeLabel);
+}
+
+if ($employeeDepartment !== '') {
+    $messages[] = 'Departamento: ' . htmlspecialchars($employeeDepartment);
+}
+
+if ($employee?->getHireDate() !== null) {
+    $messages[] = 'Admissão: ' . $employee->getHireDate()->format('d/m/Y');
+}
+
+if ($payroll->getType() === 'vacation') {
+    $messages[] = 'Férias: ' . ($payroll->getVacationDays() ?? 0) . ' dias';
+}
+
+if ($payroll->getType() === 'termination') {
+    $messages[] = 'Trabalhados: ' . ($payroll->getWorkedDays() ?? 0) . ' dias';
+    $messages[] = '13º meses: ' . ($payroll->getThirteenthMonths() ?? 0);
+}
+
+if ($payroll->getType() === 'thirteenth') {
+    $messages[] = 'Meses 13º: ' . ($payroll->getThirteenthMonths() ?? 0);
+}
 ?>
 <section class="receipt-wrapper">
-    <div class="receipt">
-        <header class="receipt-header">
-            <div class="receipt-employer">
-                <span class="label">Empregador</span>
-                <strong><?= htmlspecialchars($company->getName()); ?></strong>
-                <span><?= htmlspecialchars($company->getAddress()); ?></span>
-                <span><?= htmlspecialchars($company->getCity()) . ' - ' . htmlspecialchars($company->getState()) . ' · CEP ' . htmlspecialchars($company->getZipCode()); ?></span>
-                <span>CNPJ: <?= htmlspecialchars($company->getDocument()); ?></span>
-                <span>Telefone: <?= htmlspecialchars($company->getPhone()); ?></span>
-            </div>
-            <div class="receipt-period">
-                <span class="label">Recibo de Pagamento de Salário</span>
-                <span>Referente ao mês de <strong><?= htmlspecialchars($referenceLabel); ?></strong></span>
-                <span>Competência: <?= htmlspecialchars($payroll->getReferenceMonth()); ?></span>
-                <span>Pagamento: <?= $paymentDate; ?></span>
-                <span>Tipo: <?= htmlspecialchars($typeLabel); ?></span>
-            </div>
-        </header>
+    <div class="holerite">
+        <table class="holerite-table holerite-header">
+            <tr>
+                <td colspan="2" class="holerite-title">Empregador</td>
+                <td colspan="2" class="holerite-receipt-title">Recibo de Pagamento de Salário</td>
+            </tr>
+            <tr>
+                <td>Nome: <?= htmlspecialchars($company->getName()); ?></td>
+                <td>CNPJ: <?= htmlspecialchars($company->getDocument()); ?></td>
+                <td colspan="2">Referente ao mês/ano: <?= htmlspecialchars($referenceLabel); ?></td>
+            </tr>
+            <tr>
+                <td colspan="2">Endereço: <?= htmlspecialchars($company->getAddress()); ?></td>
+                <td>Pagamento: <?= $paymentDate; ?></td>
+                <td>Competência: <?= htmlspecialchars($payroll->getReferenceMonth()); ?></td>
+            </tr>
+        </table>
 
-        <div class="receipt-meta">
-            <div>
-                <span><strong>Código:</strong> <?= $employeeCode; ?></span>
-                <span><strong>Nome do funcionário:</strong> <?= htmlspecialchars($employee?->getName() ?? ''); ?></span>
-                <span><strong>Departamento:</strong> <?= htmlspecialchars($employee?->getDepartment() ?? ''); ?></span>
-            </div>
-            <div>
-                <span><strong>Função:</strong> <?= htmlspecialchars($employee?->getPosition() ?? ''); ?></span>
-                <span><strong>Admissão:</strong> <?= $employee?->getHireDate()?->format('d/m/Y'); ?></span>
-                <?php if ($payroll->getType() === 'vacation'): ?>
-                    <span><strong>Dias de férias:</strong> <?= $payroll->getVacationDays() ?? 0; ?></span>
-                    <span><strong>1/3 Constitucional:</strong> R$ <?= number_format($vacationBonusValue ?? ($payroll->getBaseSalary() / 3), 2, ',', '.'); ?></span>
-                <?php elseif ($payroll->getType() === 'termination'): ?>
-                    <span><strong>Dias trabalhados:</strong> <?= $payroll->getWorkedDays() ?? 0; ?></span>
-                    <span><strong>Meses 13º:</strong> <?= $payroll->getThirteenthMonths() ?? 0; ?></span>
-                    <span><strong>Justa causa:</strong> <?= $payroll->isJustCause() ? 'Sim' : 'Não'; ?></span>
-                <?php elseif ($payroll->getType() === 'thirteenth'): ?>
-                    <span><strong>Meses pagos:</strong> <?= $payroll->getThirteenthMonths() ?? 0; ?></span>
-                    <?php if ($thirteenthInstallmentLabel !== null): ?>
-                        <span><strong>Parcela:</strong> <?= htmlspecialchars($thirteenthInstallmentLabel); ?></span>
-                    <?php endif; ?>
-                    <span><strong>Total bruto 13º:</strong> R$ <?= number_format($payroll->getThirteenthAccrual(), 2, ',', '.'); ?></span>
-                    <span><strong>Competência:</strong> <?= htmlspecialchars($payroll->getReferenceMonth()); ?></span>
-                <?php endif; ?>
-            </div>
-        </div>
+        <table class="holerite-table holerite-employee">
+            <tr>
+                <td style="width: 18%;">CÓDIGO: <?= $employeeCode; ?></td>
+                <td style="width: 42%;">NOME FUNCIONÁRIO: <?= htmlspecialchars($employee?->getName() ?? ''); ?></td>
+                <td style="width: 18%;">CBO: <?= htmlspecialchars($employeeCbo); ?></td>
+                <td style="width: 22%;">FUNÇÃO: <?= htmlspecialchars($employeeFunction); ?></td>
+            </tr>
+        </table>
 
-        <table class="items">
+        <table class="holerite-table holerite-items">
             <thead>
             <tr>
-                <th style="width: 12%;">Código</th>
-                <th style="width: 44%;">Descrição</th>
-                <th style="width: 16%;">Referência</th>
-                <th style="width: 14%;" class="text-right">Vencimentos</th>
-                <th style="width: 14%;" class="text-right">Descontos</th>
+                <th style="width: 10%;">CÓD.</th>
+                <th style="width: 42%;">DESCRIÇÃO</th>
+                <th style="width: 16%;">REFERÊNCIA</th>
+                <th style="width: 16%;">PROVENTOS</th>
+                <th style="width: 16%;">DESCONTOS</th>
             </tr>
             </thead>
             <tbody>
-            <?php for ($row = 0; $row < $maxRows; $row++): ?>
+            <?php foreach ($items as $entry): ?>
                 <tr>
-                    <?php $allowance = $allowances[$row]; ?>
-                    <td><?= $allowance ? htmlspecialchars($allowance['code']) : '&nbsp;'; ?></td>
+                    <td><?= htmlspecialchars($entry['code']); ?></td>
                     <td>
-                        <?php if ($allowance): ?>
-                            <span><?= htmlspecialchars($allowance['description']); ?></span>
-                            <?php if (!empty($allowance['note'])): ?>
-                                <small class="item-note">&bull; <?= htmlspecialchars($allowance['note']); ?></small>
-                            <?php endif; ?>
-                        <?php else: ?>
-                            &nbsp;
+                        <?= htmlspecialchars($entry['description']); ?>
+                        <?php if (!empty($entry['note'])): ?>
+                            <div class="holerite-item-note">&bull; <?= htmlspecialchars($entry['note']); ?></div>
                         <?php endif; ?>
                     </td>
-                    <td><?= $allowance ? htmlspecialchars($allowance['reference']) : '&nbsp;'; ?></td>
-                    <td class="text-right"><?= $allowance ? 'R$ ' . number_format((float) $allowance['amount'], 2, ',', '.') : '&nbsp;'; ?></td>
-                    <?php $deduction = $deductions[$row]; ?>
-                    <td class="text-right"><?= $deduction ? 'R$ ' . number_format((float) $deduction['amount'], 2, ',', '.') : '&nbsp;'; ?></td>
+                    <td><?= htmlspecialchars($entry['reference']); ?></td>
+                    <td class="text-right">
+                        <?= $entry['allowance'] !== null ? 'R$ ' . number_format((float) $entry['allowance'], 2, ',', '.') : '&nbsp;'; ?>
+                    </td>
+                    <td class="text-right <?= ($entry['deduction'] === null || $entry['deduction'] == 0.0) ? 'holerite-empty' : ''; ?>">
+                        <?= $entry['deduction'] !== null && $entry['deduction'] != 0.0 ? 'R$ ' . number_format((float) $entry['deduction'], 2, ',', '.') : '&nbsp;'; ?>
+                    </td>
                 </tr>
-            <?php endfor; ?>
+            <?php endforeach; ?>
             </tbody>
-            <tfoot>
-            <tr>
-                <th colspan="3" class="text-right">Total de vencimentos</th>
-                <th class="text-right">R$ <?= number_format($grossTotal, 2, ',', '.'); ?></th>
-                <th class="text-right">&nbsp;</th>
-            </tr>
-            <tr>
-                <th colspan="3" class="text-right">Total de descontos</th>
-                <th class="text-right">&nbsp;</th>
-                <th class="text-right">R$ <?= number_format($displayTotalDeductions, 2, ',', '.'); ?></th>
-            </tr>
-            <tr>
-                <th colspan="3" class="text-right">Valor líquido a receber</th>
-                <th colspan="2" class="text-right highlight">R$ <?= number_format($netWithAdvance, 2, ',', '.'); ?></th>
-            </tr>
-            </tfoot>
         </table>
 
-        <div class="receipt-summary">
-            <div>
-                <span>Total de vencimentos</span>
-                <strong>R$ <?= number_format($grossTotal, 2, ',', '.'); ?></strong>
-            </div>
-            <div>
-                <span>Total de descontos</span>
-                <strong>R$ <?= number_format($displayTotalDeductions, 2, ',', '.'); ?></strong>
-            </div>
-            <div class="highlight">
-                <span>Importância líquida a receber</span>
-                <strong>R$ <?= number_format($netWithAdvance, 2, ',', '.'); ?></strong>
-            </div>
-            <div>
-                <span>Valor líquido do período</span>
-                <strong>R$ <?= number_format($netOriginal, 2, ',', '.'); ?></strong>
-            </div>
-        </div>
+        <table class="holerite-table holerite-totals">
+            <tr>
+                <td class="holerite-messages" rowspan="2">
+                    <strong>Mensagens</strong>
+                    <?php if ($messages === []): ?>
+                        <div>-</div>
+                    <?php else: ?>
+                        <?php foreach ($messages as $message): ?>
+                            <div><?= $message; ?></div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </td>
+                <td>Total dos vencimentos</td>
+                <td class="text-right">R$ <?= number_format($grossTotal, 2, ',', '.'); ?></td>
+                <td>Total dos descontos</td>
+                <td class="text-right">R$ <?= number_format($displayTotalDeductions, 2, ',', '.'); ?></td>
+            </tr>
+            <tr>
+                <td colspan="2" class="holerite-liquid">Líquido a receber -&gt;</td>
+                <td colspan="2" class="holerite-liquid text-right">R$ <?= number_format($netWithAdvance, 2, ',', '.'); ?></td>
+            </tr>
+        </table>
 
-        <div class="receipt-bases">
-            <div>
-                <span>Base FGTS</span>
-                <strong>R$ <?= number_format($payroll->getFgtsBase(), 2, ',', '.'); ?></strong>
-            </div>
-            <div>
-                <span>FGTS do mês</span>
-                <strong>R$ <?= number_format($payroll->getFgtsAmount(), 2, ',', '.'); ?></strong>
-            </div>
-            <div>
-                <span>Base INSS</span>
-                <strong>R$ <?= number_format($payroll->getInssBase(), 2, ',', '.'); ?></strong>
-            </div>
-            <div>
-                <span>INSS</span>
-                <strong>R$ <?= number_format($payroll->getInssAmount(), 2, ',', '.'); ?></strong>
-            </div>
-            <div>
-                <span>Base IRRF</span>
-                <strong>R$ <?= number_format($payroll->getIrrfBase(), 2, ',', '.'); ?></strong>
-            </div>
-            <div>
-                <span>IRRF</span>
-                <strong>R$ <?= number_format($payroll->getIrrfAmount(), 2, ',', '.'); ?></strong>
-            </div>
-            <div>
-                <span>13º acumulado</span>
-                <strong>R$ <?= number_format($thirteenthAccrual, 2, ',', '.'); ?></strong>
-            </div>
-        </div>
+        <table class="holerite-table holerite-bases">
+            <tr>
+                <td>Salário base<br><strong>R$ <?= number_format($payroll->getBaseSalary(), 2, ',', '.'); ?></strong></td>
+                <td>Base Cálc. FGTS<br><strong>R$ <?= number_format($payroll->getFgtsBase(), 2, ',', '.'); ?></strong></td>
+                <td>FGTS do mês<br><strong>R$ <?= number_format($payroll->getFgtsAmount(), 2, ',', '.'); ?></strong></td>
+                <td>Base Cálc. INSS<br><strong>R$ <?= number_format($payroll->getInssBase(), 2, ',', '.'); ?></strong></td>
+                <td>Base Cálc. IRRF<br><strong>R$ <?= number_format($payroll->getIrrfBase(), 2, ',', '.'); ?></strong></td>
+            </tr>
+        </table>
 
-        <div class="receipt-installments">
-            <div>
-                <span>Adiantamento (1ª parcela)</span>
-                <strong>R$ <?= number_format($advanceAmount, 2, ',', '.'); ?></strong>
+        <div class="holerite-signature">
+            <div class="holerite-declaration">
+                Declaro ter recebido a importância líquida discriminada neste recibo. Valor líquido do período: R$ <?= number_format($netOriginal, 2, ',', '.'); ?>.
             </div>
-            <div>
-                <span>Pagamento restante</span>
-                <strong>R$ <?= number_format($remainingAmount, 2, ',', '.'); ?></strong>
-            </div>
-            <div>
-                <span>Desconto de vale</span>
-                <strong>R$ <?= number_format($valeDeductionAmount, 2, ',', '.'); ?></strong>
-            </div>
-        </div>
-
-        <?php if ($payroll->getNotes() !== ''): ?>
-            <div class="notes">
-                <strong>Observações:</strong>
-                <p><?= nl2br(htmlspecialchars($payroll->getNotes())); ?></p>
-            </div>
-        <?php endif; ?>
-
-        <div class="acknowledgment">
-            <p>Declaro ter recebido a importância líquida discriminada neste recibo.</p>
-            <div class="signatures">
+            <div class="holerite-signature-line">
                 <div>
                     ___________________________________________<br>
                     <span>Assinatura do colaborador</span>
                 </div>
+                <div class="holerite-signature-separator">Assinatura<br>da empresa</div>
                 <div>
                     ___________________________________________<br>
                     <span>Assinatura da empresa</span>
@@ -316,7 +244,7 @@ $thirteenthAccrual = $payroll->getType() === 'thirteenth'
     </div>
 
     <div class="actions">
-        <a href="javascript:window.print();" class="button">Imprimir</a>
-        <a href="?action=list_payrolls" class="button button-secondary">Voltar</a>
+        <a href="javascript:window.print();" class="button"><i class="bi bi-printer"></i> Imprimir</a>
+        <a href="?action=list_payrolls" class="button button-secondary"><i class="bi bi-arrow-left"></i> Voltar</a>
     </div>
 </section>
