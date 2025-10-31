@@ -19,6 +19,26 @@ $defaultJustCause = !empty($defaults['just_cause']);
 $defaultValeDeduction = number_format((float) ($defaults['vale_deduction'] ?? 0), 2, '.', '');
 $defaultAdvanceAmount = number_format((float) ($defaults['advance_amount'] ?? 0), 2, '.', '');
 $defaultRemainingAmount = number_format((float) ($defaults['remaining_amount'] ?? 0), 2, '.', '');
+$defaultAdvanceRatio = (string) ($defaults['advance_ratio'] ?? '');
+if ($defaultAdvanceRatio === '') {
+    $advanceFloat = (float) ($defaults['advance_amount'] ?? 0);
+    $remainingFloat = (float) ($defaults['remaining_amount'] ?? 0);
+    $installmentTotal = $advanceFloat + $remainingFloat;
+
+    if ($installmentTotal > 0.0) {
+        $percentage = round(($advanceFloat / $installmentTotal) * 100);
+
+        if (abs($percentage - 40) <= 1) {
+            $defaultAdvanceRatio = '0.4';
+        } elseif (abs($percentage - 50) <= 1) {
+            $defaultAdvanceRatio = '0.5';
+        }
+    }
+}
+
+if (!in_array($defaultAdvanceRatio, ['0.4', '0.5'], true)) {
+    $defaultAdvanceRatio = '0.5';
+}
 $defaultHasAdvance = $defaults['has_advance'] ?? null;
 if ($defaultHasAdvance === null) {
     $defaultHasAdvance = $selectedType === 'regular';
@@ -192,7 +212,7 @@ $pageScripts[] = [
             <p class="muted">Valor líquido estimado: <strong id="net-salary">R$ 0,00</strong></p>
             <p class="muted">1ª parcela (adiantamento): <strong id="advance-display">R$ 0,00</strong></p>
             <p class="muted">2ª parcela (restante): <strong id="remaining-display">R$ 0,00</strong></p>
-            <p class="muted" id="advance-note" style="display: <?= $defaultHasAdvance ? 'block' : 'none'; ?>; margin-top:0.5rem;">Com o adiantamento habilitado, o desconto aparecerá logo abaixo do salário base no holerite impresso.</p>
+            <p class="muted" id="advance-note" style="display: <?= $defaultHasAdvance ? 'block' : 'none'; ?>; margin-top:0.5rem;">Com o adiantamento habilitado, escolha antecipar 40% ou 50% do líquido e o desconto aparecerá logo abaixo do salário base no holerite impresso.</p>
             <div id="automatic-descriptions" class="muted" style="margin-top:0.75rem;"></div>
         </div>
 
@@ -205,6 +225,13 @@ $pageScripts[] = [
             </label>
             <div id="advance-fields" style="margin-top:1rem; display: <?= $defaultHasAdvance ? 'block' : 'none'; ?>;">
                 <div class="grid">
+                    <div>
+                        <label for="advance_ratio">Percentual do adiantamento</label>
+                        <select name="advance_ratio" id="advance_ratio">
+                            <option value="0.4" <?= $defaultAdvanceRatio === '0.4' ? 'selected' : ''; ?>>40% do líquido</option>
+                            <option value="0.5" <?= $defaultAdvanceRatio === '0.5' ? 'selected' : ''; ?>>50% do líquido</option>
+                        </select>
+                    </div>
                     <div>
                         <label for="advance_amount">Adiantamento (1ª parcela)</label>
                         <input type="number" min="0" step="0.01" id="advance_amount" name="advance_amount" value="<?= htmlspecialchars($defaultAdvanceAmount); ?>" placeholder="0,00">

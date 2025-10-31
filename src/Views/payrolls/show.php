@@ -50,6 +50,21 @@ $valeDeductionAmount = $payroll->getValeDeduction();
 $transportDays = $payroll->getTransportDays();
 $transportTrips = $payroll->getTransportTrips();
 $transportTripCost = $payroll->getTransportTripCost();
+$advanceRatioLabel = null;
+
+if ($advanceAmount > 0.0) {
+    $installmentTotal = $advanceAmount + max($remainingAmount, 0.0);
+
+    if ($installmentTotal > 0.0) {
+        $percentage = round(($advanceAmount / $installmentTotal) * 100);
+
+        if (abs($percentage - 40) <= 1) {
+            $advanceRatioLabel = '40%';
+        } elseif (abs($percentage - 50) <= 1) {
+            $advanceRatioLabel = '50%';
+        }
+    }
+}
 
 $referenceValue = match ($payroll->getType()) {
     'vacation' => ($payroll->getVacationDays() ?? 0) . ' dias',
@@ -83,7 +98,12 @@ foreach ($payroll->getItems() as $item) {
 }
 
 if ($advanceAmount > 0.0) {
-    $appendItem($items, $code, 'Adiantamento salarial', '', null, $advanceAmount);
+    $description = 'Adiantamento salarial';
+    if ($advanceRatioLabel !== null) {
+        $description .= ' (' . $advanceRatioLabel . ')';
+    }
+
+    $appendItem($items, $code, $description, '', null, $advanceAmount);
 }
 
 $grossTotal = $payroll->getBaseSalary() + $payroll->getTotalAllowances();
@@ -98,7 +118,8 @@ $employeeCbo = $employeeDepartment !== '' ? $employeeDepartment : '-';
 
 $messages = [];
 if ($advanceAmount > 0.0) {
-    $messages[] = 'Adiantamento: R$ ' . number_format($advanceAmount, 2, ',', '.');
+    $messages[] = 'Adiantamento: R$ ' . number_format($advanceAmount, 2, ',', '.')
+        . ($advanceRatioLabel !== null ? ' (' . $advanceRatioLabel . ')' : '');
     $messages[] = 'Pagamento restante: R$ ' . number_format($remainingAmount, 2, ',', '.');
 }
 if ($transportDeduction > 0.0) {

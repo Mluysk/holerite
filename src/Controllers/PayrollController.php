@@ -54,6 +54,7 @@ final class PayrollController extends Controller
             'vale_deduction' => (float) ($_GET['vale_deduction'] ?? 0),
             'advance_amount' => (float) ($_GET['advance_amount'] ?? 0),
             'remaining_amount' => (float) ($_GET['remaining_amount'] ?? 0),
+            'advance_ratio' => (string) ($_GET['advance_ratio'] ?? ''),
             'use_transport' => isset($_GET['use_transport']) && in_array(strtolower((string) $_GET['use_transport']), ['1', 'true', 'on', 'yes'], true),
             'transport_days' => (int) ($_GET['transport_days'] ?? 0),
             'transport_trip_cost' => (float) ($_GET['transport_trip_cost'] ?? 6.0),

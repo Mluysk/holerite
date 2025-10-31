@@ -91,6 +91,40 @@
         return checkbox.checked;
     }
 
+    function getAdvanceRatio() {
+        const select = document.getElementById('advance_ratio');
+        if (!(select instanceof HTMLSelectElement)) {
+            return 0.5;
+        }
+
+        const parsed = Number.parseFloat(select.value);
+        if (!Number.isFinite(parsed) || parsed <= 0 || parsed >= 1) {
+            return 0.5;
+        }
+
+        return parsed;
+    }
+
+    function setInstallmentMode(mode) {
+        const advanceInput = document.getElementById('advance_amount');
+        const remainingInput = document.getElementById('remaining_amount');
+
+        [advanceInput, remainingInput].forEach((input) => {
+            if (input instanceof HTMLInputElement) {
+                input.dataset.mode = mode;
+            }
+        });
+    }
+
+    function getInstallmentMode() {
+        const advanceInput = document.getElementById('advance_amount');
+        if (!(advanceInput instanceof HTMLInputElement)) {
+            return 'auto';
+        }
+
+        return advanceInput.dataset.mode === 'manual' ? 'manual' : 'auto';
+    }
+
     function automaticAllowances(type, baseSalary) {
         const items = [];
 
@@ -213,10 +247,15 @@
                 return;
             }
 
+            if (!('mode' in input.dataset)) {
+                input.dataset.mode = 'auto';
+            }
+
             input.readOnly = !enabled;
 
             if (!enabled) {
                 input.value = '0.00';
+                input.dataset.mode = 'auto';
             } else if (input.value === '') {
                 input.value = '0.00';
             }
@@ -238,6 +277,8 @@
         const netRounded = roundMoney(netSalary);
         const selectedType = typeSelect instanceof HTMLSelectElement ? typeSelect.value : 'regular';
         const shouldSplit = advanceEnabled && selectedType === 'regular';
+        const ratio = getAdvanceRatio();
+        const mode = getInstallmentMode();
 
         let advance = roundMoney(Math.max(0, Number.parseFloat(advanceInput.value || '0') || 0));
         let remaining = roundMoney(Math.max(0, Number.parseFloat(remainingInput.value || '0') || 0));
@@ -270,13 +311,21 @@
 
         if (advance === 0 && remaining === 0) {
             if (shouldSplit) {
-                advance = roundMoney(netRounded / 2);
-                remaining = roundMoney(netRounded - advance);
+                advance = roundMoney(netRounded * ratio);
+                remaining = roundMoney(Math.max(0, netRounded - advance));
             } else {
                 advance = 0;
                 remaining = netRounded;
             }
 
+            setInstallmentMode(shouldSplit ? 'auto' : 'manual');
+            updateInputs();
+            return { advance, remaining, enabled: advanceEnabled };
+        }
+
+        if (shouldSplit && mode === 'auto') {
+            advance = roundMoney(netRounded * ratio);
+            remaining = roundMoney(Math.max(0, netRounded - advance));
             updateInputs();
             return { advance, remaining, enabled: advanceEnabled };
         }
@@ -709,6 +758,28 @@
         const advanceToggle = document.getElementById('has_advance');
         if (advanceToggle instanceof HTMLInputElement) {
             advanceToggle.addEventListener('change', syncAdvanceFields);
+        }
+
+        const advanceRatio = document.getElementById('advance_ratio');
+        if (advanceRatio instanceof HTMLSelectElement) {
+            advanceRatio.addEventListener('change', () => {
+                setInstallmentMode('auto');
+                updateSummary();
+            });
+        }
+
+        const advanceAmountInput = document.getElementById('advance_amount');
+        if (advanceAmountInput instanceof HTMLInputElement) {
+            advanceAmountInput.addEventListener('input', () => {
+                setInstallmentMode('manual');
+            });
+        }
+
+        const remainingAmountInput = document.getElementById('remaining_amount');
+        if (remainingAmountInput instanceof HTMLInputElement) {
+            remainingAmountInput.addEventListener('input', () => {
+                setInstallmentMode('manual');
+            });
         }
 
         const transportToggle = document.getElementById('use_transport');

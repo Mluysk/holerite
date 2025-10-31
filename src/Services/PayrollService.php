@@ -272,6 +272,20 @@ final class PayrollService
 
         $advanceAmount = $this->roundMoney(max(0.0, (float) ($data['advance_amount'] ?? 0)));
         $remainingAmount = $this->roundMoney(max(0.0, (float) ($data['remaining_amount'] ?? 0)));
+        $advanceRatio = null;
+
+        if (isset($data['advance_ratio'])) {
+            $rawRatio = (string) $data['advance_ratio'];
+            $parsedRatio = (float) $rawRatio;
+
+            if ($parsedRatio > 0.0 && $parsedRatio < 1.0) {
+                $advanceRatio = $parsedRatio;
+            } elseif ($rawRatio === '40') {
+                $advanceRatio = 0.4;
+            } elseif ($rawRatio === '50') {
+                $advanceRatio = 0.5;
+            }
+        }
 
         if (!$hasAdvance) {
             return [0.0, $this->roundMoney($netSalary)];
@@ -279,7 +293,8 @@ final class PayrollService
 
         if ($advanceAmount === 0.0 && $remainingAmount === 0.0) {
             if ($shouldSplit) {
-                $advanceAmount = $this->roundMoney($netSalary / 2);
+                $ratio = $advanceRatio ?? 0.5;
+                $advanceAmount = $this->roundMoney($netSalary * $ratio);
                 $remainingAmount = $this->roundMoney($netSalary - $advanceAmount);
             } else {
                 $remainingAmount = $this->roundMoney($netSalary);
