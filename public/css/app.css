@@ -255,6 +255,18 @@ body {
     line-height: 1.5;
 }
 
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 a {
     color: inherit;
     text-decoration: none;
@@ -1453,30 +1465,60 @@ tr:nth-child(even) td {
     color: var(--color-text-muted);
 }
 
-.backup-upload input[type="file"] {
-    width: 100%;
-    padding: 0.55rem;
-    border-radius: 10px;
-    border: 1px dashed var(--color-card-border);
-    background: var(--color-surface);
-    color: var(--color-text-muted);
-}
-
-.backup-upload input[type="password"] {
-    width: 100%;
-    padding: 0.65rem 0.75rem;
+.backup-upload .input-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.55rem 0.75rem;
     border-radius: 10px;
     border: 1px solid var(--color-card-border);
     background: var(--color-surface);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.backup-upload .input-icon:focus-within {
+    border-color: rgba(var(--color-primary-rgb), 0.6);
+    box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.15);
+}
+
+.backup-upload .input-icon i {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(var(--color-primary-rgb), 0.14);
+    color: var(--color-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.backup-upload .input-icon input[type="password"],
+.backup-upload .input-icon input[type="file"] {
+    flex: 1 1 auto;
+    width: 100%;
+    border: none;
+    background: transparent;
+    padding: 0.35rem 0.2rem;
     color: var(--color-text);
+    font: inherit;
 }
 
-.backup-upload input[type="password"]:focus {
-    outline: 2px solid rgba(var(--color-primary-rgb), 0.4);
-    outline-offset: 2px;
+.backup-upload .input-icon input[type="password"]::placeholder {
+    color: var(--color-text-muted);
 }
 
-.backup-upload input[type="file"]::file-selector-button {
+.backup-upload .input-icon input[type="password"]:focus,
+.backup-upload .input-icon input[type="file"]:focus {
+    outline: none;
+}
+
+.backup-upload .input-icon input[type="file"] {
+    color: var(--color-text-muted);
+}
+
+.backup-upload .input-icon input[type="file"]::file-selector-button {
     margin-right: 0.75rem;
     padding: 0.4rem 0.9rem;
     border: none;
@@ -1487,9 +1529,17 @@ tr:nth-child(even) td {
     cursor: pointer;
 }
 
-.backup-upload input[type="file"]:focus {
-    outline: 2px solid rgba(var(--color-primary-rgb), 0.4);
-    outline-offset: 2px;
+.backup-upload .input-icon--file {
+    border-style: dashed;
+    color: var(--color-text-muted);
+}
+
+.backup-upload .input-icon--file i {
+    background: rgba(var(--color-primary-rgb), 0.18);
+}
+
+.backup-upload .input-icon--password i {
+    background: rgba(var(--color-primary-rgb), 0.24);
 }
 
 .dashboard-schedule {

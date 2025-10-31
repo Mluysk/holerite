@@ -297,9 +297,15 @@ if (!in_array($defaultTab, $availableTabs, true)) {
                             </form>
                             <form method="post" action="?action=restore_database" enctype="multipart/form-data" class="backup-upload" data-backup-form data-backup-type="backup do banco">
                                 <label for="database_backup" class="backup-upload__label">Arquivo de backup do banco</label>
-                                <input type="file" name="database_backup" id="database_backup" accept="application/json" aria-label="Selecionar backup do banco" required>
+                                <div class="input-icon input-icon--file">
+                                    <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
+                                    <input type="file" name="database_backup" id="database_backup" accept="application/json" aria-label="Selecionar backup do banco" required>
+                                </div>
                                 <label for="database_restore_password" class="backup-upload__label">Senha de administrador</label>
-                                <input type="password" name="restore_password" id="database_restore_password" placeholder="Confirme a senha de administrador" autocomplete="current-password" required>
+                                <div class="input-icon input-icon--password">
+                                    <i class="bi bi-shield-lock-fill" aria-hidden="true"></i>
+                                    <input type="password" name="restore_password" id="database_restore_password" placeholder="Confirme a senha de administrador" autocomplete="current-password" required>
+                                </div>
                                 <small class="muted">Você precisará digitar a senha de administrador para concluir a restauração.</small>
                                 <button type="submit" class="button button-secondary">
                                     <i class="bi bi-upload" aria-hidden="true"></i>
@@ -321,9 +327,15 @@ if (!in_array($defaultTab, $availableTabs, true)) {
                             </form>
                             <form method="post" action="?action=restore_configuration" enctype="multipart/form-data" class="backup-upload" data-backup-form data-backup-type="configuração">
                                 <label for="configuration_backup" class="backup-upload__label">Arquivo de backup de configuração</label>
-                                <input type="file" name="configuration_backup" id="configuration_backup" accept="application/json" aria-label="Selecionar backup de configuração" required>
+                                <div class="input-icon input-icon--file">
+                                    <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
+                                    <input type="file" name="configuration_backup" id="configuration_backup" accept="application/json" aria-label="Selecionar backup de configuração" required>
+                                </div>
                                 <label for="configuration_restore_password" class="backup-upload__label">Senha de administrador</label>
-                                <input type="password" name="restore_password" id="configuration_restore_password" placeholder="Confirme a senha de administrador" autocomplete="current-password" required>
+                                <div class="input-icon input-icon--password">
+                                    <i class="bi bi-shield-lock-fill" aria-hidden="true"></i>
+                                    <input type="password" name="restore_password" id="configuration_restore_password" placeholder="Confirme a senha de administrador" autocomplete="current-password" required>
+                                </div>
                                 <small class="muted">Digite a senha de administrador para continuar.</small>
                                 <button type="submit" class="button button-secondary">
                                     <i class="bi bi-upload" aria-hidden="true"></i>
@@ -345,9 +357,15 @@ if (!in_array($defaultTab, $availableTabs, true)) {
                             </form>
                             <form method="post" action="?action=restore_users" enctype="multipart/form-data" class="backup-upload" data-backup-form data-backup-type="lista de usuários">
                                 <label for="users_backup" class="backup-upload__label">Arquivo de backup de usuários</label>
-                                <input type="file" name="users_backup" id="users_backup" accept="application/json" aria-label="Selecionar backup de usuários" required>
+                                <div class="input-icon input-icon--file">
+                                    <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
+                                    <input type="file" name="users_backup" id="users_backup" accept="application/json" aria-label="Selecionar backup de usuários" required>
+                                </div>
                                 <label for="users_restore_password" class="backup-upload__label">Senha de administrador</label>
-                                <input type="password" name="restore_password" id="users_restore_password" placeholder="Confirme a senha de administrador" autocomplete="current-password" required>
+                                <div class="input-icon input-icon--password">
+                                    <i class="bi bi-shield-lock-fill" aria-hidden="true"></i>
+                                    <input type="password" name="restore_password" id="users_restore_password" placeholder="Confirme a senha de administrador" autocomplete="current-password" required>
+                                </div>
                                 <small class="muted">A restauração só continua após confirmar a senha de administrador.</small>
                                 <button type="submit" class="button button-secondary">
                                     <i class="bi bi-upload" aria-hidden="true"></i>

@@ -95,14 +95,20 @@ final class BackupService
         }
 
         $allowedTables = ['companies', 'employees', 'payrolls', 'payroll_items', 'users'];
+        $clearOrder = ['payroll_items', 'payrolls', 'employees', 'companies', 'users'];
 
-        $this->pdo->beginTransaction();
+        $this->pdo->exec('SET FOREIGN_KEY_CHECKS=0');
 
         try {
-            $this->pdo->exec('SET FOREIGN_KEY_CHECKS=0');
+            $this->pdo->beginTransaction();
 
-            foreach (['payroll_items', 'payrolls', 'employees', 'companies', 'users'] as $table) {
-                $this->pdo->exec(sprintf('TRUNCATE TABLE %s', $this->wrapIdentifier($table)));
+            foreach ($clearOrder as $table) {
+                if (!in_array($table, $allowedTables, true)) {
+                    continue;
+                }
+
+                $wrapped = $this->wrapIdentifier($table);
+                $this->pdo->exec(sprintf('DELETE FROM %s', $wrapped));
             }
 
             foreach (['companies', 'employees', 'payrolls', 'payroll_items', 'users'] as $table) {
@@ -125,17 +131,19 @@ final class BackupService
                 }
             }
 
-            $this->pdo->exec('SET FOREIGN_KEY_CHECKS=1');
             $this->pdo->commit();
         } catch (Throwable $exception) {
-            $this->pdo->rollBack();
-            $this->pdo->exec('SET FOREIGN_KEY_CHECKS=1');
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
 
             throw new RuntimeException(
                 'Não foi possível restaurar o backup do banco de dados: ' . $exception->getMessage(),
                 0,
                 $exception
             );
+        } finally {
+            $this->pdo->exec('SET FOREIGN_KEY_CHECKS=1');
         }
 
         $this->seedDefaultAdministratorIfMissing();
@@ -185,7 +193,9 @@ final class BackupService
 
                     $this->pdo->commit();
                 } catch (Throwable $exception) {
-                    $this->pdo->rollBack();
+                    if ($this->pdo->inTransaction()) {
+                        $this->pdo->rollBack();
+                    }
 
                     throw new RuntimeException(
                         'Não foi possível restaurar os dados da empresa: ' . $exception->getMessage(),
@@ -215,7 +225,6 @@ final class BackupService
 
         try {
             $this->pdo->exec('DELETE FROM users');
-            $this->pdo->exec('ALTER TABLE users AUTO_INCREMENT = 1');
 
             foreach ($users as $user) {
                 if (!is_array($user) || $user === []) {
@@ -233,7 +242,9 @@ final class BackupService
 
             $this->pdo->commit();
         } catch (Throwable $exception) {
-            $this->pdo->rollBack();
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
 
             throw new RuntimeException(
                 'Não foi possível restaurar o backup de usuários: ' . $exception->getMessage(),
