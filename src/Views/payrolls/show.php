@@ -71,8 +71,7 @@ $appendItem = static function (array &$items, int &$code, string $description, s
     ];
 };
 
-$salaryNote = $advanceAmount > 0.0 ? 'Adiantamento habilitado — desconto listado ao lado.' : null;
-$appendItem($items, $code, 'Salário base', $referenceValue, $payroll->getBaseSalary(), null, $salaryNote);
+$appendItem($items, $code, 'Salário base', $referenceValue, $payroll->getBaseSalary(), null);
 
 foreach ($payroll->getItems() as $item) {
     if ($item->getType() === 'deduction') {
@@ -116,6 +115,7 @@ if ($transportDeduction > 0.0) {
 
     $messages[] = 'Vale-transporte: R$ ' . number_format($transportDeduction, 2, ',', '.')
         . ($transportDetails !== [] ? ' · ' . implode(' · ', $transportDetails) : '');
+    $messages[] = 'O vale-transporte permite desconto de até 6% do salário base, conforme legislação brasileira.';
 }
 if ($manualValeDeduction > 0.0) {
     $messages[] = 'Vales de produtos: R$ ' . number_format($manualValeDeduction, 2, ',', '.');
