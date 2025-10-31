@@ -51,18 +51,15 @@ $transportDays = $payroll->getTransportDays();
 $transportTrips = $payroll->getTransportTrips();
 $transportTripCost = $payroll->getTransportTripCost();
 $advanceRatioLabel = null;
+$installmentTotal = $advanceAmount + max($remainingAmount, 0.0);
 
-if ($advanceAmount > 0.0) {
-    $installmentTotal = $advanceAmount + max($remainingAmount, 0.0);
+if ($advanceAmount > 0.0 && $installmentTotal > 0.0) {
+    $percentage = round(($advanceAmount / $installmentTotal) * 100);
 
-    if ($installmentTotal > 0.0) {
-        $percentage = round(($advanceAmount / $installmentTotal) * 100);
-
-        if (abs($percentage - 40) <= 1) {
-            $advanceRatioLabel = '40%';
-        } elseif (abs($percentage - 50) <= 1) {
-            $advanceRatioLabel = '50%';
-        }
+    if (abs($percentage - 40) <= 1) {
+        $advanceRatioLabel = '40%';
+    } elseif (abs($percentage - 50) <= 1) {
+        $advanceRatioLabel = '50%';
     }
 }
 
@@ -86,11 +83,47 @@ $appendItem = static function (array &$items, int &$code, string $description, s
     ];
 };
 
+$formatPercentage = static function (float $ratio): string {
+    return number_format($ratio, 2, ',', '.') . '%';
+};
+
+$grossEarningsBase = $payroll->getBaseSalary() + $payroll->getTotalAllowances();
+
+$resolveDeductionReference = static function (string $description, float $amount) use ($payroll, $grossEarningsBase, $installmentTotal, $formatPercentage): string {
+    if ($amount <= 0.0) {
+        return '';
+    }
+
+    $normalized = strtolower($description);
+    $base = 0.0;
+
+    if (str_starts_with($normalized, 'inss')) {
+        $base = $payroll->getInssBase();
+    } elseif (str_starts_with($normalized, 'irrf')) {
+        $base = $payroll->getIrrfBase();
+    } elseif (str_contains($normalized, 'vale-transporte')) {
+        $base = $payroll->getBaseSalary();
+    } elseif (str_contains($normalized, 'adiantamento')) {
+        $base = $installmentTotal;
+    } elseif (str_contains($normalized, 'vale')) {
+        $base = $grossEarningsBase;
+    } else {
+        $base = $grossEarningsBase;
+    }
+
+    if ($base <= 0.0) {
+        return '';
+    }
+
+    return $formatPercentage(($amount / $base) * 100);
+};
+
 $appendItem($items, $code, 'Salário base', $referenceValue, $payroll->getBaseSalary(), null);
 
 foreach ($payroll->getItems() as $item) {
     if ($item->getType() === 'deduction') {
-        $appendItem($items, $code, $item->getDescription(), '', null, $item->getAmount());
+        $reference = $resolveDeductionReference($item->getDescription(), $item->getAmount());
+        $appendItem($items, $code, $item->getDescription(), $reference, null, $item->getAmount());
         continue;
     }
 
@@ -103,7 +136,12 @@ if ($advanceAmount > 0.0) {
         $description .= ' (' . $advanceRatioLabel . ')';
     }
 
-    $appendItem($items, $code, $description, '', null, $advanceAmount);
+    $advanceReference = '';
+    if ($installmentTotal > 0.0) {
+        $advanceReference = $formatPercentage(($advanceAmount / $installmentTotal) * 100);
+    }
+
+    $appendItem($items, $code, $description, $advanceReference, null, $advanceAmount);
 }
 
 $grossTotal = $payroll->getBaseSalary() + $payroll->getTotalAllowances();
