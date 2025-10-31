@@ -124,6 +124,7 @@ $pageScripts[] = [
         <div class="grid" style="margin-top:1.5rem;">
             <div class="card">
                 <h3 style="margin-top:0;">Proventos manuais</h3>
+                <p class="muted" style="margin:0 0 0.75rem 0;">Registre aqui ganhos como horas extras, adicional noturno, comissões, bônus, gratificações e demais proventos que não sejam calculados automaticamente.</p>
                 <div id="allowances" class="dynamic-list" data-empty-label="Nenhum provento manual informado."></div>
                 <button type="button" class="button dynamic-add" data-target="allowances" data-type="allowance" style="background:#10b981;margin-top:0.5rem;">Adicionar provento</button>
             </div>
