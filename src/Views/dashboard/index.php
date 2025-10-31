@@ -432,7 +432,7 @@ if ($hasCharts) {
         <div class="card">
             <header class="section-heading section-heading--compact">
                 <span class="icon-circle icon-circle--info" aria-hidden="true">
-                    <i class="bi bi-calendar2-month"></i>
+                    <i class="bi bi-calendar-month"></i>
                 </span>
                 <div>
                     <h3>Totais pagos por mês</h3>
@@ -465,7 +465,7 @@ if ($hasCharts) {
         <div class="card">
             <header class="section-heading section-heading--compact">
                 <span class="icon-circle icon-circle--info" aria-hidden="true">
-                    <i class="bi bi-calendar2-year"></i>
+                    <i class="bi bi-calendar3"></i>
                 </span>
                 <div>
                     <h3>Totais pagos por ano</h3>
