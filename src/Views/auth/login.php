@@ -8,11 +8,6 @@ $displayName = $loginName !== null && $loginName !== '' ? $loginName : null;
 $welcomeHeadline = $greeting . ($displayName !== null ? ', ' . $displayName : '!');
 ?>
 <section class="auth-wrapper">
-    <div class="auth-brand" aria-label="Logos do sistema">
-        <img src="img/logo.png" alt="JP Fábrica de Salgados" class="auth-brand__logo auth-brand__logo--primary">
-        <span class="auth-brand__separator" aria-hidden="true">&bull;</span>
-        <img src="img/logo3.png" alt="Holerite GO" class="auth-brand__logo auth-brand__logo--secondary">
-    </div>
     <div class="auth-card">
         <div class="auth-card__header">
             <h2>Entrar</h2>

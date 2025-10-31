@@ -34,12 +34,13 @@ CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(100) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
+    role ENUM('administrator', 'operator') NOT NULL DEFAULT 'administrator',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO users (username, password_hash)
-VALUES ('admin', '$2y$12$xYtysTzDWmNVJUtrv3xcnO62KGT24U774wEy8RTIA7H5IsczQS9fu')
-ON DUPLICATE KEY UPDATE username = VALUES(username);
+INSERT INTO users (username, password_hash, role)
+VALUES ('admin', '$2y$12$xYtysTzDWmNVJUtrv3xcnO62KGT24U774wEy8RTIA7H5IsczQS9fu', 'administrator')
+ON DUPLICATE KEY UPDATE username = VALUES(username), role = VALUES(role);
 
 CREATE TABLE IF NOT EXISTS payrolls (
     id INT AUTO_INCREMENT PRIMARY KEY,

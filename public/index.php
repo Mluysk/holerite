@@ -7,12 +7,14 @@ use Holerite\Controllers\AuthController;
 use Holerite\Controllers\DashboardController;
 use Holerite\Controllers\EmployeeController;
 use Holerite\Controllers\PayrollController;
+use Holerite\Controllers\BackupController;
 use Holerite\Repositories\CompanyRepository;
 use Holerite\Repositories\EmployeeRepository;
 use Holerite\Repositories\PayrollRepository;
 use Holerite\Repositories\UserRepository;
 use Holerite\Services\EmployeeBenefitService;
 use Holerite\Services\PayrollService;
+use Holerite\Services\BackupService;
 
 require __DIR__ . '/../autoload.php';
 
@@ -24,6 +26,7 @@ $payrollRepository = new PayrollRepository();
 $userRepository = new UserRepository();
 $employeeBenefitService = new EmployeeBenefitService();
 $payrollService = new PayrollService($employeeRepository, $payrollRepository);
+$backupService = new BackupService();
 
 $activeCompany = $companyRepository->get();
 $GLOBALS['holerite_company'] = $activeCompany;
@@ -37,6 +40,7 @@ $companyController = new CompanyController($companyRepository, $userRepository);
 $employeeController = new EmployeeController($employeeRepository, $payrollRepository, $employeeBenefitService);
 $payrollController = new PayrollController($employeeRepository, $payrollRepository, $payrollService, $companyRepository);
 $authController = new AuthController($userRepository);
+$backupController = new BackupController($backupService);
 
 $action = $_GET['action'] ?? 'dashboard';
 $isAuthenticated = isset($_SESSION['user']) && is_array($_SESSION['user']);
@@ -120,6 +124,30 @@ switch ($action) {
     case 'create_user':
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $authController->createUser($_POST);
+        } else {
+            $companyController->edit();
+        }
+        break;
+
+    case 'backup_database':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $backupController->downloadDatabase();
+        } else {
+            $companyController->edit();
+        }
+        break;
+
+    case 'backup_configuration':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $backupController->downloadConfiguration();
+        } else {
+            $companyController->edit();
+        }
+        break;
+
+    case 'backup_users':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $backupController->downloadUsers();
         } else {
             $companyController->edit();
         }

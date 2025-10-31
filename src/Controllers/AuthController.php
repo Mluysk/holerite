@@ -6,6 +6,7 @@ namespace Holerite\Controllers;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use Holerite\Models\User;
 use Holerite\Repositories\UserRepository;
 use RuntimeException;
 use Throwable;
@@ -64,6 +65,7 @@ final class AuthController extends Controller
             $_SESSION['user'] = [
                 'id' => $user->getId(),
                 'username' => $user->getUsername(),
+                'role' => $user->getRole(),
             ];
 
             unset($_SESSION['login_username']);
@@ -125,7 +127,7 @@ final class AuthController extends Controller
             $this->flash('error', 'Não foi possível atualizar a senha: ' . $exception->getMessage());
         }
 
-        $this->redirect('?action=edit_company');
+        $this->redirect('?action=edit_company&tab=password');
     }
 
     /**
@@ -171,7 +173,7 @@ final class AuthController extends Controller
             $this->flash('error', 'Não foi possível atualizar o usuário: ' . $exception->getMessage());
         }
 
-        $this->redirect('?action=edit_company');
+        $this->redirect('?action=edit_company&tab=password');
     }
 
     /**
@@ -179,28 +181,33 @@ final class AuthController extends Controller
      */
     public function createUser(array $data): void
     {
+        $this->requireAdministrator();
+
         $username = trim((string) ($data['username'] ?? ''));
         $password = (string) ($data['password'] ?? '');
         $confirmPassword = (string) ($data['confirm_password'] ?? '');
+        $roleInput = strtolower(trim((string) ($data['role'] ?? User::ROLE_OPERATOR)));
+        $allowedRoles = User::allowedRoles();
+        $role = in_array($roleInput, $allowedRoles, true) ? $roleInput : User::ROLE_OPERATOR;
 
         if ($username === '' || $password === '' || $confirmPassword === '') {
             $this->flash('error', 'Informe usuário e senha para criar uma nova conta.');
-            $this->redirect('?action=edit_company');
+            $this->redirect('?action=edit_company&tab=users');
         }
 
         if (strlen($username) < 3) {
             $this->flash('error', 'O nome de usuário deve ter pelo menos 3 caracteres.');
-            $this->redirect('?action=edit_company');
+            $this->redirect('?action=edit_company&tab=users');
         }
 
         if ($password !== $confirmPassword) {
             $this->flash('error', 'A confirmação da senha não confere.');
-            $this->redirect('?action=edit_company');
+            $this->redirect('?action=edit_company&tab=users');
         }
 
         if (strlen($password) < 6) {
             $this->flash('error', 'A senha deve ter pelo menos 6 caracteres.');
-            $this->redirect('?action=edit_company');
+            $this->redirect('?action=edit_company&tab=users');
         }
 
         try {
@@ -209,7 +216,7 @@ final class AuthController extends Controller
             }
 
             $hash = password_hash($password, PASSWORD_DEFAULT);
-            $this->userRepository->create($username, $hash);
+            $this->userRepository->create($username, $hash, $role);
             $this->flash('success', 'Usuário criado com sucesso.');
         } catch (RuntimeException $exception) {
             $this->flash('error', $exception->getMessage());
@@ -217,7 +224,20 @@ final class AuthController extends Controller
             $this->flash('error', 'Não foi possível criar o usuário: ' . $exception->getMessage());
         }
 
-        $this->redirect('?action=edit_company');
+        $this->redirect('?action=edit_company&tab=users');
+    }
+
+    private function requireAdministrator(): void
+    {
+        $user = $_SESSION['user'] ?? null;
+        $role = is_array($user) ? ($user['role'] ?? null) : null;
+
+        if ($role === User::ROLE_ADMINISTRATOR) {
+            return;
+        }
+
+        $this->flash('error', 'Apenas administradores podem gerenciar contas adicionais.');
+        $this->redirect('?action=dashboard');
     }
 
     private function isAuthenticated(): bool

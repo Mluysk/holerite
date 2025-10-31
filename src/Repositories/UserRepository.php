@@ -58,15 +58,16 @@ final class UserRepository
         return array_map(fn ($row) => $this->hydrate((array) $row), $rows);
     }
 
-    public function create(string $username, string $passwordHash): User
+    public function create(string $username, string $passwordHash, string $role): User
     {
-        $statement = $this->pdo->prepare('INSERT INTO users (username, password_hash) VALUES (:username, :password_hash)');
+        $statement = $this->pdo->prepare('INSERT INTO users (username, password_hash, role) VALUES (:username, :password_hash, :role)');
         $statement->execute([
             'username' => $username,
             'password_hash' => $passwordHash,
+            'role' => $role,
         ]);
 
-        return new User((int) $this->pdo->lastInsertId(), $username, $passwordHash);
+        return new User((int) $this->pdo->lastInsertId(), $username, $passwordHash, $role);
     }
 
     public function updatePassword(int $id, string $passwordHash): void
@@ -92,10 +93,15 @@ final class UserRepository
      */
     private function hydrate(array $row): User
     {
+        $role = isset($row['role']) && in_array($row['role'], User::allowedRoles(), true)
+            ? (string) $row['role']
+            : User::ROLE_ADMINISTRATOR;
+
         return new User(
             isset($row['id']) ? (int) $row['id'] : null,
             (string) $row['username'],
             (string) $row['password_hash'],
+            $role,
         );
     }
 }

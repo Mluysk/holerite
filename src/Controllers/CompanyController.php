@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Holerite\Controllers;
 
 use Holerite\Models\Company;
+use Holerite\Models\User;
 use Holerite\Repositories\CompanyRepository;
 use Holerite\Repositories\UserRepository;
 use RuntimeException;
@@ -36,6 +37,11 @@ final class CompanyController extends Controller
         'wine' => 'Cor Vinho',
     ];
 
+    private const USER_ROLES = [
+        User::ROLE_ADMINISTRATOR => 'Administrador',
+        User::ROLE_OPERATOR => 'Operador',
+    ];
+
     public function __construct(
         private CompanyRepository $companyRepository,
         private UserRepository $userRepository,
@@ -45,12 +51,15 @@ final class CompanyController extends Controller
     public function edit(): void
     {
         $company = $this->companyRepository->get();
-        $users = $this->userRepository->all();
         $currentUser = isset($_SESSION['user']) && is_array($_SESSION['user']) ? $_SESSION['user'] : null;
-        $requestedTab = isset($_GET['tab']) ? strtolower((string) $_GET['tab']) : 'company';
-        $allowedTabs = ['company', 'appearance', 'password', 'users'];
+        $isAdmin = $this->isAdmin();
+        $users = $isAdmin ? $this->userRepository->all() : [];
+        $requestedTab = isset($_GET['tab']) ? strtolower((string) $_GET['tab']) : ($isAdmin ? 'company' : 'password');
+        $allowedTabs = $isAdmin
+            ? ['company', 'appearance', 'password', 'users', 'backups']
+            : ['password'];
         if (!in_array($requestedTab, $allowedTabs, true)) {
-            $requestedTab = 'company';
+            $requestedTab = $isAdmin ? 'company' : 'password';
         }
 
         $pageScripts = [
@@ -75,11 +84,14 @@ final class CompanyController extends Controller
             'currentUser' => $currentUser,
             'themeModes' => self::THEME_MODES,
             'colorPalettes' => self::COLOR_PALETTES,
+            'userRoles' => self::USER_ROLES,
             'appearance' => [
                 'themeMode' => $company->getThemeMode(),
                 'colorPalette' => $company->getColorPalette(),
             ],
             'defaultTab' => $requestedTab,
+            'availableTabs' => $allowedTabs,
+            'isAdmin' => $isAdmin,
             'pageScripts' => $pageScripts,
         ]);
     }
@@ -89,6 +101,7 @@ final class CompanyController extends Controller
      */
     public function update(array $data): void
     {
+        $this->ensureAdmin();
         $company = $this->companyRepository->get();
 
         try {
@@ -109,6 +122,7 @@ final class CompanyController extends Controller
      */
     public function updateThemeMode(array $data): void
     {
+        $this->ensureAdmin();
         $company = $this->companyRepository->get();
         $themeMode = strtolower((string) ($data['theme_mode'] ?? ''));
 
@@ -133,6 +147,7 @@ final class CompanyController extends Controller
      */
     public function updateColorPalette(array $data): void
     {
+        $this->ensureAdmin();
         $company = $this->companyRepository->get();
         $colorPalette = strtolower((string) ($data['color_palette'] ?? ''));
 
@@ -193,5 +208,23 @@ final class CompanyController extends Controller
         $company->setColorPalette($colorPalette);
 
         return $company;
+    }
+
+    private function isAdmin(): bool
+    {
+        $user = $_SESSION['user'] ?? null;
+        $role = is_array($user) ? ($user['role'] ?? null) : null;
+
+        return $role === User::ROLE_ADMINISTRATOR;
+    }
+
+    private function ensureAdmin(): void
+    {
+        if ($this->isAdmin()) {
+            return;
+        }
+
+        $this->flash('error', 'Acesso restrito aos administradores.');
+        $this->redirect('?action=dashboard');
     }
 }

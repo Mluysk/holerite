@@ -6,10 +6,14 @@ namespace Holerite\Models;
 
 final class User
 {
+    public const ROLE_ADMINISTRATOR = 'administrator';
+    public const ROLE_OPERATOR = 'operator';
+
     public function __construct(
         private ?int $id,
         private string $username,
         private string $passwordHash,
+        private string $role = self::ROLE_OPERATOR,
     ) {
     }
 
@@ -41,5 +45,26 @@ final class User
     public function setPasswordHash(string $passwordHash): void
     {
         $this->passwordHash = $passwordHash;
+    }
+
+    public function getRole(): string
+    {
+        return $this->role;
+    }
+
+    public function setRole(string $role): void
+    {
+        $this->role = $role;
+    }
+
+    /**
+     * @return string[]
+     */
+    public static function allowedRoles(): array
+    {
+        return [
+            self::ROLE_ADMINISTRATOR,
+            self::ROLE_OPERATOR,
+        ];
     }
 }

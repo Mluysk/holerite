@@ -929,32 +929,8 @@ form textarea::placeholder {
 
 .auth-wrapper {
     display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-
-.auth-brand {
-    display: flex;
-    align-items: center;
     justify-content: center;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-    color: var(--color-text-muted);
-}
-
-.auth-brand__logo {
-    height: 64px;
-    width: auto;
-    object-fit: contain;
-}
-
-.auth-brand__logo--secondary {
-    height: 72px;
-}
-
-.auth-brand__separator {
-    font-size: 1.5rem;
-    line-height: 1;
+    padding: 1rem;
 }
 
 .auth-card {
@@ -1418,6 +1394,50 @@ tr:nth-child(even) td {
     background: rgba(var(--color-primary-rgb), 0.08);
     color: var(--color-primary);
     border: 1px solid rgba(var(--color-primary-rgb), 0.18);
+}
+
+.tag--admin {
+    background: rgba(255, 215, 0, 0.16);
+    color: #ad7c00;
+    border: 1px solid rgba(255, 215, 0, 0.5);
+}
+
+.backup-actions {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    margin-top: 1.5rem;
+}
+
+.backup-option {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1rem;
+    align-items: start;
+    padding: 1rem;
+    border-radius: 14px;
+    background: var(--color-surface-alt);
+    box-shadow: inset 0 0 0 1px var(--color-card-border);
+}
+
+.backup-option__icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    background: rgba(var(--color-primary-rgb), 0.12);
+    color: var(--color-primary);
+}
+
+.backup-option__body h4 {
+    margin: 0 0 0.25rem 0;
+}
+
+.backup-option__body form {
+    margin-top: 0.75rem;
 }
 
 .dashboard-schedule {
