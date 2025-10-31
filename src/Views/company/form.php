@@ -281,7 +281,7 @@ if (!in_array($defaultTab, $availableTabs, true)) {
         <div class="tab-content<?php if ($defaultTab === 'backups'): ?> active<?php endif; ?>" id="tab-backups">
             <div class="card">
                 <h3 style="margin-top:0;">Backups do sistema</h3>
-                <p class="muted" style="margin-top:0;">Gere arquivos JSON com uma cópia dos dados principais para armazenar em local seguro.</p>
+                <p class="muted" style="margin-top:0;">Gere arquivos JSON com uma cópia dos dados principais e faça upload aqui quando precisar restaurar.</p>
 
                 <div class="backup-actions">
                     <div class="backup-option">
@@ -293,6 +293,13 @@ if (!in_array($defaultTab, $availableTabs, true)) {
                                 <button type="submit" class="button">
                                     <i class="bi bi-download" aria-hidden="true"></i>
                                     <span>Baixar backup do banco</span>
+                                </button>
+                            </form>
+                            <form method="post" action="?action=restore_database" enctype="multipart/form-data" class="backup-upload">
+                                <input type="file" name="database_backup" id="database_backup" accept="application/json" aria-label="Selecionar backup do banco" required>
+                                <button type="submit" class="button button-secondary">
+                                    <i class="bi bi-upload" aria-hidden="true"></i>
+                                    <span>Restaurar backup do banco</span>
                                 </button>
                             </form>
                         </div>
@@ -308,6 +315,13 @@ if (!in_array($defaultTab, $availableTabs, true)) {
                                     <span>Baixar backup de configuração</span>
                                 </button>
                             </form>
+                            <form method="post" action="?action=restore_configuration" enctype="multipart/form-data" class="backup-upload">
+                                <input type="file" name="configuration_backup" id="configuration_backup" accept="application/json" aria-label="Selecionar backup de configuração" required>
+                                <button type="submit" class="button button-secondary">
+                                    <i class="bi bi-upload" aria-hidden="true"></i>
+                                    <span>Restaurar configuração</span>
+                                </button>
+                            </form>
                         </div>
                     </div>
                     <div class="backup-option">
@@ -319,6 +333,13 @@ if (!in_array($defaultTab, $availableTabs, true)) {
                                 <button type="submit" class="button">
                                     <i class="bi bi-download" aria-hidden="true"></i>
                                     <span>Baixar usuários</span>
+                                </button>
+                            </form>
+                            <form method="post" action="?action=restore_users" enctype="multipart/form-data" class="backup-upload">
+                                <input type="file" name="users_backup" id="users_backup" accept="application/json" aria-label="Selecionar backup de usuários" required>
+                                <button type="submit" class="button button-secondary">
+                                    <i class="bi bi-upload" aria-hidden="true"></i>
+                                    <span>Restaurar usuários</span>
                                 </button>
                             </form>
                         </div>

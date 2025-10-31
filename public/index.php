@@ -153,6 +153,30 @@ switch ($action) {
         }
         break;
 
+    case 'restore_database':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $backupController->restoreDatabase();
+        } else {
+            $companyController->edit();
+        }
+        break;
+
+    case 'restore_configuration':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $backupController->restoreConfiguration();
+        } else {
+            $companyController->edit();
+        }
+        break;
+
+    case 'restore_users':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $backupController->restoreUsers();
+        } else {
+            $companyController->edit();
+        }
+        break;
+
     case 'list_employees':
         $employeeController->index();
         break;

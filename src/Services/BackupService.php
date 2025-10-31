@@ -10,6 +10,7 @@ use DateTimeZone;
 use Holerite\Database\Connection;
 use PDO;
 use RuntimeException;
+use Throwable;
 
 final class BackupService
 {
@@ -60,7 +61,7 @@ final class BackupService
 
     public function generateUsersBackup(): string
     {
-        $statement = $this->pdo->query('SELECT id, username, role, created_at FROM users ORDER BY username ASC');
+        $statement = $this->pdo->query('SELECT id, username, role, password_hash, created_at FROM users ORDER BY username ASC');
         $rows = $statement ? $statement->fetchAll() : [];
 
         return $this->encode([
@@ -71,11 +72,177 @@ final class BackupService
                     'id' => (int) ($row['id'] ?? 0),
                     'username' => (string) ($row['username'] ?? ''),
                     'role' => (string) ($row['role'] ?? ''),
+                    'password_hash' => (string) ($row['password_hash'] ?? ''),
                     'created_at' => $row['created_at'] ?? null,
                 ],
                 $rows ?: []
             ),
         ]);
+    }
+
+    public function restoreDatabaseBackup(string $json): void
+    {
+        $payload = $this->decode($json);
+
+        if (($payload['type'] ?? null) !== 'database') {
+            throw new RuntimeException('O arquivo enviado não corresponde a um backup do banco de dados.');
+        }
+
+        $tables = $payload['tables'] ?? null;
+
+        if (!is_array($tables)) {
+            throw new RuntimeException('Backup de banco de dados inválido.');
+        }
+
+        $allowedTables = ['companies', 'employees', 'payrolls', 'payroll_items', 'users'];
+
+        $this->pdo->beginTransaction();
+
+        try {
+            $this->pdo->exec('SET FOREIGN_KEY_CHECKS=0');
+
+            foreach (['payroll_items', 'payrolls', 'employees', 'companies', 'users'] as $table) {
+                $this->pdo->exec(sprintf('TRUNCATE TABLE %s', $this->wrapIdentifier($table)));
+            }
+
+            foreach (['companies', 'employees', 'payrolls', 'payroll_items', 'users'] as $table) {
+                if (!in_array($table, $allowedTables, true)) {
+                    continue;
+                }
+
+                $rows = $tables[$table] ?? [];
+
+                if (!is_array($rows)) {
+                    continue;
+                }
+
+                foreach ($rows as $row) {
+                    if (!is_array($row) || $row === []) {
+                        continue;
+                    }
+
+                    $this->insertRow($table, $row);
+                }
+            }
+
+            $this->pdo->exec('SET FOREIGN_KEY_CHECKS=1');
+            $this->pdo->commit();
+        } catch (Throwable $exception) {
+            $this->pdo->rollBack();
+            $this->pdo->exec('SET FOREIGN_KEY_CHECKS=1');
+
+            throw new RuntimeException(
+                'Não foi possível restaurar o backup do banco de dados: ' . $exception->getMessage(),
+                0,
+                $exception
+            );
+        }
+
+        $this->seedDefaultAdministratorIfMissing();
+    }
+
+    public function restoreConfigurationBackup(string $json): void
+    {
+        $payload = $this->decode($json);
+
+        if (($payload['type'] ?? null) !== 'configuration') {
+            throw new RuntimeException('O arquivo enviado não corresponde a um backup de configuração.');
+        }
+
+        $configData = $payload['config_file'] ?? null;
+        $companyData = $payload['company'] ?? null;
+
+        if (!is_array($configData)) {
+            throw new RuntimeException('Backup de configuração inválido.');
+        }
+
+        $this->writeConfigFile($configData);
+
+        if (is_array($companyData) && $companyData !== []) {
+            $filtered = $this->filterCompanyData($companyData);
+
+            if ($filtered !== []) {
+                $this->pdo->beginTransaction();
+
+                try {
+                    $columns = array_keys($filtered);
+                    $placeholders = array_map(fn (string $column): string => ':' . $column, $columns);
+                    $updates = array_map(
+                        fn (string $column): string => sprintf('%s = VALUES(%s)', $this->wrapIdentifier($column), $this->wrapIdentifier($column)),
+                        $columns
+                    );
+
+                    $sql = sprintf(
+                        'INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s',
+                        $this->wrapIdentifier('companies'),
+                        implode(', ', array_map([$this, 'wrapIdentifier'], $columns)),
+                        implode(', ', $placeholders),
+                        implode(', ', $updates)
+                    );
+
+                    $statement = $this->pdo->prepare($sql);
+                    $statement->execute($filtered);
+
+                    $this->pdo->commit();
+                } catch (Throwable $exception) {
+                    $this->pdo->rollBack();
+
+                    throw new RuntimeException(
+                        'Não foi possível restaurar os dados da empresa: ' . $exception->getMessage(),
+                        0,
+                        $exception
+                    );
+                }
+            }
+        }
+    }
+
+    public function restoreUsersBackup(string $json): void
+    {
+        $payload = $this->decode($json);
+
+        if (($payload['type'] ?? null) !== 'users') {
+            throw new RuntimeException('O arquivo enviado não corresponde a um backup de usuários.');
+        }
+
+        $users = $payload['users'] ?? null;
+
+        if (!is_array($users)) {
+            throw new RuntimeException('Backup de usuários inválido.');
+        }
+
+        $this->pdo->beginTransaction();
+
+        try {
+            $this->pdo->exec('DELETE FROM users');
+            $this->pdo->exec('ALTER TABLE users AUTO_INCREMENT = 1');
+
+            foreach ($users as $user) {
+                if (!is_array($user) || $user === []) {
+                    continue;
+                }
+
+                $filtered = $this->filterUserData($user);
+
+                if (!isset($filtered['username'], $filtered['password_hash'])) {
+                    throw new RuntimeException('Backup de usuários inválido: senhas não encontradas.');
+                }
+
+                $this->insertRow('users', $filtered);
+            }
+
+            $this->pdo->commit();
+        } catch (Throwable $exception) {
+            $this->pdo->rollBack();
+
+            throw new RuntimeException(
+                'Não foi possível restaurar o backup de usuários: ' . $exception->getMessage(),
+                0,
+                $exception
+            );
+        }
+
+        $this->seedDefaultAdministratorIfMissing();
     }
 
     private function timestamp(): string
@@ -130,5 +297,126 @@ final class BackupService
         }
 
         return $encoded;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function decode(string $json): array
+    {
+        $decoded = json_decode($json, true);
+
+        if (!is_array($decoded)) {
+            throw new RuntimeException('Arquivo de backup inválido ou corrompido.');
+        }
+
+        return $decoded;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private function insertRow(string $table, array $row): void
+    {
+        $columns = array_keys($row);
+        $placeholders = array_map(fn (string $column): string => ':' . $column, $columns);
+
+        $sql = sprintf(
+            'INSERT INTO %s (%s) VALUES (%s)',
+            $this->wrapIdentifier($table),
+            implode(', ', array_map([$this, 'wrapIdentifier'], $columns)),
+            implode(', ', $placeholders)
+        );
+
+        $statement = $this->pdo->prepare($sql);
+
+        foreach ($row as $column => $value) {
+            if ($value === null) {
+                $statement->bindValue(':' . $column, null, PDO::PARAM_NULL);
+            } else {
+                $statement->bindValue(':' . $column, $value);
+            }
+        }
+
+        $statement->execute();
+    }
+
+    private function wrapIdentifier(string $identifier): string
+    {
+        return '`' . str_replace('`', '``', $identifier) . '`';
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function filterCompanyData(array $data): array
+    {
+        $allowed = [
+            'id',
+            'name',
+            'document',
+            'address',
+            'city',
+            'state',
+            'zip_code',
+            'phone',
+            'email',
+            'theme_mode',
+            'color_palette',
+            'created_at',
+            'updated_at',
+        ];
+
+        $filtered = array_intersect_key($data, array_flip($allowed));
+
+        if (!isset($filtered['id'])) {
+            $filtered['id'] = 1;
+        }
+
+        return $filtered;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function filterUserData(array $data): array
+    {
+        $allowed = ['id', 'username', 'password_hash', 'role', 'created_at'];
+
+        return array_intersect_key($data, array_flip($allowed));
+    }
+
+    private function writeConfigFile(array $config): void
+    {
+        if (!isset($config['db']) || !is_array($config['db'])) {
+            throw new RuntimeException('Configuração de banco de dados ausente no backup.');
+        }
+
+        $path = __DIR__ . '/../../config/config.php';
+        $export = "<?php\n\ndeclare(strict_types=1);\n\nreturn " . var_export($config, true) . ";\n";
+
+        if (file_put_contents($path, $export) === false) {
+            throw new RuntimeException('Não foi possível atualizar o arquivo de configuração.');
+        }
+    }
+
+    private function seedDefaultAdministratorIfMissing(): void
+    {
+        $statement = $this->pdo->query("SELECT COUNT(*) AS total FROM users WHERE role = 'administrator'");
+        $row = $statement ? $statement->fetch() : false;
+        $count = $row !== false ? (int) ($row['total'] ?? 0) : 0;
+
+        if ($count > 0) {
+            return;
+        }
+
+        $seed = $this->pdo->prepare('INSERT INTO users (username, password_hash, role) VALUES (:username, :password_hash, :role)');
+        $seed->execute([
+            'username' => 'admin',
+            'password_hash' => '$2y$12$xYtysTzDWmNVJUtrv3xcnO62KGT24U774wEy8RTIA7H5IsczQS9fu',
+            'role' => 'administrator',
+        ]);
     }
 }

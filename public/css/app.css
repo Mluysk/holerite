@@ -1440,6 +1440,36 @@ tr:nth-child(even) td {
     margin-top: 0.75rem;
 }
 
+.backup-upload {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.backup-upload input[type="file"] {
+    width: 100%;
+    padding: 0.55rem;
+    border-radius: 10px;
+    border: 1px dashed var(--color-card-border);
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+}
+
+.backup-upload input[type="file"]::file-selector-button {
+    margin-right: 0.75rem;
+    padding: 0.4rem 0.9rem;
+    border: none;
+    border-radius: 8px;
+    background: rgba(var(--color-primary-rgb), 0.12);
+    color: var(--color-primary);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.backup-upload input[type="file"]:focus {
+    outline: 2px solid rgba(var(--color-primary-rgb), 0.4);
+    outline-offset: 2px;
+}
+
 .dashboard-schedule {
     display: grid;
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
