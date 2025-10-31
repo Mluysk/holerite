@@ -21,7 +21,7 @@ $colorPalette = preg_match('/^[a-z0-9_-]+$/', $colorPalette) ? $colorPalette : '
 
 $bodyClasses = trim('theme-' . $themeMode . ' accent-' . $colorPalette);
 $footerYear = (new DateTimeImmutable('now', new DateTimeZone('America/Sao_Paulo')))->format('Y');
-$footerSignature = sprintf('Holerite GO! © %s Created by Mystic Designer', $footerYear);
+$footerSignature = sprintf('Holerite GO! © %s Created by Mystic Designer®', $footerYear);
 
 ?>
 <!DOCTYPE html>
