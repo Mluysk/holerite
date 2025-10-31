@@ -1981,6 +1981,7 @@ body.theme-dark .badge--soon {
     text-align: left;
     border-bottom: 1px solid rgba(148, 163, 184, 0.25);
     color: var(--color-text);
+    word-break: break-word;
 }
 
 .report-simple-table th {
@@ -2849,6 +2850,22 @@ body.theme-dark .badge--soon {
         border: 1px solid #111827;
         box-shadow: none;
         padding: 1.5rem;
+    }
+
+    .report-table-wrapper {
+        overflow: visible;
+        box-shadow: none;
+        border-color: #111827;
+    }
+
+    .report-simple-table--wide {
+        min-width: 0;
+    }
+
+    .report-simple-table th,
+    .report-simple-table td {
+        padding: 0.6rem 0.75rem;
+        font-size: 0.85rem;
     }
 
     .report-details__column,
