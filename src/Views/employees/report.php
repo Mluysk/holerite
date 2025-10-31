@@ -126,10 +126,13 @@ $totalEmployees = count($entries);
                 <p class="report__empty">Nenhum colaborador cadastrado até o momento.</p>
             <?php else: ?>
                 <div class="report-table-wrapper">
-                    <table class="report-simple-table">
+                    <table class="report-simple-table report-simple-table--wide">
                         <thead>
                             <tr>
                                 <th>Colaborador</th>
+                                <th>CPF</th>
+                                <th>Departamento</th>
+                                <th>Cargo</th>
                                 <th>Salário base</th>
                                 <th>Admissão</th>
                                 <th>Meses de casa</th>
@@ -141,6 +144,9 @@ $totalEmployees = count($entries);
                             <?php $months = (int) ($entry['tenureMonths'] ?? 0); ?>
                             <tr>
                                 <td><?= htmlspecialchars($employee->getName()); ?></td>
+                                <td><?= htmlspecialchars($employee->getCpfFormatted()); ?></td>
+                                <td><?= htmlspecialchars($employee->getDepartment()); ?></td>
+                                <td><?= htmlspecialchars($employee->getPosition()); ?></td>
                                 <td>R$ <?= number_format($employee->getBaseSalary(), 2, ',', '.'); ?></td>
                                 <td><?= $employee->getHireDate()->format('d/m/Y'); ?></td>
                                 <td>
