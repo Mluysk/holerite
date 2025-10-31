@@ -135,13 +135,19 @@ $totalEmployees = count($entries);
                                 <th>Cargo</th>
                                 <th>Salário base</th>
                                 <th>Admissão</th>
-                                <th>Meses de casa</th>
+                                <th>Tempo de casa</th>
                             </tr>
                         </thead>
                         <tbody>
                         <?php foreach ($entries as $entry): ?>
                             <?php /** @var Employee $employee */ $employee = $entry['employee']; ?>
-                            <?php $months = (int) ($entry['tenureMonths'] ?? 0); ?>
+                            <?php
+                            $months = max(0, (int) ($entry['tenureMonths'] ?? 0));
+                            $yearsPart = intdiv($months, 12);
+                            $remainingMonths = $months % 12;
+                            $yearsLabel = $yearsPart === 1 ? '1 ano' : $yearsPart . ' anos';
+                            $monthsLabel = $remainingMonths === 1 ? '1 mês' : $remainingMonths . ' meses';
+                            ?>
                             <tr>
                                 <td><?= htmlspecialchars($employee->getName()); ?></td>
                                 <td><?= htmlspecialchars($employee->getCpfFormatted()); ?></td>
@@ -150,7 +156,7 @@ $totalEmployees = count($entries);
                                 <td>R$ <?= number_format($employee->getBaseSalary(), 2, ',', '.'); ?></td>
                                 <td><?= $employee->getHireDate()->format('d/m/Y'); ?></td>
                                 <td>
-                                    <?= $months; ?> mês<?= $months === 1 ? '' : 'es'; ?>
+                                    <?= htmlspecialchars($yearsLabel . ' e ' . $monthsLabel); ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
