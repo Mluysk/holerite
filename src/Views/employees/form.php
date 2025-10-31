@@ -2,6 +2,15 @@
 /** @var string $title */
 /** @var string $action */
 /** @var Holerite\Models\Employee|null $employee */
+
+if (!isset($pageScripts) || !is_array($pageScripts)) {
+    $pageScripts = [];
+}
+
+$pageScripts[] = [
+    'src' => 'js/employee-form.js',
+    'defer' => true,
+];
 ?>
 <section>
     <header style="margin-bottom:1.5rem;">
