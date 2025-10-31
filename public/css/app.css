@@ -375,8 +375,8 @@ a:focus {
 
 .layout-footer-logo {
     display: block;
-    height: 64px;
-    margin: 0 auto 0.5rem;
+    height: 128px;
+    margin: 0 auto 0.75rem;
     object-fit: contain;
     width: auto;
 }
@@ -1875,8 +1875,8 @@ body.theme-dark .badge--soon {
     }
 
     .layout-footer-logo {
-        height: 52px;
-        margin-bottom: 0.4rem;
+        height: 104px;
+        margin-bottom: 0.6rem;
     }
 
     .dashboard-vale {
