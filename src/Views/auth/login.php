@@ -8,6 +8,11 @@ $displayName = $loginName !== null && $loginName !== '' ? $loginName : null;
 $welcomeHeadline = $greeting . ($displayName !== null ? ', ' . $displayName : '!');
 ?>
 <section class="auth-wrapper">
+    <div class="auth-brand" aria-label="Logos do sistema">
+        <img src="img/logo.png" alt="JP Fábrica de Salgados" class="auth-brand__logo auth-brand__logo--primary">
+        <span class="auth-brand__separator" aria-hidden="true">&bull;</span>
+        <img src="img/logo3.png" alt="Holerite GO" class="auth-brand__logo auth-brand__logo--secondary">
+    </div>
     <div class="auth-card">
         <div class="auth-card__header">
             <h2>Entrar</h2>
@@ -19,7 +24,7 @@ $welcomeHeadline = $greeting . ($displayName !== null ? ', ' . $displayName : '!
                 Bem-vindo<?= $displayName !== null ? ', ' . htmlspecialchars($displayName) : '' ?> ao Sistema de Holerite GO.
             </span>
         </p>
-        <form method="post" action="?action=authenticate" autocomplete="off">
+        <form method="post" action="?action=authenticate" autocomplete="off" data-auth-form>
             <div class="form-group form-group--with-icon">
                 <label for="username">Usuário</label>
                 <div class="input-icon">
@@ -44,5 +49,9 @@ $welcomeHeadline = $greeting . ($displayName !== null ? ', ' . $displayName : '!
             </div>
             <button type="submit" class="button">Acessar</button>
         </form>
+        <div class="auth-card__loading" data-auth-loading hidden>
+            <div class="auth-card__spinner" role="status" aria-live="polite" aria-label="Entrando"></div>
+            <p>Entrando...</p>
+        </div>
     </div>
 </section>

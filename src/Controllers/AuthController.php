@@ -39,6 +39,7 @@ final class AuthController extends Controller
             'greeting' => $greeting,
             'loginName' => $loginName,
             'loginUsername' => $loginName,
+            'pageScripts' => ['js/login.js'],
         ]);
     }
 
