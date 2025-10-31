@@ -35,12 +35,14 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(100) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     role ENUM('administrator', 'operator') NOT NULL DEFAULT 'administrator',
+    theme_mode ENUM('light', 'dark') NOT NULL DEFAULT 'light',
+    color_palette VARCHAR(20) NOT NULL DEFAULT 'blue',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO users (username, password_hash, role)
-VALUES ('admin', '$2y$12$xYtysTzDWmNVJUtrv3xcnO62KGT24U774wEy8RTIA7H5IsczQS9fu', 'administrator')
-ON DUPLICATE KEY UPDATE username = VALUES(username), role = VALUES(role);
+INSERT INTO users (username, password_hash, role, theme_mode, color_palette)
+VALUES ('admin', '$2y$12$xYtysTzDWmNVJUtrv3xcnO62KGT24U774wEy8RTIA7H5IsczQS9fu', 'administrator', 'light', 'blue')
+ON DUPLICATE KEY UPDATE username = VALUES(username), role = VALUES(role), theme_mode = VALUES(theme_mode), color_palette = VALUES(color_palette);
 
 CREATE TABLE IF NOT EXISTS payrolls (
     id INT AUTO_INCREMENT PRIMARY KEY,

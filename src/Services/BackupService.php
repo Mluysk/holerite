@@ -61,7 +61,7 @@ final class BackupService
 
     public function generateUsersBackup(): string
     {
-        $statement = $this->pdo->query('SELECT id, username, role, password_hash, created_at FROM users ORDER BY username ASC');
+        $statement = $this->pdo->query('SELECT id, username, role, password_hash, created_at, theme_mode, color_palette FROM users ORDER BY username ASC');
         $rows = $statement ? $statement->fetchAll() : [];
 
         return $this->encode([
@@ -74,6 +74,8 @@ final class BackupService
                     'role' => (string) ($row['role'] ?? ''),
                     'password_hash' => (string) ($row['password_hash'] ?? ''),
                     'created_at' => $row['created_at'] ?? null,
+                    'theme_mode' => (string) ($row['theme_mode'] ?? 'light'),
+                    'color_palette' => (string) ($row['color_palette'] ?? 'blue'),
                 ],
                 $rows ?: []
             ),
@@ -125,6 +127,41 @@ final class BackupService
                 foreach ($rows as $row) {
                     if (!is_array($row) || $row === []) {
                         continue;
+                    }
+
+                    if ($table === 'users') {
+                        $themeMode = isset($row['theme_mode']) ? strtolower((string) $row['theme_mode']) : 'light';
+                        $palette = isset($row['color_palette']) ? strtolower((string) $row['color_palette']) : 'blue';
+
+                        if (!in_array($themeMode, ['light', 'dark'], true)) {
+                            $themeMode = 'light';
+                        }
+
+                        $allowedPalettes = [
+                            'blue',
+                            'emerald',
+                            'violet',
+                            'amber',
+                            'rose',
+                            'black',
+                            'gray',
+                            'red',
+                            'dark-red',
+                            'pink',
+                            'yellow',
+                            'gold',
+                            'rgb',
+                            'light-blue',
+                            'dark-blue',
+                            'wine',
+                        ];
+
+                        if (!in_array($palette, $allowedPalettes, true)) {
+                            $palette = 'blue';
+                        }
+
+                        $row['theme_mode'] = $themeMode;
+                        $row['color_palette'] = $palette;
                     }
 
                     $this->insertRow($table, $row);
@@ -394,9 +431,44 @@ final class BackupService
      */
     private function filterUserData(array $data): array
     {
-        $allowed = ['id', 'username', 'password_hash', 'role', 'created_at'];
+        $allowed = ['id', 'username', 'password_hash', 'role', 'created_at', 'theme_mode', 'color_palette'];
 
-        return array_intersect_key($data, array_flip($allowed));
+        $filtered = array_intersect_key($data, array_flip($allowed));
+
+        $themeMode = isset($filtered['theme_mode']) ? strtolower((string) $filtered['theme_mode']) : 'light';
+        if (!in_array($themeMode, ['light', 'dark'], true)) {
+            $filtered['theme_mode'] = 'light';
+        } else {
+            $filtered['theme_mode'] = $themeMode;
+        }
+
+        $palette = isset($filtered['color_palette']) ? strtolower((string) $filtered['color_palette']) : 'blue';
+        $allowedPalettes = [
+            'blue',
+            'emerald',
+            'violet',
+            'amber',
+            'rose',
+            'black',
+            'gray',
+            'red',
+            'dark-red',
+            'pink',
+            'yellow',
+            'gold',
+            'rgb',
+            'light-blue',
+            'dark-blue',
+            'wine',
+        ];
+
+        if (!in_array($palette, $allowedPalettes, true)) {
+            $filtered['color_palette'] = 'blue';
+        } else {
+            $filtered['color_palette'] = $palette;
+        }
+
+        return $filtered;
     }
 
     private function writeConfigFile(array $config): void
@@ -423,11 +495,13 @@ final class BackupService
             return;
         }
 
-        $seed = $this->pdo->prepare('INSERT INTO users (username, password_hash, role) VALUES (:username, :password_hash, :role)');
+        $seed = $this->pdo->prepare('INSERT INTO users (username, password_hash, role, theme_mode, color_palette) VALUES (:username, :password_hash, :role, :theme_mode, :color_palette)');
         $seed->execute([
             'username' => 'admin',
             'password_hash' => '$2y$12$xYtysTzDWmNVJUtrv3xcnO62KGT24U774wEy8RTIA7H5IsczQS9fu',
             'role' => 'administrator',
+            'theme_mode' => 'light',
+            'color_palette' => 'blue',
         ]);
     }
 }

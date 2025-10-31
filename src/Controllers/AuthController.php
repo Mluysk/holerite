@@ -61,11 +61,43 @@ final class AuthController extends Controller
         $_SESSION['login_username'] = $username;
 
         if ($user !== null && password_verify($password, $user->getPasswordHash())) {
+            $themeMode = strtolower($user->getThemeMode());
+            $palette = strtolower($user->getColorPalette());
+            $allowedThemes = ['light', 'dark'];
+            $allowedPalettes = [
+                'blue',
+                'emerald',
+                'violet',
+                'amber',
+                'rose',
+                'black',
+                'gray',
+                'red',
+                'dark-red',
+                'pink',
+                'yellow',
+                'gold',
+                'rgb',
+                'light-blue',
+                'dark-blue',
+                'wine',
+            ];
+
+            if (!in_array($themeMode, $allowedThemes, true)) {
+                $themeMode = 'light';
+            }
+
+            if (!in_array($palette, $allowedPalettes, true)) {
+                $palette = 'blue';
+            }
+
             session_regenerate_id(true);
             $_SESSION['user'] = [
                 'id' => $user->getId(),
                 'username' => $user->getUsername(),
                 'role' => $user->getRole(),
+                'theme_mode' => $themeMode,
+                'color_palette' => $palette,
             ];
 
             unset($_SESSION['login_username']);
@@ -216,7 +248,42 @@ final class AuthController extends Controller
             }
 
             $hash = password_hash($password, PASSWORD_DEFAULT);
-            $this->userRepository->create($username, $hash, $role);
+            $company = $GLOBALS['holerite_company'] ?? null;
+            $defaultTheme = is_object($company) && method_exists($company, 'getThemeMode')
+                ? strtolower((string) $company->getThemeMode())
+                : 'light';
+            $defaultPalette = is_object($company) && method_exists($company, 'getColorPalette')
+                ? strtolower((string) $company->getColorPalette())
+                : 'blue';
+
+            if (!in_array($defaultTheme, ['light', 'dark'], true)) {
+                $defaultTheme = 'light';
+            }
+
+            $allowedPalettes = [
+                'blue',
+                'emerald',
+                'violet',
+                'amber',
+                'rose',
+                'black',
+                'gray',
+                'red',
+                'dark-red',
+                'pink',
+                'yellow',
+                'gold',
+                'rgb',
+                'light-blue',
+                'dark-blue',
+                'wine',
+            ];
+
+            if (!in_array($defaultPalette, $allowedPalettes, true)) {
+                $defaultPalette = 'blue';
+            }
+
+            $this->userRepository->create($username, $hash, $role, $defaultTheme, $defaultPalette);
             $this->flash('success', 'Usuário criado com sucesso.');
         } catch (RuntimeException $exception) {
             $this->flash('error', $exception->getMessage());

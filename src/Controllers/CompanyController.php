@@ -54,12 +54,27 @@ final class CompanyController extends Controller
         $currentUser = isset($_SESSION['user']) && is_array($_SESSION['user']) ? $_SESSION['user'] : null;
         $isAdmin = $this->isAdmin();
         $users = $isAdmin ? $this->userRepository->all() : [];
-        $requestedTab = isset($_GET['tab']) ? strtolower((string) $_GET['tab']) : ($isAdmin ? 'company' : 'password');
+        $requestedTab = isset($_GET['tab']) ? strtolower((string) $_GET['tab']) : ($isAdmin ? 'company' : 'appearance');
         $allowedTabs = $isAdmin
             ? ['company', 'appearance', 'password', 'users', 'backups']
-            : ['password'];
+            : ['appearance', 'password'];
         if (!in_array($requestedTab, $allowedTabs, true)) {
-            $requestedTab = $isAdmin ? 'company' : 'password';
+            $requestedTab = $isAdmin ? 'company' : 'appearance';
+        }
+
+        $userThemeMode = is_array($currentUser) && isset($currentUser['theme_mode'])
+            ? strtolower((string) $currentUser['theme_mode'])
+            : $company->getThemeMode();
+        $userColorPalette = is_array($currentUser) && isset($currentUser['color_palette'])
+            ? strtolower((string) $currentUser['color_palette'])
+            : $company->getColorPalette();
+
+        if (!array_key_exists($userThemeMode, self::THEME_MODES)) {
+            $userThemeMode = $company->getThemeMode();
+        }
+
+        if (!array_key_exists($userColorPalette, self::COLOR_PALETTES)) {
+            $userColorPalette = $company->getColorPalette();
         }
 
         $pageScripts = [
@@ -84,6 +99,16 @@ final class CompanyController extends Controller
             ];
         }
 
+        $companyThemeMode = $company->getThemeMode();
+        if (!array_key_exists($companyThemeMode, self::THEME_MODES)) {
+            $companyThemeMode = 'light';
+        }
+
+        $companyColorPalette = $company->getColorPalette();
+        if (!array_key_exists($companyColorPalette, self::COLOR_PALETTES)) {
+            $companyColorPalette = 'blue';
+        }
+
         $this->render('company/form', [
             'title' => 'Configurações',
             'company' => $company,
@@ -93,9 +118,13 @@ final class CompanyController extends Controller
             'colorPalettes' => self::COLOR_PALETTES,
             'userRoles' => self::USER_ROLES,
             'appearance' => [
-                'themeMode' => $company->getThemeMode(),
-                'colorPalette' => $company->getColorPalette(),
+                'themeMode' => $userThemeMode,
+                'colorPalette' => $userColorPalette,
             ],
+            'userThemeMode' => $userThemeMode,
+            'userColorPalette' => $userColorPalette,
+            'companyThemeMode' => $companyThemeMode,
+            'companyColorPalette' => $companyColorPalette,
             'defaultTab' => $requestedTab,
             'availableTabs' => $allowedTabs,
             'isAdmin' => $isAdmin,
@@ -129,8 +158,13 @@ final class CompanyController extends Controller
      */
     public function updateThemeMode(array $data): void
     {
-        $this->ensureAdmin();
-        $company = $this->companyRepository->get();
+        $user = $_SESSION['user'] ?? null;
+
+        if (!is_array($user) || !isset($user['id'])) {
+            $this->flash('error', 'Sessão expirada.');
+            $this->redirect('?action=login');
+        }
+
         $themeMode = strtolower((string) ($data['theme_mode'] ?? ''));
 
         if (!array_key_exists($themeMode, self::THEME_MODES)) {
@@ -138,10 +172,16 @@ final class CompanyController extends Controller
             $this->redirect('?action=edit_company&tab=appearance');
         }
 
+        $currentPalette = strtolower((string) ($user['color_palette'] ?? 'blue'));
+
+        if (!array_key_exists($currentPalette, self::COLOR_PALETTES)) {
+            $currentPalette = 'blue';
+        }
+
         try {
-            $company->setThemeMode($themeMode);
-            $this->companyRepository->save($company);
-            $this->flash('success', 'Modo de exibição atualizado com sucesso.');
+            $this->userRepository->updateAppearance((int) $user['id'], $themeMode, $currentPalette);
+            $_SESSION['user']['theme_mode'] = $themeMode;
+            $this->flash('success', 'Seu modo de exibição foi atualizado.');
         } catch (Throwable $exception) {
             $this->flash('error', 'Não foi possível atualizar o modo: ' . $exception->getMessage());
         }
@@ -154,8 +194,13 @@ final class CompanyController extends Controller
      */
     public function updateColorPalette(array $data): void
     {
-        $this->ensureAdmin();
-        $company = $this->companyRepository->get();
+        $user = $_SESSION['user'] ?? null;
+
+        if (!is_array($user) || !isset($user['id'])) {
+            $this->flash('error', 'Sessão expirada.');
+            $this->redirect('?action=login');
+        }
+
         $colorPalette = strtolower((string) ($data['color_palette'] ?? ''));
 
         if (!array_key_exists($colorPalette, self::COLOR_PALETTES)) {
@@ -163,10 +208,16 @@ final class CompanyController extends Controller
             $this->redirect('?action=edit_company&tab=appearance');
         }
 
+        $currentTheme = strtolower((string) ($user['theme_mode'] ?? 'light'));
+
+        if (!array_key_exists($currentTheme, self::THEME_MODES)) {
+            $currentTheme = 'light';
+        }
+
         try {
-            $company->setColorPalette($colorPalette);
-            $this->companyRepository->save($company);
-            $this->flash('success', 'Paleta de cores atualizada com sucesso.');
+            $this->userRepository->updateAppearance((int) $user['id'], $currentTheme, $colorPalette);
+            $_SESSION['user']['color_palette'] = $colorPalette;
+            $this->flash('success', 'Sua paleta de cores foi atualizada.');
         } catch (Throwable $exception) {
             $this->flash('error', 'Não foi possível atualizar a paleta: ' . $exception->getMessage());
         }

@@ -2,20 +2,26 @@
 /** @var string $title */
 /** @var Holerite\Models\Company $company */
 /** @var Holerite\Models\User[] $users */
-/** @var array{id?: int, username?: string, role?: string}|null $currentUser */
+/** @var array{id?: int, username?: string, role?: string, theme_mode?: string, color_palette?: string}|null $currentUser */
 /** @var array<string, string> $themeModes */
 /** @var array<string, string> $colorPalettes */
 /** @var array<string, string> $userRoles */
 /** @var string $defaultTab */
 /** @var string[] $availableTabs */
 /** @var bool $isAdmin */
+/** @var string $userThemeMode */
+/** @var string $userColorPalette */
+/** @var string $companyThemeMode */
+/** @var string $companyColorPalette */
 
 use Holerite\Models\User;
 
 $activeUserId = $currentUser['id'] ?? null;
 $activeUsername = isset($currentUser['username']) ? (string) $currentUser['username'] : '';
-$selectedThemeMode = $company->getThemeMode();
-$selectedColorPalette = $company->getColorPalette();
+$selectedThemeMode = isset($userThemeMode) && is_string($userThemeMode) ? $userThemeMode : $company->getThemeMode();
+$selectedColorPalette = isset($userColorPalette) && is_string($userColorPalette) ? $userColorPalette : $company->getColorPalette();
+$companyThemeMode = isset($companyThemeMode) && is_string($companyThemeMode) ? $companyThemeMode : $company->getThemeMode();
+$companyColorPalette = isset($companyColorPalette) && is_string($companyColorPalette) ? $companyColorPalette : $company->getColorPalette();
 $defaultTab = isset($defaultTab) && is_string($defaultTab) ? $defaultTab : 'company';
 $availableTabs = isset($availableTabs) && is_array($availableTabs) ? $availableTabs : ['company', 'appearance', 'password', 'users', 'backups'];
 if (!in_array($defaultTab, $availableTabs, true)) {
@@ -114,7 +120,12 @@ if (!in_array($defaultTab, $availableTabs, true)) {
         <div class="tab-content<?php if ($defaultTab === 'appearance'): ?> active<?php endif; ?>" id="tab-appearance">
             <div class="card">
                 <h3 style="margin-top:0;">Modo de exibição</h3>
-                <p class="muted" style="margin-top:0;">Defina se o painel deve usar tema claro ou escuro para todos os usuários.</p>
+                <p class="muted" style="margin-top:0;">Personalize se a sua conta utiliza o modo claro ou escuro ao navegar pelo sistema.</p>
+                <?php if (!empty($isAdmin)): ?>
+                    <p class="muted" style="margin:0.5rem 0 0 0;">
+                        Padrão da empresa: <strong><?= htmlspecialchars($themeModes[$companyThemeMode] ?? ucfirst($companyThemeMode)); ?></strong>
+                    </p>
+                <?php endif; ?>
 
                 <form method="post" action="?action=update_theme_mode" style="margin-top:1rem;" data-theme-mode-form>
                     <div class="appearance-options appearance-options--pills" data-theme-options>
@@ -133,7 +144,12 @@ if (!in_array($defaultTab, $availableTabs, true)) {
 
             <div class="card" style="margin-top:1.5rem;">
                 <h3 style="margin-top:0;">Paleta de cores</h3>
-                <p class="muted" style="margin-top:0;">Escolha a cor principal que será utilizada nos destaques do sistema.</p>
+                <p class="muted" style="margin-top:0;">Escolha a cor de destaque que será aplicada somente à sua conta.</p>
+                <?php if (!empty($isAdmin)): ?>
+                    <p class="muted" style="margin:0.5rem 0 0 0;">
+                        Paleta padrão da empresa: <strong><?= htmlspecialchars($colorPalettes[$companyColorPalette] ?? ucfirst($companyColorPalette)); ?></strong>
+                    </p>
+                <?php endif; ?>
 
                 <form method="post" action="?action=update_color_palette" style="margin-top:1rem;" data-color-palette-form>
                     <div class="appearance-options appearance-options--swatches" data-palette-options>

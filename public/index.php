@@ -30,10 +30,44 @@ $backupService = new BackupService();
 
 $activeCompany = $companyRepository->get();
 $GLOBALS['holerite_company'] = $activeCompany;
-$GLOBALS['holerite_appearance'] = [
+$appearance = [
     'themeMode' => $activeCompany->getThemeMode(),
     'colorPalette' => $activeCompany->getColorPalette(),
 ];
+
+if (isset($_SESSION['user']) && is_array($_SESSION['user'])) {
+    $userTheme = strtolower((string) ($_SESSION['user']['theme_mode'] ?? ''));
+    $userPalette = strtolower((string) ($_SESSION['user']['color_palette'] ?? ''));
+    $allowedThemes = ['light', 'dark'];
+    $allowedPalettes = [
+        'blue',
+        'emerald',
+        'violet',
+        'amber',
+        'rose',
+        'black',
+        'gray',
+        'red',
+        'dark-red',
+        'pink',
+        'yellow',
+        'gold',
+        'rgb',
+        'light-blue',
+        'dark-blue',
+        'wine',
+    ];
+
+    if (in_array($userTheme, $allowedThemes, true)) {
+        $appearance['themeMode'] = $userTheme;
+    }
+
+    if (in_array($userPalette, $allowedPalettes, true)) {
+        $appearance['colorPalette'] = $userPalette;
+    }
+}
+
+$GLOBALS['holerite_appearance'] = $appearance;
 
 $dashboardController = new DashboardController($employeeRepository, $payrollRepository);
 $companyController = new CompanyController($companyRepository, $userRepository);

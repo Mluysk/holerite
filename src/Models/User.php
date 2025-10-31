@@ -14,6 +14,8 @@ final class User
         private string $username,
         private string $passwordHash,
         private string $role = self::ROLE_OPERATOR,
+        private string $themeMode = 'light',
+        private string $colorPalette = 'blue',
     ) {
     }
 
@@ -55,6 +57,26 @@ final class User
     public function setRole(string $role): void
     {
         $this->role = $role;
+    }
+
+    public function getThemeMode(): string
+    {
+        return $this->themeMode;
+    }
+
+    public function setThemeMode(string $themeMode): void
+    {
+        $this->themeMode = $themeMode;
+    }
+
+    public function getColorPalette(): string
+    {
+        return $this->colorPalette;
+    }
+
+    public function setColorPalette(string $colorPalette): void
+    {
+        $this->colorPalette = $colorPalette;
     }
 
     /**

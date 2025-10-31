@@ -58,16 +58,24 @@ final class UserRepository
         return array_map(fn ($row) => $this->hydrate((array) $row), $rows);
     }
 
-    public function create(string $username, string $passwordHash, string $role): User
+    public function create(
+        string $username,
+        string $passwordHash,
+        string $role,
+        string $themeMode = 'light',
+        string $colorPalette = 'blue'
+    ): User
     {
-        $statement = $this->pdo->prepare('INSERT INTO users (username, password_hash, role) VALUES (:username, :password_hash, :role)');
+        $statement = $this->pdo->prepare('INSERT INTO users (username, password_hash, role, theme_mode, color_palette) VALUES (:username, :password_hash, :role, :theme_mode, :color_palette)');
         $statement->execute([
             'username' => $username,
             'password_hash' => $passwordHash,
             'role' => $role,
+            'theme_mode' => $themeMode,
+            'color_palette' => $colorPalette,
         ]);
 
-        return new User((int) $this->pdo->lastInsertId(), $username, $passwordHash, $role);
+        return new User((int) $this->pdo->lastInsertId(), $username, $passwordHash, $role, $themeMode, $colorPalette);
     }
 
     public function updatePassword(int $id, string $passwordHash): void
@@ -88,6 +96,16 @@ final class UserRepository
         ]);
     }
 
+    public function updateAppearance(int $id, string $themeMode, string $colorPalette): void
+    {
+        $statement = $this->pdo->prepare('UPDATE users SET theme_mode = :theme_mode, color_palette = :color_palette WHERE id = :id');
+        $statement->execute([
+            'id' => $id,
+            'theme_mode' => $themeMode,
+            'color_palette' => $colorPalette,
+        ]);
+    }
+
     /**
      * @param array<string, mixed> $row
      */
@@ -102,6 +120,8 @@ final class UserRepository
             (string) $row['username'],
             (string) $row['password_hash'],
             $role,
+            isset($row['theme_mode']) ? (string) $row['theme_mode'] : 'light',
+            isset($row['color_palette']) ? (string) $row['color_palette'] : 'blue',
         );
     }
 }
