@@ -56,41 +56,69 @@ if ($hasCharts) {
 ?>
 <section class="dashboard">
     <div class="dashboard-hero">
-        <div>
-            <h2 class="dashboard-hero__title">Visão geral da folha</h2>
-            <p class="muted">Acompanhe pagamentos, distribuição mensal e desempenho anual em um só lugar.</p>
+        <div class="dashboard-hero__intro section-heading section-heading--hero">
+            <span class="icon-circle icon-circle--info" aria-hidden="true">
+                <i class="bi bi-speedometer"></i>
+            </span>
+            <div>
+                <h2 class="dashboard-hero__title">Visão geral da folha</h2>
+                <p class="muted">Acompanhe pagamentos, distribuição mensal e desempenho anual em um só lugar.</p>
+            </div>
         </div>
         <div class="dashboard-hero__highlight">
-            <span>Total pago no ano</span>
-            <span class="dashboard-hero__value">R$ <?= number_format($yearlyChart['total'], 2, ',', '.'); ?></span>
-            <div class="dashboard-hero__sub">
-                <span>Total pago em <?= htmlspecialchars($currentMonthLabel); ?></span>
-                <strong>R$ <?= number_format($currentMonthNet, 2, ',', '.'); ?></strong>
+            <span class="icon-circle icon-circle--success" aria-hidden="true">
+                <i class="bi bi-cash-stack"></i>
+            </span>
+            <div class="dashboard-hero__highlight-content">
+                <span class="dashboard-hero__label">Total pago no ano</span>
+                <span class="dashboard-hero__value">R$ <?= number_format($yearlyChart['total'], 2, ',', '.'); ?></span>
+                <div class="dashboard-hero__sub">
+                    <span>Total pago em <?= htmlspecialchars($currentMonthLabel); ?></span>
+                    <strong>R$ <?= number_format($currentMonthNet, 2, ',', '.'); ?></strong>
+                </div>
             </div>
         </div>
         <div class="dashboard-hero__actions">
-            <a class="button button-secondary" href="?action=dashboard_report&amp;scope=monthly">Relatório mensal</a>
-            <a class="button" href="?action=dashboard_report&amp;scope=yearly">Relatório anual</a>
+            <a class="button button-secondary" href="?action=dashboard_report&amp;scope=monthly">
+                <i class="bi bi-journal-text button__icon" aria-hidden="true"></i>
+                <span>Relatório mensal</span>
+            </a>
+            <a class="button" href="?action=dashboard_report&amp;scope=yearly">
+                <i class="bi bi-calendar-week button__icon" aria-hidden="true"></i>
+                <span>Relatório anual</span>
+            </a>
         </div>
     </div>
 
     <div class="dashboard-metrics">
         <article class="stats-card">
+            <div class="stats-card__icon icon-circle icon-circle--info" aria-hidden="true">
+                <i class="bi bi-people-fill"></i>
+            </div>
             <h3>Colaboradores ativos</h3>
             <strong><?= $totalEmployees; ?></strong>
             <p class="muted" style="margin:0.35rem 0 0 0;">Equipe cadastrada atualmente.</p>
         </article>
         <article class="stats-card">
+            <div class="stats-card__icon icon-circle icon-circle--primary" aria-hidden="true">
+                <i class="bi bi-receipt"></i>
+            </div>
             <h3>Holerites emitidos</h3>
             <strong><?= $totalPayrolls; ?></strong>
             <p class="muted" style="margin:0.35rem 0 0 0;">Documentos gerados até o momento.</p>
         </article>
         <article class="stats-card">
+            <div class="stats-card__icon icon-circle icon-circle--accent" aria-hidden="true">
+                <i class="bi bi-wallet2"></i>
+            </div>
             <h3>Folha líquida acumulada</h3>
             <strong style="font-size:1.85rem;">R$ <?= number_format($totalNet, 2, ',', '.'); ?></strong>
             <p class="muted" style="margin:0.35rem 0 0 0;">Total já desembolsado em pagamentos líquidos.</p>
         </article>
         <article class="stats-card stats-card--vale">
+            <div class="stats-card__icon icon-circle icon-circle--warning" aria-hidden="true">
+                <i class="bi bi-cash-coin"></i>
+            </div>
             <header>
                 <span class="stats-card__subtitle">Descontos de vale</span>
                 <h3>Total acumulado</h3>
@@ -111,12 +139,15 @@ if ($hasCharts) {
 
     <div class="dashboard-schedule">
         <div class="card dashboard-calendar-card">
-            <div class="dashboard-calendar-card__header">
+            <header class="dashboard-calendar-card__header section-heading">
+                <span class="icon-circle icon-circle--calendar" aria-hidden="true">
+                    <i class="bi bi-calendar-event"></i>
+                </span>
                 <div>
-                    <h3 style="margin:0;">Calendário de pagamentos</h3>
-                    <p class="muted" style="margin:0.35rem 0 0 0;">Pagamentos registrados em <?= htmlspecialchars($calendarMonth->format('m/Y')); ?>.</p>
+                    <h3>Calendário de pagamentos</h3>
+                    <p class="muted">Pagamentos registrados em <?= htmlspecialchars($calendarMonth->format('m/Y')); ?>.</p>
                 </div>
-            </div>
+            </header>
             <div class="calendar-wrapper">
                 <table class="calendar-grid">
                     <thead>
@@ -160,30 +191,56 @@ if ($hasCharts) {
         </div>
         <div class="dashboard-status">
             <div class="card dashboard-status__card">
-                <h3 style="margin-top:0;">Pagamentos mensais efetuados</h3>
+                <header class="section-heading section-heading--compact">
+                    <span class="icon-circle icon-circle--success" aria-hidden="true">
+                        <i class="bi bi-check-circle-fill"></i>
+                    </span>
+                    <div>
+                        <h3>Pagamentos mensais efetuados</h3>
+                        <p class="muted">Colaboradores com salário do mês confirmado.</p>
+                    </div>
+                </header>
                 <?php if ($paidMonthlyPayrolls === []): ?>
                     <p class="muted">Nenhum pagamento mensal registrado neste mês.</p>
                 <?php else: ?>
                     <ul class="status-list">
                         <?php foreach ($paidMonthlyPayrolls as $payroll): ?>
                             <li>
-                                <strong><?= htmlspecialchars($employeeNames[$payroll->getEmployeeId()] ?? 'Colaborador'); ?></strong>
-                                <small class="muted"><?= htmlspecialchars($payroll->getPaymentDate()->format('d/m/Y')); ?> • R$ <?= number_format($payroll->getNetSalary(), 2, ',', '.'); ?></small>
+                                <span class="status-list__bullet status-list__bullet--success" aria-hidden="true">
+                                    <i class="bi bi-check2"></i>
+                                </span>
+                                <div class="status-list__content">
+                                    <strong><?= htmlspecialchars($employeeNames[$payroll->getEmployeeId()] ?? 'Colaborador'); ?></strong>
+                                    <small class="muted"><?= htmlspecialchars($payroll->getPaymentDate()->format('d/m/Y')); ?> • R$ <?= number_format($payroll->getNetSalary(), 2, ',', '.'); ?></small>
+                                </div>
                             </li>
                         <?php endforeach; ?>
                     </ul>
                 <?php endif; ?>
             </div>
             <div class="card dashboard-status__card">
-                <h3 style="margin-top:0;">Pagamentos mensais pendentes</h3>
+                <header class="section-heading section-heading--compact">
+                    <span class="icon-circle icon-circle--warning" aria-hidden="true">
+                        <i class="bi bi-hourglass-split"></i>
+                    </span>
+                    <div>
+                        <h3>Pagamentos mensais pendentes</h3>
+                        <p class="muted">Funcionários aguardando pagamento neste mês.</p>
+                    </div>
+                </header>
                 <?php if ($pendingMonthlyEmployees === []): ?>
                     <p class="muted">Todos os colaboradores receberam este mês.</p>
                 <?php else: ?>
                     <ul class="status-list status-list--pending">
                         <?php foreach ($pendingMonthlyEmployees as $pendingEmployee): ?>
                             <li>
-                                <strong><?= htmlspecialchars($pendingEmployee->getName()); ?></strong>
-                                <small class="muted">Salário base: R$ <?= number_format($pendingEmployee->getBaseSalary(), 2, ',', '.'); ?></small>
+                                <span class="status-list__bullet status-list__bullet--warning" aria-hidden="true">
+                                    <i class="bi bi-exclamation"></i>
+                                </span>
+                                <div class="status-list__content">
+                                    <strong><?= htmlspecialchars($pendingEmployee->getName()); ?></strong>
+                                    <small class="muted">Salário base: R$ <?= number_format($pendingEmployee->getBaseSalary(), 2, ',', '.'); ?></small>
+                                </div>
                             </li>
                         <?php endforeach; ?>
                     </ul>
@@ -194,10 +251,15 @@ if ($hasCharts) {
 
     <div class="dashboard-charts">
         <section class="dashboard-chart">
-            <div>
-                <h3 style="margin:0;">Distribuição mensal</h3>
-                <p class="muted" style="margin:0.25rem 0 0 0;">Percentual de pagamentos por mês.</p>
-            </div>
+            <header class="section-heading">
+                <span class="icon-circle icon-circle--chart" aria-hidden="true">
+                    <i class="bi bi-pie-chart-fill"></i>
+                </span>
+                <div>
+                    <h3>Distribuição mensal</h3>
+                    <p class="muted">Percentual de pagamentos por mês.</p>
+                </div>
+            </header>
             <?php if ($monthlyChart['labels'] === []): ?>
                 <p class="muted">Os valores mensais aparecerão após os primeiros pagamentos.</p>
             <?php else: ?>
@@ -214,10 +276,15 @@ if ($hasCharts) {
             <?php endif; ?>
         </section>
         <section class="dashboard-chart">
-            <div>
-                <h3 style="margin:0;">Distribuição anual</h3>
-                <p class="muted" style="margin:0.25rem 0 0 0;">Percentual de pagamentos por ano.</p>
-            </div>
+            <header class="section-heading">
+                <span class="icon-circle icon-circle--chart" aria-hidden="true">
+                    <i class="bi bi-pie-chart"></i>
+                </span>
+                <div>
+                    <h3>Distribuição anual</h3>
+                    <p class="muted">Percentual de pagamentos por ano.</p>
+                </div>
+            </header>
             <?php if ($yearlyChart['labels'] === []): ?>
                 <p class="muted">Os totais anuais serão exibidos conforme a folha evoluir.</p>
             <?php else: ?>
@@ -236,7 +303,10 @@ if ($hasCharts) {
     </div>
 
     <section class="dashboard-vale">
-        <header class="dashboard-vale__header">
+        <header class="dashboard-vale__header section-heading section-heading--large">
+            <span class="icon-circle icon-circle--vale" aria-hidden="true">
+                <i class="bi bi-ticket-perforated"></i>
+            </span>
             <div>
                 <h2>Controle de vales</h2>
                 <p class="muted">Acompanhe os descontos e o desempenho dos vales mês a mês e ano a ano.</p>
@@ -245,10 +315,15 @@ if ($hasCharts) {
         <div class="dashboard-vale__content">
             <div class="dashboard-vale__charts">
                 <section class="dashboard-chart dashboard-chart--wide">
-                    <div>
-                        <h3 style="margin:0;">Desempenho mensal de vales</h3>
-                        <p class="muted" style="margin:0.25rem 0 0 0;">Tendência dos descontos ao longo dos meses.</p>
-                    </div>
+                    <header class="section-heading">
+                        <span class="icon-circle icon-circle--chart" aria-hidden="true">
+                            <i class="bi bi-graph-up-arrow"></i>
+                        </span>
+                        <div>
+                            <h3>Desempenho mensal de vales</h3>
+                            <p class="muted">Tendência dos descontos ao longo dos meses.</p>
+                        </div>
+                    </header>
                     <?php if ($monthlyValeChart['labels'] === []): ?>
                         <p class="muted">Os descontos mensais de vale aparecerão conforme forem registrados.</p>
                     <?php else: ?>
@@ -258,10 +333,15 @@ if ($hasCharts) {
                     <?php endif; ?>
                 </section>
                 <section class="dashboard-chart dashboard-chart--wide">
-                    <div>
-                        <h3 style="margin:0;">Desempenho anual de vales</h3>
-                        <p class="muted" style="margin:0.25rem 0 0 0;">Comparativo dos descontos entre os anos.</p>
-                    </div>
+                    <header class="section-heading">
+                        <span class="icon-circle icon-circle--chart" aria-hidden="true">
+                            <i class="bi bi-graph-up"></i>
+                        </span>
+                        <div>
+                            <h3>Desempenho anual de vales</h3>
+                            <p class="muted">Comparativo dos descontos entre os anos.</p>
+                        </div>
+                    </header>
                     <?php if ($yearlyValeChart['labels'] === []): ?>
                         <p class="muted">Os totais anuais de vale aparecerão após os primeiros registros.</p>
                     <?php else: ?>
@@ -273,7 +353,15 @@ if ($hasCharts) {
             </div>
             <div class="dashboard-vale__tables">
                 <div class="card">
-                    <h3 style="margin-top:0;">Resumo mensal de vales</h3>
+                    <header class="section-heading section-heading--compact">
+                        <span class="icon-circle icon-circle--info" aria-hidden="true">
+                            <i class="bi bi-calendar4-week"></i>
+                        </span>
+                        <div>
+                            <h3>Resumo mensal de vales</h3>
+                            <p class="muted">Totais descontados por mês.</p>
+                        </div>
+                    </header>
                     <?php if ($monthlyValeTotals === []): ?>
                         <p class="muted">Os valores aparecerão após registrar descontos de vale.</p>
                     <?php else: ?>
@@ -301,7 +389,15 @@ if ($hasCharts) {
                     <?php endif; ?>
                 </div>
                 <div class="card">
-                    <h3 style="margin-top:0;">Resumo anual de vales</h3>
+                    <header class="section-heading section-heading--compact">
+                        <span class="icon-circle icon-circle--info" aria-hidden="true">
+                            <i class="bi bi-calendar3"></i>
+                        </span>
+                        <div>
+                            <h3>Resumo anual de vales</h3>
+                            <p class="muted">Consolidação por exercício.</p>
+                        </div>
+                    </header>
                     <?php if ($yearlyValeTotals === []): ?>
                         <p class="muted">Os totais anuais aparecerão após os primeiros registros.</p>
                     <?php else: ?>
@@ -334,7 +430,15 @@ if ($hasCharts) {
 
     <div class="dashboard-tables">
         <div class="card">
-            <h3 style="margin-top:0;">Totais pagos por mês</h3>
+            <header class="section-heading section-heading--compact">
+                <span class="icon-circle icon-circle--info" aria-hidden="true">
+                    <i class="bi bi-calendar2-month"></i>
+                </span>
+                <div>
+                    <h3>Totais pagos por mês</h3>
+                    <p class="muted">Resumo líquido por competência.</p>
+                </div>
+            </header>
             <?php if ($monthlyTotals === []): ?>
                 <p class="muted">Os valores mensais aparecerão após os primeiros pagamentos.</p>
             <?php else: ?>
@@ -359,7 +463,15 @@ if ($hasCharts) {
             <?php endif; ?>
         </div>
         <div class="card">
-            <h3 style="margin-top:0;">Totais pagos por ano</h3>
+            <header class="section-heading section-heading--compact">
+                <span class="icon-circle icon-circle--info" aria-hidden="true">
+                    <i class="bi bi-calendar2-year"></i>
+                </span>
+                <div>
+                    <h3>Totais pagos por ano</h3>
+                    <p class="muted">Visão geral consolidada por exercício.</p>
+                </div>
+            </header>
             <?php if ($yearlyTotals === []): ?>
                 <p class="muted">Os totais anuais serão exibidos conforme a folha evoluir.</p>
             <?php else: ?>
@@ -386,7 +498,15 @@ if ($hasCharts) {
     </div>
 
     <div class="card dashboard-recent">
-        <h3 style="margin-top:0;">Últimos holerites</h3>
+        <header class="section-heading section-heading--compact">
+            <span class="icon-circle icon-circle--accent" aria-hidden="true">
+                <i class="bi bi-clock-history"></i>
+            </span>
+            <div>
+                <h3>Últimos holerites</h3>
+                <p class="muted">Confira os pagamentos emitidos recentemente.</p>
+            </div>
+        </header>
         <?php if ($lastPayrolls === []): ?>
             <p class="muted">Ainda não há holerites registrados. Que tal gerar o primeiro?</p>
         <?php else: ?>

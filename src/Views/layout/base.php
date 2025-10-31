@@ -31,6 +31,7 @@ $footerSignature = sprintf('Holerite GO! © %s Created by Mystic Designer®', $f
     <title><?= htmlspecialchars($pageTitle ?? ($title ?? 'Holerite')); ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/app.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <?php foreach ($styleEntries as $style): ?>
         <?php if (is_string($style)): ?>
             <link rel="stylesheet" href="<?= htmlspecialchars($style); ?>">
@@ -63,14 +64,32 @@ $footerSignature = sprintf('Holerite GO! © %s Created by Mystic Designer®', $f
                 Menu
             </button>
             <nav id="mainNavigation" class="layout-nav is-open" data-nav>
-                <a href="?action=dashboard">Dashboard</a>
-                <a href="?action=list_employees">Colaboradores</a>
-                <a href="?action=list_payrolls">Holerites</a>
-                <a href="?action=edit_company">Configurações</a>
+                <a class="layout-nav-link" href="?action=dashboard">
+                    <i class="bi bi-speedometer2" aria-hidden="true"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a class="layout-nav-link" href="?action=list_employees">
+                    <i class="bi bi-people-fill" aria-hidden="true"></i>
+                    <span>Colaboradores</span>
+                </a>
+                <a class="layout-nav-link" href="?action=list_payrolls">
+                    <i class="bi bi-receipt-cutoff" aria-hidden="true"></i>
+                    <span>Holerites</span>
+                </a>
+                <a class="layout-nav-link" href="?action=edit_company">
+                    <i class="bi bi-gear" aria-hidden="true"></i>
+                    <span>Configurações</span>
+                </a>
             </nav>
             <div class="layout-session">
-                <span class="layout-session-user">Olá, <?= htmlspecialchars($currentUserName); ?></span>
-                <a class="layout-session-logout" href="?action=logout">Sair</a>
+                <span class="layout-session-chip">
+                    <i class="bi bi-person-circle" aria-hidden="true"></i>
+                    <span class="layout-session-user">Olá, <?= htmlspecialchars($currentUserName); ?></span>
+                </span>
+                <a class="layout-session-logout" href="?action=logout">
+                    <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                    <span>Sair</span>
+                </a>
             </div>
         </div>
     <?php endif; ?>
