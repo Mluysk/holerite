@@ -133,6 +133,16 @@ final class Payroll
         return $this->transportTripCost;
     }
 
+    public function getTransportTotalCost(): float
+    {
+        return round($this->transportDays * 2 * $this->transportTripCost, 2);
+    }
+
+    public function getTransportDeductionLimit(): float
+    {
+        return round($this->baseSalary * 0.06, 2);
+    }
+
     public function getPaymentDate(): DateTimeImmutable
     {
         return $this->paymentDate;

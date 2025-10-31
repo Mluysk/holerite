@@ -109,6 +109,8 @@ final class PayrollService
         }
 
         $transportDeduction = 0.0;
+        $transportTotalCost = 0.0;
+        $transportLegalLimit = 0.0;
         if ($useTransport) {
             $transportDays = $this->sanitizeInt($data['transport_days'] ?? 0, 0, 31, 0);
             $transportTripCost = $this->roundMoney((float) ($data['transport_trip_cost'] ?? 6.0));
@@ -117,13 +119,19 @@ final class PayrollService
             }
 
             $transportTrips = $transportDays * 2;
-            $transportDeduction = $this->roundMoney($transportTrips * $transportTripCost);
+            $transportTotalCost = $this->roundMoney($transportTrips * $transportTripCost);
+            $transportLegalLimit = $this->roundMoney($baseSalaryAmount * 0.06);
+            $transportDeduction = $this->roundMoney(min($transportTotalCost, $transportLegalLimit));
 
-            if ($transportDeduction > 0) {
+            if ($transportTotalCost > 0) {
+                $descriptionParts = [sprintf('Vale-transporte (%d dias · %d passagens)', $transportDays, $transportTrips)];
+                if ($transportDeduction > 0 && $transportTotalCost > $transportDeduction) {
+                    $descriptionParts[] = 'desconto limitado a 6% do salário base';
+                }
                 $automaticDeductions[] = new PayrollItem(
                     null,
                     null,
-                    sprintf('Vale-transporte (%d dias · %d passagens)', $transportDays, $transportTrips),
+                    implode(' · ', $descriptionParts),
                     $transportDeduction,
                     'deduction'
                 );

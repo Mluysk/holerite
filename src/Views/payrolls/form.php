@@ -187,7 +187,10 @@ $pageScripts[] = [
                         <input type="number" min="0" step="0.01" id="transport_trip_cost" name="transport_trip_cost" value="<?= htmlspecialchars($defaultTransportTripCost); ?>" data-default-value="<?= htmlspecialchars($defaultTransportTripCost); ?>">
                     </div>
                 </div>
-                <p class="muted" style="margin:0;">O cálculo considera duas passagens por dia (ida e volta). Dias: <strong id="transport-day-count">0</strong> · Passagens: <strong id="transport-trip-count">0</strong> · Total estimado: <strong id="transport-trip-total">R$ 0,00</strong></p>
+                <p class="muted" style="margin:0;">O cálculo considera duas passagens por dia (ida e volta).</p>
+                <p class="muted" style="margin:0.35rem 0 0;">Dias: <strong id="transport-day-count">0</strong> · Passagens: <strong id="transport-trip-count">0</strong> · Custo estimado: <strong id="transport-cost-display">R$ 0,00</strong></p>
+                <p class="muted" style="margin:0.35rem 0 0;">Desconto ao colaborador (até 6% do salário base): <strong id="transport-deduction-display">R$ 0,00</strong></p>
+                <p class="muted" style="margin:0.35rem 0 0;">Limite legal de desconto (6%): <strong id="transport-limit-display">R$ 0,00</strong></p>
             </div>
         </div>
 
@@ -202,7 +205,8 @@ $pageScripts[] = [
             <p class="muted">Proventos automáticos: <strong id="auto-allowances">R$ 0,00</strong></p>
             <p class="muted">Proventos manuais: <strong id="total-allowances">R$ 0,00</strong></p>
             <p class="muted">Descontos manuais: <strong id="total-deductions">R$ 0,00</strong></p>
-            <p class="muted">Vale-transporte: <strong id="transport-deduction-total">R$ 0,00</strong></p>
+            <p class="muted">Vale-transporte — custo estimado: <strong id="transport-cost-summary">R$ 0,00</strong></p>
+            <p class="muted">Vale-transporte — desconto aplicado: <strong id="transport-deduction-summary">R$ 0,00</strong></p>
             <p class="muted">Vales de produtos: <strong id="vale-deduction-total">R$ 0,00</strong></p>
             <p class="muted">Total de vales (produtos + transporte): <strong id="vale-deduction-sum">R$ 0,00</strong></p>
             <p class="muted">INSS estimado: <strong id="inss-amount">R$ 0,00</strong> · Base: <strong id="inss-base">R$ 0,00</strong></p>

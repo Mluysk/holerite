@@ -46,6 +46,9 @@ $advanceAmount = $payroll->getAdvanceAmount();
 $remainingAmount = $payroll->getRemainingAmount();
 $manualValeDeduction = $payroll->getManualValeDeduction();
 $transportDeduction = $payroll->getTransportDeduction();
+$transportTotalCost = $payroll->getTransportTotalCost();
+$transportLegalLimit = $payroll->getTransportDeductionLimit();
+$transportCompanyShare = max(0.0, round($transportTotalCost - $transportDeduction, 2));
 $valeDeductionAmount = $payroll->getValeDeduction();
 $transportDays = $payroll->getTransportDays();
 $transportTrips = $payroll->getTransportTrips();
@@ -160,7 +163,7 @@ if ($advanceAmount > 0.0) {
         . ($advanceRatioLabel !== null ? ' (' . $advanceRatioLabel . ')' : '');
     $messages[] = 'Pagamento restante: R$ ' . number_format($remainingAmount, 2, ',', '.');
 }
-if ($transportDeduction > 0.0) {
+if ($transportTotalCost > 0.0) {
     $transportDetails = [];
     if ($transportDays > 0) {
         $transportDetails[] = $transportDays . ' dia' . ($transportDays === 1 ? '' : 's');
@@ -172,8 +175,24 @@ if ($transportDeduction > 0.0) {
         $transportDetails[] = 'R$ ' . number_format($transportTripCost, 2, ',', '.') . ' por passagem';
     }
 
-    $messages[] = 'Vale-transporte: R$ ' . number_format($transportDeduction, 2, ',', '.')
-        . ($transportDetails !== [] ? ' · ' . implode(' · ', $transportDetails) : '');
+    $messageParts = [
+        'custo total R$ ' . number_format($transportTotalCost, 2, ',', '.'),
+        'desconto aplicado R$ ' . number_format($transportDeduction, 2, ',', '.'),
+    ];
+
+    if ($transportLegalLimit > 0.0) {
+        $messageParts[] = 'limite legal (6%) R$ ' . number_format($transportLegalLimit, 2, ',', '.');
+    }
+
+    if ($transportCompanyShare > 0.0) {
+        $messageParts[] = 'custeado pela empresa R$ ' . number_format($transportCompanyShare, 2, ',', '.');
+    }
+
+    if ($transportDetails !== []) {
+        $messageParts[] = implode(' · ', $transportDetails);
+    }
+
+    $messages[] = 'Vale-transporte: ' . implode(' · ', $messageParts);
     $messages[] = 'O vale-transporte permite desconto de até 6% do salário base, conforme legislação brasileira.';
 }
 if ($manualValeDeduction > 0.0) {

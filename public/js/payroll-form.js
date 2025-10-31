@@ -485,7 +485,9 @@
         let transportDays = 0;
         let transportTripCost = 0;
         let transportTrips = 0;
+        let transportCostTotal = 0;
         let transportDeduction = 0;
+        let transportLimit = 0;
 
         if (transportCheckbox instanceof HTMLInputElement && transportCheckbox.checked) {
             if (transportDaysInput instanceof HTMLInputElement) {
@@ -506,7 +508,9 @@
             }
 
             transportTrips = transportDays * transportTripsPerDay;
-            transportDeduction = roundMoney(transportTrips * transportTripCost);
+            transportCostTotal = roundMoney(transportTrips * transportTripCost);
+            transportLimit = roundMoney(baseSalary * 0.06);
+            transportDeduction = roundMoney(Math.min(transportCostTotal, transportLimit));
         }
 
         const totalVale = roundMoney(manualVale + transportDeduction);
@@ -584,8 +588,11 @@
         setText('auto-allowances', automaticTotal);
         setText('total-allowances', manualAllowances);
         setText('total-deductions', manualDeductions);
-        setText('transport-deduction-total', transportDeduction);
-        setText('transport-trip-total', transportDeduction);
+        setText('transport-cost-display', transportCostTotal);
+        setText('transport-deduction-display', transportDeduction);
+        setText('transport-limit-display', transportLimit);
+        setText('transport-cost-summary', transportCostTotal);
+        setText('transport-deduction-summary', transportDeduction);
         setText('vale-deduction-total', manualVale);
         setText('vale-deduction-sum', totalVale);
         setText('inss-amount', inss);
@@ -619,7 +626,7 @@
                 : 'Descontos automáticos estimados';
             const deductionLine = `<p style="margin:0.75rem 0 0;">${deductionTitle}: INSS <strong>${formatter.format(inss)}</strong> · IRRF <strong>${formatter.format(irrf)}</strong></p>`;
             const valeLines = [];
-            if (transportDeduction > 0) {
+            if (transportCostTotal > 0) {
                 const detailParts = [];
                 if (transportDays > 0) {
                     detailParts.push(`${transportDays} dia${transportDays === 1 ? '' : 's'}`);
@@ -631,7 +638,18 @@
                     detailParts.push(`${formatter.format(transportTripCost)} por passagem`);
                 }
                 const detail = detailParts.length > 0 ? ` (${detailParts.join(' · ')})` : '';
-                valeLines.push(`Vale-transporte: <strong>${formatter.format(transportDeduction)}</strong>${detail}`);
+                const infoParts = [
+                    `custo total <strong>${formatter.format(transportCostTotal)}</strong>`,
+                    `desconto aplicado <strong>${formatter.format(transportDeduction)}</strong>`
+                ];
+                if (transportLimit > 0) {
+                    infoParts.push(`limite legal (6%) <strong>${formatter.format(transportLimit)}</strong>`);
+                }
+                const companyShare = roundMoney(Math.max(0, transportCostTotal - transportDeduction));
+                if (companyShare > 0) {
+                    infoParts.push(`custeado pela empresa <strong>${formatter.format(companyShare)}</strong>`);
+                }
+                valeLines.push(`Vale-transporte${detail}: ${infoParts.join(' · ')}`);
             }
             if (manualVale > 0) {
                 valeLines.push(`Vales de produtos informados: <strong>${formatter.format(manualVale)}</strong>`);
