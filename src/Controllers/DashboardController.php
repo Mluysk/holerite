@@ -26,6 +26,7 @@ final class DashboardController extends Controller
         $currentMonthKey = $currentMonth->format('Y-m');
         $currentYearKey = $currentMonth->format('Y');
         $monthEnd = $currentMonth->modify('last day of this month');
+        $currentMonthNet = 0.0;
 
         $totalNet = array_reduce($payrolls, fn (float $carry, $payroll): float => $carry + $payroll->getNetSalary(), 0.0);
         $totalValeDeductions = array_reduce($payrolls, fn (float $carry, $payroll): float => $carry + $payroll->getValeDeduction(), 0.0);
@@ -48,6 +49,7 @@ final class DashboardController extends Controller
             $yearKey = $paymentDate->format('Y');
 
             if ($monthKey === $currentMonthKey) {
+                $currentMonthNet += $payroll->getNetSalary();
                 $currentMonthVale += $payroll->getValeDeduction();
                 $dateKey = $paymentDate->format('Y-m-d');
                 if (!isset($calendarEvents[$dateKey])) {
@@ -139,6 +141,8 @@ final class DashboardController extends Controller
                 'currentMonth' => $currentMonthVale,
                 'currentYear' => $currentYearVale,
             ],
+            'currentMonthNet' => $currentMonthNet,
+            'currentMonthLabel' => $this->getMonthDisplayName($currentMonth),
         ]);
     }
 
@@ -378,5 +382,32 @@ final class DashboardController extends Controller
         uksort($totals, static fn (string $a, string $b): int => strcmp($b, $a));
 
         return array_values($totals);
+    }
+
+    private function getMonthDisplayName(DateTimeImmutable $date): string
+    {
+        $months = [
+            '01' => 'janeiro',
+            '02' => 'fevereiro',
+            '03' => 'março',
+            '04' => 'abril',
+            '05' => 'maio',
+            '06' => 'junho',
+            '07' => 'julho',
+            '08' => 'agosto',
+            '09' => 'setembro',
+            '10' => 'outubro',
+            '11' => 'novembro',
+            '12' => 'dezembro',
+        ];
+
+        $monthKey = $date->format('m');
+        $name = $months[$monthKey] ?? $date->format('F');
+
+        if (function_exists('mb_convert_case') && defined('MB_CASE_TITLE')) {
+            return mb_convert_case($name, constant('MB_CASE_TITLE'), 'UTF-8');
+        }
+
+        return ucfirst($name);
     }
 }

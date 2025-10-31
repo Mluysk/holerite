@@ -63,6 +63,10 @@ if ($hasCharts) {
         <div class="dashboard-hero__highlight">
             <span>Total pago no ano</span>
             <span class="dashboard-hero__value">R$ <?= number_format($yearlyChart['total'], 2, ',', '.'); ?></span>
+            <div class="dashboard-hero__sub">
+                <span>Total pago em <?= htmlspecialchars($currentMonthLabel); ?></span>
+                <strong>R$ <?= number_format($currentMonthNet, 2, ',', '.'); ?></strong>
+            </div>
         </div>
         <div class="dashboard-hero__actions">
             <a class="button button-secondary" href="?action=dashboard_report&amp;scope=monthly">Relatório mensal</a>
