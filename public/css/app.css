@@ -373,6 +373,18 @@ a:focus {
     border-top: 1px solid var(--color-border);
 }
 
+.layout-footer-logo {
+    display: block;
+    height: 64px;
+    margin: 0 auto 0.5rem;
+    object-fit: contain;
+    width: auto;
+}
+
+.layout-footer-text {
+    display: block;
+}
+
 .layout-nav-toggle {
     display: none;
     background: var(--color-session-chip-bg);
@@ -1860,6 +1872,11 @@ body.theme-dark .badge--soon {
     .layout-footer {
         padding: 1rem 1.5rem;
         font-size: 0.8rem;
+    }
+
+    .layout-footer-logo {
+        height: 52px;
+        margin-bottom: 0.4rem;
     }
 
     .dashboard-vale {

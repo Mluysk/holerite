@@ -89,7 +89,8 @@ $footerSignature = sprintf('Holerite GO! © %s Created by Mystic Designer', $foo
 </main>
 
 <footer class="layout-footer">
-    <?= htmlspecialchars($footerSignature); ?>
+    <img src="img/logo3.png" alt="Holerite GO" class="layout-footer-logo">
+    <span class="layout-footer-text"><?= htmlspecialchars($footerSignature); ?></span>
 </footer>
 
     <script src="js/navigation.js" defer></script>
