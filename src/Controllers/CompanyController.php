@@ -62,6 +62,10 @@ final class CompanyController extends Controller
                 'src' => 'js/theme-preview.js',
                 'defer' => true,
             ],
+            [
+                'src' => 'js/company-form.js',
+                'defer' => true,
+            ],
         ];
 
         $this->render('company/form', [
