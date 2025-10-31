@@ -24,7 +24,7 @@ $welcomeHeadline = $greeting . ($displayName !== null ? ', ' . $displayName : '!
                 Bem-vindo<?= $displayName !== null ? ', ' . htmlspecialchars($displayName) : '' ?> ao Sistema de Holerite GO.
             </span>
         </p>
-        <form method="post" action="?action=authenticate" autocomplete="off" data-auth-form>
+        <form method="post" action="?action=authenticate" autocomplete="off">
             <div class="form-group form-group--with-icon">
                 <label for="username">Usuário</label>
                 <div class="input-icon">
@@ -49,9 +49,5 @@ $welcomeHeadline = $greeting . ($displayName !== null ? ', ' . $displayName : '!
             </div>
             <button type="submit" class="button">Acessar</button>
         </form>
-        <div class="auth-card__loading" data-auth-loading hidden>
-            <div class="auth-card__spinner" role="status" aria-live="polite" aria-label="Entrando"></div>
-            <p>Entrando...</p>
-        </div>
     </div>
 </section>
