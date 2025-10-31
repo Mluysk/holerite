@@ -334,7 +334,6 @@
         description.type = 'text';
         description.name = `${type}_description[]`;
         description.placeholder = 'Descrição';
-        description.required = true;
         description.style.marginBottom = '0.5rem';
 
         const amount = document.createElement('input');
@@ -343,7 +342,6 @@
         amount.placeholder = 'Valor em R$';
         amount.step = '0.01';
         amount.min = '0';
-        amount.required = true;
 
         const removeButton = document.createElement('button');
         removeButton.type = 'button';
