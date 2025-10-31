@@ -16,8 +16,9 @@
                 <input type="text" id="name" name="name" value="<?= htmlspecialchars($employee?->getName() ?? ''); ?>" required>
             </div>
             <div>
-                <label for="email">E-mail corporativo</label>
-                <input type="email" id="email" name="email" value="<?= htmlspecialchars($employee?->getEmail() ?? ''); ?>" required>
+                <label for="cpf">CPF</label>
+                <input type="text" id="cpf" name="cpf" inputmode="numeric" maxlength="14" pattern="\d{3}\.\d{3}\.\d{3}-\d{2}|\d{11}" value="<?= htmlspecialchars($employee?->getCpfFormatted() ?? ''); ?>" required>
+                <small class="muted">Informe apenas números ou utilize o formato 000.000.000-00.</small>
             </div>
             <div>
                 <label for="department">Departamento</label>

@@ -4,7 +4,7 @@ USE holerite;
 CREATE TABLE IF NOT EXISTS employees (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL,
+    cpf VARCHAR(20) NOT NULL,
     base_salary DECIMAL(12,2) NOT NULL DEFAULT 0,
     department VARCHAR(150) NOT NULL,
     position VARCHAR(150) NOT NULL,

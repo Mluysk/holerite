@@ -10,6 +10,7 @@ use Holerite\Models\Payroll;
 use Holerite\Repositories\EmployeeRepository;
 use Holerite\Repositories\PayrollRepository;
 use Holerite\Services\EmployeeBenefitService;
+use InvalidArgumentException;
 use Throwable;
 
 final class EmployeeController extends Controller
@@ -120,7 +121,7 @@ final class EmployeeController extends Controller
             $employee = new Employee(
                 null,
                 trim((string) ($data['name'] ?? '')),
-                trim((string) ($data['email'] ?? '')),
+                $this->sanitizeCpf($data['cpf'] ?? ''),
                 (float) ($data['base_salary'] ?? 0),
                 trim((string) ($data['department'] ?? '')),
                 trim((string) ($data['position'] ?? '')),
@@ -166,7 +167,7 @@ final class EmployeeController extends Controller
 
         try {
             $employee->setName(trim((string) ($data['name'] ?? '')));
-            $employee->setEmail(trim((string) ($data['email'] ?? '')));
+            $employee->setCpf($this->sanitizeCpf($data['cpf'] ?? ''));
             $employee->setBaseSalary((float) ($data['base_salary'] ?? 0));
             $employee->setDepartment(trim((string) ($data['department'] ?? '')));
             $employee->setPosition(trim((string) ($data['position'] ?? '')));
@@ -228,6 +229,21 @@ final class EmployeeController extends Controller
         } catch (Throwable) {
             return null;
         }
+    }
+
+    private function sanitizeCpf(mixed $value): string
+    {
+        $cpf = preg_replace('/\D+/', '', (string) ($value ?? ''));
+
+        if ($cpf === '') {
+            throw new InvalidArgumentException('Informe o CPF do colaborador.');
+        }
+
+        if (strlen($cpf) !== 11) {
+            throw new InvalidArgumentException('O CPF deve conter 11 dígitos.');
+        }
+
+        return $cpf;
     }
 
     /**

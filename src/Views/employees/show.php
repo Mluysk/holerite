@@ -77,6 +77,7 @@ $pageScripts[] = [
             <div class="grid">
                 <div class="card">
                     <h3 style="margin-top:0;">Informações cadastrais</h3>
+                    <p><strong>CPF:</strong> <?= htmlspecialchars($employee->getCpfFormatted()); ?></p>
                     <p><strong>Cargo:</strong> <?= htmlspecialchars($employee->getPosition()); ?></p>
                     <p><strong>Departamento:</strong> <?= htmlspecialchars($employee->getDepartment()); ?></p>
                     <p><strong>Salário base:</strong> R$ <?= number_format($employee->getBaseSalary(), 2, ',', '.'); ?></p>

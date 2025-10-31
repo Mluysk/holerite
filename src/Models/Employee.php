@@ -11,7 +11,7 @@ final class Employee
     public function __construct(
         private ?int $id,
         private string $name,
-        private string $email,
+        private string $cpf,
         private float $baseSalary,
         private string $department,
         private string $position,
@@ -40,14 +40,38 @@ final class Employee
         $this->name = $name;
     }
 
-    public function getEmail(): string
+    public function getCpf(): string
     {
-        return $this->email;
+        return $this->cpf;
     }
 
-    public function setEmail(string $email): void
+    public function setCpf(string $cpf): void
     {
-        $this->email = $email;
+        $this->cpf = $cpf;
+    }
+
+    public function getCpfFormatted(): string
+    {
+        $digits = preg_replace('/\D+/', '', $this->cpf);
+
+        if (strlen($digits) !== 11) {
+            return $this->cpf;
+        }
+
+        return sprintf(
+            '%s%s%s.%s%s%s.%s%s%s-%s%s',
+            $digits[0],
+            $digits[1],
+            $digits[2],
+            $digits[3],
+            $digits[4],
+            $digits[5],
+            $digits[6],
+            $digits[7],
+            $digits[8],
+            $digits[9],
+            $digits[10]
+        );
     }
 
     public function getBaseSalary(): float

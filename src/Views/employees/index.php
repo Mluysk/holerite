@@ -22,7 +22,7 @@
                 <thead>
                 <tr>
                     <th>Nome</th>
-                    <th>E-mail</th>
+                    <th>CPF</th>
                     <th>Departamento</th>
                     <th>Cargo</th>
                     <th>Salário base</th>
@@ -34,7 +34,7 @@
                 <?php foreach ($employees as $employee): ?>
                     <tr>
                         <td><?= htmlspecialchars($employee->getName()); ?></td>
-                        <td><?= htmlspecialchars($employee->getEmail()); ?></td>
+                        <td><?= htmlspecialchars($employee->getCpfFormatted()); ?></td>
                         <td><?= htmlspecialchars($employee->getDepartment()); ?></td>
                         <td><?= htmlspecialchars($employee->getPosition()); ?></td>
                         <td>R$ <?= number_format($employee->getBaseSalary(), 2, ',', '.'); ?></td>
