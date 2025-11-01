@@ -968,7 +968,7 @@ form textarea::placeholder {
 }
 
 .auth-card__logo {
-    height: 52px;
+    height: 47px;
     width: auto;
 }
 
@@ -1445,42 +1445,77 @@ tr:nth-child(even) td {
     gap: 1.5rem;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     margin-top: 1.5rem;
+    justify-items: center;
 }
 
 .backup-option {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 1rem;
-    align-items: start;
-    padding: 1rem;
-    border-radius: 14px;
+    width: min(100%, 360px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.1rem;
+    padding: 1.5rem 1.75rem;
+    border-radius: 16px;
     background: var(--color-surface-alt);
-    box-shadow: inset 0 0 0 1px var(--color-card-border);
+    box-shadow: 0 18px 36px -28px rgba(var(--color-primary-rgb), 0.35), inset 0 0 0 1px var(--color-card-border);
+    text-align: center;
 }
 
 .backup-option__icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
-    background: rgba(var(--color-primary-rgb), 0.12);
+    font-size: 2rem;
+    background: rgba(var(--color-primary-rgb), 0.16);
     color: var(--color-primary);
+    box-shadow: 0 16px 32px -24px rgba(var(--color-primary-rgb), 0.4);
+}
+
+.backup-option__body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.9rem;
+    width: 100%;
+}
+
+.backup-option__body > * + * {
+    margin-top: 0.35rem;
+}
+
+.backup-option__body > * + form {
+    margin-top: 0.75rem;
 }
 
 .backup-option__body h4 {
-    margin: 0 0 0.25rem 0;
+    margin: 0;
+}
+
+.backup-option__body p {
+    margin: 0 auto;
+    color: var(--color-text-muted);
+    max-width: 320px;
 }
 
 .backup-option__body form {
-    margin-top: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 0;
+    width: 100%;
+}
+
+.backup-option__body form .button {
+    width: 100%;
 }
 
 .backup-upload {
     display: grid;
     gap: 0.5rem;
+    width: 100%;
 }
 
 .backup-upload__label {
@@ -2460,7 +2495,7 @@ body.theme-dark .badge--soon {
     }
 
     .auth-card__logo {
-        height: 48px;
+        height: 43px;
     }
 }
 
