@@ -129,7 +129,7 @@ final class CompanyRepository
             'phone' => '(00) 0000-0000',
             'email' => 'contato@empresa.com',
             'theme_mode' => 'light',
-            'color_palette' => 'blue',
+            'color_palette' => 'dark-red',
         ];
 
         if (!file_exists($configPath)) {

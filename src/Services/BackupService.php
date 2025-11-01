@@ -78,7 +78,7 @@ final class BackupService
                     'password_hash' => (string) ($row['password_hash'] ?? ''),
                     'created_at' => $row['created_at'] ?? null,
                     'theme_mode' => (string) ($row['theme_mode'] ?? 'light'),
-                    'color_palette' => (string) ($row['color_palette'] ?? 'blue'),
+                    'color_palette' => (string) ($row['color_palette'] ?? 'dark-red'),
                 ],
                 $rows ?: []
             ),
@@ -134,7 +134,7 @@ final class BackupService
 
                     if ($table === 'users') {
                         $themeMode = isset($row['theme_mode']) ? strtolower((string) $row['theme_mode']) : 'light';
-                        $palette = isset($row['color_palette']) ? strtolower((string) $row['color_palette']) : 'blue';
+                        $palette = isset($row['color_palette']) ? strtolower((string) $row['color_palette']) : 'dark-red';
 
                         if (!in_array($themeMode, ['light', 'dark'], true)) {
                             $themeMode = 'light';
@@ -160,7 +160,7 @@ final class BackupService
                         ];
 
                         if (!in_array($palette, $allowedPalettes, true)) {
-                            $palette = 'blue';
+                            $palette = 'dark-red';
                         }
 
                         $row['theme_mode'] = $themeMode;
@@ -592,7 +592,7 @@ final class BackupService
             $filtered['theme_mode'] = $themeMode;
         }
 
-        $palette = isset($filtered['color_palette']) ? strtolower((string) $filtered['color_palette']) : 'blue';
+        $palette = isset($filtered['color_palette']) ? strtolower((string) $filtered['color_palette']) : 'dark-red';
         $allowedPalettes = [
             'blue',
             'emerald',
@@ -613,7 +613,7 @@ final class BackupService
         ];
 
         if (!in_array($palette, $allowedPalettes, true)) {
-            $filtered['color_palette'] = 'blue';
+            $filtered['color_palette'] = 'dark-red';
         } else {
             $filtered['color_palette'] = $palette;
         }
@@ -651,7 +651,7 @@ final class BackupService
             'password_hash' => '$2y$12$xYtysTzDWmNVJUtrv3xcnO62KGT24U774wEy8RTIA7H5IsczQS9fu',
             'role' => 'administrator',
             'theme_mode' => 'light',
-            'color_palette' => 'blue',
+            'color_palette' => 'dark-red',
         ]);
     }
 }

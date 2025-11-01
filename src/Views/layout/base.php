@@ -14,10 +14,10 @@ $mainClass = isset($layoutClass) && is_string($layoutClass) && trim($layoutClass
     : 'layout-content';
 
 $themeMode = isset($appearance['themeMode']) && is_string($appearance['themeMode']) ? $appearance['themeMode'] : 'light';
-$colorPalette = isset($appearance['colorPalette']) && is_string($appearance['colorPalette']) ? $appearance['colorPalette'] : 'blue';
+$colorPalette = isset($appearance['colorPalette']) && is_string($appearance['colorPalette']) ? $appearance['colorPalette'] : 'dark-red';
 
 $themeMode = in_array($themeMode, ['light', 'dark'], true) ? $themeMode : 'light';
-$colorPalette = preg_match('/^[a-z0-9_-]+$/', $colorPalette) ? $colorPalette : 'blue';
+$colorPalette = preg_match('/^[a-z0-9_-]+$/', $colorPalette) ? $colorPalette : 'dark-red';
 
 $bodyClasses = trim('theme-' . $themeMode . ' accent-' . $colorPalette);
 $footerYear = (new DateTimeImmutable('now', new DateTimeZone('America/Sao_Paulo')))->format('Y');

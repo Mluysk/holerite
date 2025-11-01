@@ -116,7 +116,7 @@ final class CompanyController extends Controller
 
         $companyColorPalette = $company->getColorPalette();
         if (!array_key_exists($companyColorPalette, self::COLOR_PALETTES)) {
-            $companyColorPalette = 'blue';
+            $companyColorPalette = 'dark-red';
         }
 
         $this->render('company/form', [
@@ -184,10 +184,10 @@ final class CompanyController extends Controller
             $this->redirect('?action=edit_company&tab=appearance');
         }
 
-        $currentPalette = strtolower((string) ($user['color_palette'] ?? 'blue'));
+        $currentPalette = strtolower((string) ($user['color_palette'] ?? 'dark-red'));
 
         if (!array_key_exists($currentPalette, self::COLOR_PALETTES)) {
-            $currentPalette = 'blue';
+            $currentPalette = 'dark-red';
         }
 
         try {

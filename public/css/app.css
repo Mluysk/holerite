@@ -968,7 +968,7 @@ form textarea::placeholder {
 }
 
 .auth-card__logo {
-    height: 58px;
+    height: 52px;
     width: auto;
 }
 
@@ -2460,7 +2460,7 @@ body.theme-dark .badge--soon {
     }
 
     .auth-card__logo {
-        height: 53px;
+        height: 48px;
     }
 }
 

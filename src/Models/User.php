@@ -15,7 +15,7 @@ final class User
         private string $passwordHash,
         private string $role = self::ROLE_OPERATOR,
         private string $themeMode = 'light',
-        private string $colorPalette = 'blue',
+        private string $colorPalette = 'dark-red',
     ) {
     }
 

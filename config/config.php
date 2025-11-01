@@ -21,7 +21,7 @@ return [
         'phone' => '(11) 0000-0000',
         'email' => 'contato@xyz.com.br',
         'theme_mode' => 'light',
-        'color_palette' => 'blue',
+        'color_palette' => 'dark-red',
     ],
     'services' => [
         'contributions_api' => [

@@ -63,7 +63,7 @@ final class UserRepository
         string $passwordHash,
         string $role,
         string $themeMode = 'light',
-        string $colorPalette = 'blue'
+        string $colorPalette = 'dark-red'
     ): User
     {
         $statement = $this->pdo->prepare('INSERT INTO users (username, password_hash, role, theme_mode, color_palette) VALUES (:username, :password_hash, :role, :theme_mode, :color_palette)');
@@ -121,7 +121,7 @@ final class UserRepository
             (string) $row['password_hash'],
             $role,
             isset($row['theme_mode']) ? (string) $row['theme_mode'] : 'light',
-            isset($row['color_palette']) ? (string) $row['color_palette'] : 'blue',
+            isset($row['color_palette']) ? (string) $row['color_palette'] : 'dark-red',
         );
     }
 }

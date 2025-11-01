@@ -34,7 +34,7 @@
     }
 
     let currentTheme = sanitize(body.getAttribute('data-theme-mode'), 'light');
-    let currentPalette = sanitize(body.getAttribute('data-color-palette'), 'blue');
+    let currentPalette = sanitize(body.getAttribute('data-color-palette'), 'dark-red');
 
     function applyAppearance(theme, palette) {
         const nextTheme = sanitize(theme, currentTheme);
@@ -48,7 +48,7 @@
         });
 
         const appliedTheme = themeOptions.includes(nextTheme) ? nextTheme : 'light';
-        const appliedPalette = paletteOptions.includes(nextPalette) ? nextPalette : 'blue';
+        const appliedPalette = paletteOptions.includes(nextPalette) ? nextPalette : 'dark-red';
 
         body.classList.add('theme-' + appliedTheme);
         body.classList.add('accent-' + appliedPalette);

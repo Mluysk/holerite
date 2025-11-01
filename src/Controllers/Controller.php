@@ -62,7 +62,7 @@ abstract class Controller
     {
         $defaults = [
             'themeMode' => 'light',
-            'colorPalette' => 'blue',
+            'colorPalette' => 'dark-red',
         ];
 
         if (!is_array($source)) {

@@ -88,7 +88,7 @@ final class AuthController extends Controller
             }
 
             if (!in_array($palette, $allowedPalettes, true)) {
-                $palette = 'blue';
+                $palette = 'dark-red';
             }
 
             session_regenerate_id(true);
@@ -254,7 +254,7 @@ final class AuthController extends Controller
                 : 'light';
             $defaultPalette = is_object($company) && method_exists($company, 'getColorPalette')
                 ? strtolower((string) $company->getColorPalette())
-                : 'blue';
+                : 'dark-red';
 
             if (!in_array($defaultTheme, ['light', 'dark'], true)) {
                 $defaultTheme = 'light';
@@ -280,7 +280,7 @@ final class AuthController extends Controller
             ];
 
             if (!in_array($defaultPalette, $allowedPalettes, true)) {
-                $defaultPalette = 'blue';
+                $defaultPalette = 'dark-red';
             }
 
             $this->userRepository->create($username, $hash, $role, $defaultTheme, $defaultPalette);
