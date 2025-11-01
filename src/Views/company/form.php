@@ -35,6 +35,12 @@ $irrfBrackets = $contributionSettings->getIrrfBrackets();
 $inssFormRows = array_values(array_merge($inssBrackets, [['limit' => null, 'rate' => null]]));
 $irrfFormRows = array_values(array_merge($irrfBrackets, [['limit' => null, 'rate' => null, 'deduction' => null]]));
 $contributionsUpdatedAt = $contributionSettings->getUpdatedAt();
+$contributionApi = isset($contributionApi) && is_array($contributionApi) ? $contributionApi : [];
+$apiEnabled = !empty($contributionApi['enabled']);
+$apiEndpoint = trim((string) ($contributionApi['endpoint'] ?? ''));
+$apiProvider = trim((string) ($contributionApi['provider'] ?? ''));
+$apiHasToken = !empty($contributionApi['hasToken']);
+$apiTimeout = isset($contributionApi['timeout']) ? (int) $contributionApi['timeout'] : 10;
 ?>
 <section>
     <header style="margin-bottom:1.5rem;">
@@ -533,9 +539,3 @@ $contributionsUpdatedAt = $contributionSettings->getUpdatedAt();
         <?php endif; ?>
     </div>
 </section>
-$contributionApi = isset($contributionApi) && is_array($contributionApi) ? $contributionApi : [];
-$apiEnabled = !empty($contributionApi['enabled']);
-$apiEndpoint = trim((string) ($contributionApi['endpoint'] ?? ''));
-$apiProvider = trim((string) ($contributionApi['provider'] ?? ''));
-$apiHasToken = !empty($contributionApi['hasToken']);
-$apiTimeout = isset($contributionApi['timeout']) ? (int) $contributionApi['timeout'] : 10;
