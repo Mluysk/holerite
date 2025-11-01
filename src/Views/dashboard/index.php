@@ -8,8 +8,8 @@
 /** @var array<int, array{period: string, total: float, count: int}> $yearlyTotals */
 /** @var array{labels: array<int, string>, values: array<int, float>, percentages: array<int, float>, total: float} $monthlyChart */
 /** @var array{labels: array<int, string>, values: array<int, float>, percentages: array<int, float>, total: float} $yearlyChart */
-/** @var array<int, array{period: string, manual: float, transport: float, total: float}> $monthlyValeTotals */
-/** @var array<int, array{period: string, manual: float, transport: float, total: float}> $yearlyValeTotals */
+/** @var array<int, array{period: string, manual: float, transport: float, total: float, transport_days: int, transport_trips: int}> $monthlyValeTotals */
+/** @var array<int, array{period: string, manual: float, transport: float, total: float, transport_days: int, transport_trips: int}> $yearlyValeTotals */
 /**
  * @var array{
  *     manual: array{current: array{period: string, value: float|null}|null, previous: array{period: string, value: float|null}|null, difference: float|null, percentage: float|null},
@@ -921,6 +921,8 @@ $pageScripts[] = [
                                     <th>Mês</th>
                                     <th class="text-right">Vales de produtos</th>
                                     <th class="text-right">Vale-transporte</th>
+                                    <th class="text-right">Dias de VT</th>
+                                    <th class="text-right">Passagens</th>
                                     <th class="text-right">Total</th>
                                 </tr>
                                 </thead>
@@ -930,6 +932,8 @@ $pageScripts[] = [
                                         <td><?= htmlspecialchars($row['period']); ?></td>
                                         <td class="text-right">R$ <?= number_format($row['manual'], 2, ',', '.'); ?></td>
                                         <td class="text-right">R$ <?= number_format($row['transport'], 2, ',', '.'); ?></td>
+                                        <td class="text-right"><?= number_format((int) $row['transport_days'], 0, ',', '.'); ?></td>
+                                        <td class="text-right"><?= number_format((int) $row['transport_trips'], 0, ',', '.'); ?></td>
                                         <td class="text-right">R$ <?= number_format($row['total'], 2, ',', '.'); ?></td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -958,6 +962,8 @@ $pageScripts[] = [
                                     <th>Ano</th>
                                     <th class="text-right">Vales de produtos</th>
                                     <th class="text-right">Vale-transporte</th>
+                                    <th class="text-right">Dias de VT</th>
+                                    <th class="text-right">Passagens</th>
                                     <th class="text-right">Total</th>
                                 </tr>
                                 </thead>
@@ -967,6 +973,8 @@ $pageScripts[] = [
                                         <td><?= htmlspecialchars($row['period']); ?></td>
                                         <td class="text-right">R$ <?= number_format($row['manual'], 2, ',', '.'); ?></td>
                                         <td class="text-right">R$ <?= number_format($row['transport'], 2, ',', '.'); ?></td>
+                                        <td class="text-right"><?= number_format((int) $row['transport_days'], 0, ',', '.'); ?></td>
+                                        <td class="text-right"><?= number_format((int) $row['transport_trips'], 0, ',', '.'); ?></td>
                                         <td class="text-right">R$ <?= number_format($row['total'], 2, ',', '.'); ?></td>
                                     </tr>
                                 <?php endforeach; ?>

@@ -417,7 +417,7 @@ final class DashboardController extends Controller
 
     /**
      * @param array<int, Payroll> $payrolls
-     * @return array<int, array{period: string, manual: float, transport: float, total: float}>
+     * @return array<int, array{period: string, manual: float, transport: float, total: float, transport_days: int, transport_trips: int}>
      */
     private function aggregateValeTotals(array $payrolls, string $scope): array
     {
@@ -436,11 +436,15 @@ final class DashboardController extends Controller
                     'manual' => 0.0,
                     'transport' => 0.0,
                     'total' => 0.0,
+                    'transport_days' => 0,
+                    'transport_trips' => 0,
                 ];
             }
 
             $totals[$key]['manual'] += $payroll->getManualValeDeduction();
             $totals[$key]['transport'] += $payroll->getTransportDeduction();
+            $totals[$key]['transport_days'] += $payroll->getTransportDays();
+            $totals[$key]['transport_trips'] += $payroll->getTransportTrips();
             $totals[$key]['total'] = $totals[$key]['manual'] + $totals[$key]['transport'];
         }
 
@@ -454,7 +458,7 @@ final class DashboardController extends Controller
     }
 
     /**
-     * @param array<int, array{period: string, manual: float, transport: float, total: float}> $totals
+     * @param array<int, array{period: string, manual: float, transport: float, total: float, transport_days: int, transport_trips: int}> $totals
      * @return array<int, array{period: string, total: float}>
      */
     private function extractValeSeries(array $totals, string $key): array
