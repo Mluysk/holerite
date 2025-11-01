@@ -1693,6 +1693,13 @@ tr:nth-child(even) td {
     min-height: 1.1rem;
 }
 
+.calendar-day__marker-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.1rem 0.25rem 0.1rem 0;
+}
+
 .calendar-day__marker {
     width: 12px;
     height: 12px;
@@ -1744,6 +1751,37 @@ tr:nth-child(even) td {
 .calendar-day__marker--termination {
     background: #64748b;
     box-shadow: 0 0 0 2px rgba(100, 116, 139, 0.24);
+}
+
+.calendar-day__marker-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.calendar-day__marker-label--salary {
+    color: #ef4444;
+}
+
+.calendar-day__marker-label--thirteenth {
+    color: #16a34a;
+}
+
+.calendar-day__marker-label--vacation {
+    color: #f59e0b;
+}
+
+.calendar-day__marker-label--termination {
+    color: #64748b;
+}
+
+.calendar-day__marker-label--regular {
+    color: #ef4444;
+}
+
+.calendar-day__marker-label--default {
+    color: rgba(148, 163, 184, 0.9);
 }
 
 .calendar-tooltip {

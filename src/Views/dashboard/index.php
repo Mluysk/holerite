@@ -217,6 +217,7 @@ $pageScripts[] = [
                                                     <?php
                                                     $groupType = $group['type'];
                                                     $markerClass = $calendarMarkerClasses[$groupType] ?? 'calendar-day__marker--default';
+                                                    $labelClass = 'calendar-day__marker-label--' . ($groupType ?? 'default');
                                                     $markerTitle = $typeLabels[$groupType] ?? 'Pagamento';
                                                     $infoItems = [];
                                                     $summaryParts = [];
@@ -251,13 +252,16 @@ $pageScripts[] = [
                                                     $infoJson = htmlspecialchars(json_encode($infoPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
                                                     $ariaLabel = $markerTitle . ' em ' . $cellDate->format('d/m/Y') . ': ' . implode('; ', $summaryParts);
                                                     ?>
-                                                    <button
-                                                        type="button"
-                                                        class="calendar-day__marker <?= $markerClass; ?>"
-                                                        data-marker-info="<?= $infoJson; ?>"
-                                                        aria-expanded="false"
-                                                        aria-label="<?= htmlspecialchars($ariaLabel); ?>"
-                                                    ></button>
+                                                    <span class="calendar-day__marker-group">
+                                                        <button
+                                                            type="button"
+                                                            class="calendar-day__marker <?= $markerClass; ?>"
+                                                            data-marker-info="<?= $infoJson; ?>"
+                                                            aria-expanded="false"
+                                                            aria-label="<?= htmlspecialchars($ariaLabel); ?>"
+                                                        ></button>
+                                                        <span class="calendar-day__marker-label <?= htmlspecialchars($labelClass); ?>">Pago</span>
+                                                    </span>
                                                 <?php endforeach; ?>
                                             </div>
                                         <?php else: ?>
