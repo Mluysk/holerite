@@ -18,7 +18,22 @@
 /** @var array<int, array<int, array{date: DateTimeImmutable|null, payrolls: Holerite\Models\Payroll[]}>> $calendarWeeks */
 /** @var Holerite\Models\Payroll[] $paidMonthlyPayrolls */
 /** @var Holerite\Models\Employee[] $pendingMonthlyEmployees */
-/** @var array{manual: array{overall: float, currentMonth: float, currentYear: float}, transport: array{overall: float, currentMonth: float, currentYear: float}} $valeTotals */
+/**
+ * @var array{
+ *     manual: array{overall: float, currentMonth: float, currentYear: float},
+ *     transport: array{
+ *         overall: float,
+ *         currentMonth: float,
+ *         currentYear: float,
+ *         costOverall: float,
+ *         costCurrentMonth: float,
+ *         costCurrentYear: float,
+ *         companyOverall: float,
+ *         companyCurrentMonth: float,
+ *         companyCurrentYear: float,
+ *     }
+ * } $valeTotals
+ */
 /** @var Holerite\Models\Payroll[] $thirteenthFirstInstallments */
 /** @var Holerite\Models\Payroll[] $thirteenthSecondInstallments */
 
@@ -149,6 +164,38 @@ $pageScripts[] = [
                     <dd>R$ <?= number_format($valeTotals['manual']['currentYear'], 2, ',', '.'); ?></dd>
                 </div>
             </dl>
+        </article>
+        <article class="stats-card stats-card--vale">
+            <div class="stats-card__icon icon-circle icon-circle--info" aria-hidden="true">
+                <i class="bi bi-bus-front"></i>
+            </div>
+            <header>
+                <span class="stats-card__subtitle">Vale-transporte</span>
+                <h3>Custo acumulado</h3>
+            </header>
+            <div class="stats-card__value">R$ <?= number_format($valeTotals['transport']['costOverall'], 2, ',', '.'); ?></div>
+            <dl class="stats-card__details">
+                <div>
+                    <dt>Desconto (6%) no mês</dt>
+                    <dd>R$ <?= number_format($valeTotals['transport']['currentMonth'], 2, ',', '.'); ?></dd>
+                </div>
+                <div>
+                    <dt>Diferença coberta no mês</dt>
+                    <dd>R$ <?= number_format($valeTotals['transport']['companyCurrentMonth'], 2, ',', '.'); ?></dd>
+                </div>
+                <div>
+                    <dt>Desconto (6%) no ano</dt>
+                    <dd>R$ <?= number_format($valeTotals['transport']['currentYear'], 2, ',', '.'); ?></dd>
+                </div>
+                <div>
+                    <dt>Diferença coberta no ano</dt>
+                    <dd>R$ <?= number_format($valeTotals['transport']['companyCurrentYear'], 2, ',', '.'); ?></dd>
+                </div>
+            </dl>
+            <p class="stats-card__note">
+                Desconto acumulado (6%): R$ <?= number_format($valeTotals['transport']['overall'], 2, ',', '.'); ?> ·
+                Empresa custeou: R$ <?= number_format($valeTotals['transport']['companyOverall'], 2, ',', '.'); ?>
+            </p>
         </article>
     </div>
 

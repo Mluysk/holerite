@@ -1287,6 +1287,15 @@ tr:nth-child(even) td {
     color: var(--color-text);
 }
 
+.stats-card__note {
+    margin: 0.65rem 0 0 0;
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
 
 .stats-card--transport {
     display: flex;
