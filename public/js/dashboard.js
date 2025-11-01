@@ -155,18 +155,240 @@
         });
     }
 
-    function bootstrap() {
-        const payload = parsePayload();
-        if (!payload || typeof Chart === 'undefined') {
+    function setupCalendarMarkers() {
+        const markers = document.querySelectorAll('.calendar-day__marker[data-marker-info]');
+        if (!markers.length) {
             return;
         }
 
-        createDoughnutChart('monthlyChart', payload.monthly);
-        createDoughnutChart('yearlyChart', payload.yearly);
-        createLineChart('monthlyValeProductsChart', payload.monthlyValeProducts, 'Vales de produtos - mensal');
-        createLineChart('monthlyValeTransportChart', payload.monthlyValeTransport, 'Vale-transporte - mensal');
-        createLineChart('yearlyValeProductsChart', payload.yearlyValeProducts, 'Vales de produtos - anual');
-        createLineChart('yearlyValeTransportChart', payload.yearlyValeTransport, 'Vale-transporte - anual');
+        const tooltip = document.createElement('div');
+        tooltip.className = 'calendar-tooltip';
+        tooltip.setAttribute('role', 'dialog');
+        tooltip.setAttribute('aria-hidden', 'true');
+
+        const titleEl = document.createElement('div');
+        titleEl.className = 'calendar-tooltip__title';
+        tooltip.appendChild(titleEl);
+
+        const subtitleEl = document.createElement('div');
+        subtitleEl.className = 'calendar-tooltip__subtitle';
+        tooltip.appendChild(subtitleEl);
+
+        const list = document.createElement('ul');
+        list.className = 'calendar-tooltip__list';
+        tooltip.appendChild(list);
+
+        document.body.appendChild(tooltip);
+
+        let activeMarker = null;
+
+        function hideTooltip() {
+            if (!activeMarker) {
+                return;
+            }
+            activeMarker.classList.remove('is-active');
+            activeMarker.setAttribute('aria-expanded', 'false');
+            activeMarker = null;
+            tooltip.classList.remove('calendar-tooltip--visible');
+            tooltip.setAttribute('aria-hidden', 'true');
+        }
+
+        function parseInfo(marker) {
+            try {
+                const raw = marker.getAttribute('data-marker-info') || '{}';
+                const info = JSON.parse(raw);
+                if (!info || typeof info !== 'object') {
+                    return null;
+                }
+                return info;
+            } catch (error) {
+                console.warn('Não foi possível interpretar as informações do pagamento.', error);
+                return null;
+            }
+        }
+
+        function renderTooltip(info) {
+            titleEl.textContent = info.title || 'Pagamentos';
+
+            if (info.date) {
+                subtitleEl.textContent = info.date;
+                subtitleEl.style.display = '';
+            } else {
+                subtitleEl.textContent = '';
+                subtitleEl.style.display = 'none';
+            }
+
+            list.innerHTML = '';
+            if (Array.isArray(info.items)) {
+                info.items.forEach(function (item) {
+                    const element = document.createElement('li');
+                    element.className = 'calendar-tooltip__item';
+
+                    const name = document.createElement('span');
+                    name.className = 'calendar-tooltip__name';
+                    name.textContent = item.name || 'Colaborador';
+                    element.appendChild(name);
+
+                    if (item.details) {
+                        const details = document.createElement('span');
+                        details.className = 'calendar-tooltip__details';
+                        details.textContent = item.details;
+                        element.appendChild(details);
+                    }
+
+                    if (item.amount) {
+                        const amount = document.createElement('span');
+                        amount.className = 'calendar-tooltip__amount';
+                        amount.textContent = item.amount;
+                        element.appendChild(amount);
+                    }
+
+                    list.appendChild(element);
+                });
+            }
+        }
+
+        function positionTooltip(marker) {
+            const rect = marker.getBoundingClientRect();
+            const tooltipRect = tooltip.getBoundingClientRect();
+            const scrollY = window.scrollY || window.pageYOffset;
+            const scrollX = window.scrollX || window.pageXOffset;
+            const gutter = 16;
+            const top = scrollY + rect.bottom + 10;
+            let left = scrollX + rect.left + rect.width / 2 - tooltipRect.width / 2;
+            const viewportWidth = document.documentElement.clientWidth;
+            if (left < scrollX + gutter) {
+                left = scrollX + gutter;
+            }
+            const maxLeft = scrollX + viewportWidth - tooltipRect.width - gutter;
+            if (left > maxLeft) {
+                left = Math.max(scrollX + gutter, maxLeft);
+            }
+            tooltip.style.top = top + 'px';
+            tooltip.style.left = left + 'px';
+        }
+
+        function showTooltip(marker, info) {
+            if (!info) {
+                return;
+            }
+
+            if (activeMarker && activeMarker !== marker) {
+                hideTooltip();
+            }
+
+            renderTooltip(info);
+            tooltip.setAttribute('aria-hidden', 'false');
+            tooltip.style.visibility = 'hidden';
+            tooltip.classList.add('calendar-tooltip--visible');
+            positionTooltip(marker);
+            tooltip.style.visibility = '';
+
+            marker.classList.add('is-active');
+            marker.setAttribute('aria-expanded', 'true');
+            activeMarker = marker;
+        }
+
+        markers.forEach(function (marker) {
+            marker.addEventListener('mouseenter', function () {
+                const info = parseInfo(marker);
+                showTooltip(marker, info);
+            });
+
+            marker.addEventListener('mouseleave', function (event) {
+                if (!activeMarker || activeMarker !== marker) {
+                    return;
+                }
+                const related = event.relatedTarget;
+                if (related instanceof Node && tooltip.contains(related)) {
+                    return;
+                }
+                hideTooltip();
+            });
+
+            marker.addEventListener('focus', function () {
+                const info = parseInfo(marker);
+                showTooltip(marker, info);
+            });
+
+            marker.addEventListener('blur', function (event) {
+                if (!activeMarker || activeMarker !== marker) {
+                    return;
+                }
+                const related = event.relatedTarget;
+                if (related instanceof Node && tooltip.contains(related)) {
+                    return;
+                }
+                hideTooltip();
+            });
+
+            marker.addEventListener('click', function (event) {
+                event.preventDefault();
+                const info = parseInfo(marker);
+                if (!info) {
+                    hideTooltip();
+                    return;
+                }
+                if (activeMarker === marker) {
+                    hideTooltip();
+                } else {
+                    showTooltip(marker, info);
+                }
+            });
+        });
+
+        tooltip.addEventListener('mouseleave', function () {
+            hideTooltip();
+        });
+
+        document.addEventListener('click', function (event) {
+            if (!activeMarker) {
+                return;
+            }
+            const target = event.target;
+            if (!(target instanceof Node)) {
+                return;
+            }
+            if (tooltip.contains(target) || activeMarker.contains(target)) {
+                return;
+            }
+            hideTooltip();
+        }, { capture: true });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                hideTooltip();
+            }
+        });
+
+        window.addEventListener('scroll', function () {
+            if (!activeMarker) {
+                return;
+            }
+            positionTooltip(activeMarker);
+        });
+
+        window.addEventListener('resize', function () {
+            if (!activeMarker) {
+                return;
+            }
+            positionTooltip(activeMarker);
+        });
+    }
+
+    function bootstrap() {
+        const payload = parsePayload();
+
+        if (payload && typeof Chart !== 'undefined') {
+            createDoughnutChart('monthlyChart', payload.monthly);
+            createDoughnutChart('yearlyChart', payload.yearly);
+            createLineChart('monthlyValeProductsChart', payload.monthlyValeProducts, 'Vales de produtos - mensal');
+            createLineChart('monthlyValeTransportChart', payload.monthlyValeTransport, 'Vale-transporte - mensal');
+            createLineChart('yearlyValeProductsChart', payload.yearlyValeProducts, 'Vales de produtos - anual');
+            createLineChart('yearlyValeTransportChart', payload.yearlyValeTransport, 'Vale-transporte - anual');
+        }
+
+        setupCalendarMarkers();
     }
 
     if (document.readyState === 'loading') {

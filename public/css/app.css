@@ -1699,6 +1699,26 @@ tr:nth-child(even) td {
     border-radius: 999px;
     background: rgba(var(--color-primary-rgb), 0.45);
     box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.18);
+    border: none;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    position: relative;
+    appearance: none;
+}
+
+.calendar-day__marker:hover,
+.calendar-day__marker.is-active {
+    transform: scale(1.2);
+    box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.28);
+}
+
+.calendar-day__marker:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
 }
 
 .calendar-day__marker--default {
@@ -1724,6 +1744,71 @@ tr:nth-child(even) td {
 .calendar-day__marker--termination {
     background: #64748b;
     box-shadow: 0 0 0 2px rgba(100, 116, 139, 0.24);
+}
+
+.calendar-tooltip {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 60;
+    width: min(280px, calc(100vw - 2rem));
+    padding: 0.8rem 1rem;
+    border-radius: 0.85rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.calendar-tooltip--visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+.calendar-tooltip__title {
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 0.1rem;
+}
+
+.calendar-tooltip__subtitle {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    margin-bottom: 0.5rem;
+}
+
+.calendar-tooltip__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.calendar-tooltip__item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.calendar-tooltip__name {
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.calendar-tooltip__details {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.calendar-tooltip__amount {
+    font-size: 0.85rem;
+    color: var(--color-text);
 }
 
 .calendar-day__list {
@@ -1767,6 +1852,7 @@ tr:nth-child(even) td {
     width: 14px;
     height: 14px;
     border-radius: 999px;
+    cursor: default;
 }
 
 .dashboard-status {

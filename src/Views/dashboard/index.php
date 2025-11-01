@@ -61,11 +61,12 @@ if ($hasCharts) {
         'integrity' => 'sha384-UCZpkU3iAFH4x63HzlOAAbZv9fhPjbjJQr9HFVLqN3XkHKXKjMR2D3mHmr18bHul',
         'crossorigin' => 'anonymous',
     ];
-    $pageScripts[] = [
-        'src' => 'js/dashboard.js',
-        'defer' => true,
-    ];
 }
+
+$pageScripts[] = [
+    'src' => 'js/dashboard.js',
+    'defer' => true,
+];
 ?>
 <section class="dashboard">
     <div class="dashboard-hero">
@@ -203,12 +204,60 @@ if ($hasCharts) {
                                     <td class="calendar-day<?= $hasPayments ? ' calendar-day--has-payments' : ''; ?>">
                                         <div class="calendar-day__date"><?= htmlspecialchars($cellDate->format('d')); ?></div>
                                         <?php if ($hasPayments): ?>
-                                            <?php $paymentCount = count($cellPayrolls); ?>
-                                            <?php $ariaLabel = $paymentCount === 1 ? '1 pagamento registrado' : sprintf('%d pagamentos registrados', $paymentCount); ?>
-                                            <div class="calendar-day__markers" aria-label="<?= htmlspecialchars($ariaLabel); ?>">
-                                                <?php foreach ($cellPayrolls as $cellPayroll): ?>
-                                                    <?php $markerType = $calendarMarkerClasses[$cellPayroll->getType()] ?? 'calendar-day__marker--default'; ?>
-                                                    <span class="calendar-day__marker <?= $markerType; ?>" role="presentation"></span>
+                                            <?php
+                                            $markerGroups = [];
+                                            foreach ($cellPayrolls as $cellPayroll) {
+                                                $groupType = $cellPayroll->getType();
+                                                $markerGroups[$groupType]['type'] = $groupType;
+                                                $markerGroups[$groupType]['payrolls'][] = $cellPayroll;
+                                            }
+                                            ?>
+                                            <div class="calendar-day__markers" role="group" aria-label="Pagamentos do dia <?= htmlspecialchars($cellDate->format('d/m')); ?>">
+                                                <?php foreach ($markerGroups as $group): ?>
+                                                    <?php
+                                                    $groupType = $group['type'];
+                                                    $markerClass = $calendarMarkerClasses[$groupType] ?? 'calendar-day__marker--default';
+                                                    $markerTitle = $typeLabels[$groupType] ?? 'Pagamento';
+                                                    $infoItems = [];
+                                                    $summaryParts = [];
+                                                    foreach ($group['payrolls'] as $groupPayroll) {
+                                                        $employeeName = $employeeNames[$groupPayroll->getEmployeeId()] ?? 'Colaborador';
+                                                        $amount = 'R$ ' . number_format($groupPayroll->getNetSalary(), 2, ',', '.');
+                                                        $details = '';
+                                                        if ($groupType === 'thirteenth') {
+                                                            $installment = $groupPayroll->getThirteenthInstallment();
+                                                            if ($installment === 'first') {
+                                                                $details = '1ª parcela';
+                                                            } elseif ($installment === 'second') {
+                                                                $details = '2ª parcela';
+                                                            }
+                                                        }
+                                                        $infoItems[] = [
+                                                            'name' => $employeeName,
+                                                            'amount' => $amount,
+                                                            'details' => $details,
+                                                        ];
+                                                        $summary = $employeeName . ' — ' . $amount;
+                                                        if ($details !== '') {
+                                                            $summary .= ' (' . $details . ')';
+                                                        }
+                                                        $summaryParts[] = $summary;
+                                                    }
+                                                    $infoPayload = [
+                                                        'title' => $markerTitle,
+                                                        'date' => $cellDate->format('d/m/Y'),
+                                                        'items' => $infoItems,
+                                                    ];
+                                                    $infoJson = htmlspecialchars(json_encode($infoPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
+                                                    $ariaLabel = $markerTitle . ' em ' . $cellDate->format('d/m/Y') . ': ' . implode('; ', $summaryParts);
+                                                    ?>
+                                                    <button
+                                                        type="button"
+                                                        class="calendar-day__marker <?= $markerClass; ?>"
+                                                        data-marker-info="<?= $infoJson; ?>"
+                                                        aria-expanded="false"
+                                                        aria-label="<?= htmlspecialchars($ariaLabel); ?>"
+                                                    ></button>
                                                 <?php endforeach; ?>
                                             </div>
                                         <?php else: ?>
