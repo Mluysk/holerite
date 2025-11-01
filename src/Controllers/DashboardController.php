@@ -31,10 +31,13 @@ final class DashboardController extends Controller
         $totalNet = array_reduce($payrolls, fn (float $carry, $payroll): float => $carry + $payroll->getNetSalary(), 0.0);
         $totalManualValeDeductions = array_reduce($payrolls, fn (float $carry, Payroll $payroll): float => $carry + $payroll->getManualValeDeduction(), 0.0);
         $totalTransportValeDeductions = array_reduce($payrolls, fn (float $carry, Payroll $payroll): float => $carry + $payroll->getTransportDeduction(), 0.0);
+        $totalTransportCost = array_reduce($payrolls, fn (float $carry, Payroll $payroll): float => $carry + $payroll->getTransportTotalCost(), 0.0);
         $currentMonthManualVale = 0.0;
         $currentMonthTransportVale = 0.0;
+        $currentMonthTransportCost = 0.0;
         $currentYearManualVale = 0.0;
         $currentYearTransportVale = 0.0;
+        $currentYearTransportCost = 0.0;
         $lastPayrolls = array_slice($payrolls, 0, 5);
 
         $monthlyTotals = $this->aggregateTotals($payrolls, 'monthly');
@@ -57,6 +60,7 @@ final class DashboardController extends Controller
                 $currentMonthNet += $payroll->getNetSalary();
                 $currentMonthManualVale += $payroll->getManualValeDeduction();
                 $currentMonthTransportVale += $payroll->getTransportDeduction();
+                $currentMonthTransportCost += $payroll->getTransportTotalCost();
                 $dateKey = $paymentDate->format('Y-m-d');
                 if (!isset($calendarEvents[$dateKey])) {
                     $calendarEvents[$dateKey] = [];
@@ -81,8 +85,21 @@ final class DashboardController extends Controller
             if ($yearKey === $currentYearKey) {
                 $currentYearManualVale += $payroll->getManualValeDeduction();
                 $currentYearTransportVale += $payroll->getTransportDeduction();
+                $currentYearTransportCost += $payroll->getTransportTotalCost();
             }
         }
+
+        $totalTransportCost = round($totalTransportCost, 2);
+        $currentMonthTransportCost = round($currentMonthTransportCost, 2);
+        $currentYearTransportCost = round($currentYearTransportCost, 2);
+
+        $totalTransportValeDeductions = round($totalTransportValeDeductions, 2);
+        $currentMonthTransportVale = round($currentMonthTransportVale, 2);
+        $currentYearTransportVale = round($currentYearTransportVale, 2);
+
+        $totalTransportCompanyShare = round(max(0.0, $totalTransportCost - $totalTransportValeDeductions), 2);
+        $currentMonthTransportCompanyShare = round(max(0.0, $currentMonthTransportCost - $currentMonthTransportVale), 2);
+        $currentYearTransportCompanyShare = round(max(0.0, $currentYearTransportCost - $currentYearTransportVale), 2);
 
         $monthlyChart = $this->buildChartPayload($monthlyTotals);
         $yearlyChart = $this->buildChartPayload($yearlyTotals);
@@ -171,6 +188,12 @@ final class DashboardController extends Controller
                     'overall' => $totalTransportValeDeductions,
                     'currentMonth' => $currentMonthTransportVale,
                     'currentYear' => $currentYearTransportVale,
+                    'costOverall' => $totalTransportCost,
+                    'costCurrentMonth' => $currentMonthTransportCost,
+                    'costCurrentYear' => $currentYearTransportCost,
+                    'companyOverall' => $totalTransportCompanyShare,
+                    'companyCurrentMonth' => $currentMonthTransportCompanyShare,
+                    'companyCurrentYear' => $currentYearTransportCompanyShare,
                 ],
             ],
             'currentMonthNet' => $currentMonthNet,

@@ -67,6 +67,17 @@ $pageScripts[] = [
     'src' => 'js/dashboard.js',
     'defer' => true,
 ];
+
+$transportTotals = $valeTotals['transport'] ?? [];
+$transportCostOverall = $transportTotals['costOverall'] ?? 0.0;
+$transportDeductionOverall = $transportTotals['overall'] ?? 0.0;
+$transportCompanyOverall = $transportTotals['companyOverall'] ?? max(0.0, $transportCostOverall - $transportDeductionOverall);
+$transportCostCurrentMonth = $transportTotals['costCurrentMonth'] ?? 0.0;
+$transportDeductionCurrentMonth = $transportTotals['currentMonth'] ?? 0.0;
+$transportCompanyCurrentMonth = $transportTotals['companyCurrentMonth'] ?? max(0.0, $transportCostCurrentMonth - $transportDeductionCurrentMonth);
+$transportCostCurrentYear = $transportTotals['costCurrentYear'] ?? 0.0;
+$transportDeductionCurrentYear = $transportTotals['currentYear'] ?? 0.0;
+$transportCompanyCurrentYear = $transportTotals['companyCurrentYear'] ?? max(0.0, $transportCostCurrentYear - $transportDeductionCurrentYear);
 ?>
 <section class="dashboard">
     <div class="dashboard-hero">
@@ -149,7 +160,7 @@ $pageScripts[] = [
                 </div>
             </dl>
         </article>
-        <article class="stats-card stats-card--vale">
+        <article class="stats-card stats-card--vale stats-card--transport">
             <div class="stats-card__icon icon-circle icon-circle--info" aria-hidden="true">
                 <i class="bi bi-bus-front"></i>
             </div>
@@ -157,17 +168,30 @@ $pageScripts[] = [
                 <span class="stats-card__subtitle">Vale-transporte</span>
                 <h3>Total acumulado</h3>
             </header>
-            <div class="stats-card__value">R$ <?= number_format($valeTotals['transport']['overall'], 2, ',', '.'); ?></div>
-            <dl class="stats-card__details">
-                <div>
-                    <dt>Este mês</dt>
-                    <dd>R$ <?= number_format($valeTotals['transport']['currentMonth'], 2, ',', '.'); ?></dd>
+            <div class="stats-card__value">
+                <span class="stats-card__value-number">R$ <?= number_format($transportCostOverall, 2, ',', '.'); ?></span>
+                <span class="stats-card__value-label">Consumo total de passagens</span>
+            </div>
+            <div class="stats-card__split">
+                <div class="stats-card__split-item">
+                    <span class="stats-card__chip stats-card__chip--employee">
+                        <i class="bi bi-person-check-fill" aria-hidden="true"></i>
+                        Desconto (6%)
+                    </span>
+                    <strong>R$ <?= number_format($transportDeductionOverall, 2, ',', '.'); ?></strong>
+                    <small>Este mês: R$ <?= number_format($transportDeductionCurrentMonth, 2, ',', '.'); ?></small>
+                    <small>No ano: R$ <?= number_format($transportDeductionCurrentYear, 2, ',', '.'); ?></small>
                 </div>
-                <div>
-                    <dt>No ano</dt>
-                    <dd>R$ <?= number_format($valeTotals['transport']['currentYear'], 2, ',', '.'); ?></dd>
+                <div class="stats-card__split-item">
+                    <span class="stats-card__chip stats-card__chip--company">
+                        <i class="bi bi-building-fill" aria-hidden="true"></i>
+                        Custeio da empresa
+                    </span>
+                    <strong>R$ <?= number_format($transportCompanyOverall, 2, ',', '.'); ?></strong>
+                    <small>Este mês: R$ <?= number_format($transportCompanyCurrentMonth, 2, ',', '.'); ?></small>
+                    <small>No ano: R$ <?= number_format($transportCompanyCurrentYear, 2, ',', '.'); ?></small>
                 </div>
-            </dl>
+            </div>
         </article>
     </div>
 
@@ -244,11 +268,12 @@ $pageScripts[] = [
                                                         }
                                                         $summaryParts[] = $summary;
                                                     }
-                                                    $infoPayload = [
-                                                        'title' => $markerTitle,
-                                                        'date' => $cellDate->format('d/m/Y'),
-                                                        'items' => $infoItems,
-                                                    ];
+                                            $infoPayload = [
+                                                'title' => $markerTitle,
+                                                'date' => $cellDate->format('d/m/Y'),
+                                                'items' => $infoItems,
+                                                'category' => $groupType,
+                                            ];
                                                     $infoJson = htmlspecialchars(json_encode($infoPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
                                                     $ariaLabel = $markerTitle . ' em ' . $cellDate->format('d/m/Y') . ': ' . implode('; ', $summaryParts);
                                                     ?>

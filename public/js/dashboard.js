@@ -168,6 +168,16 @@
 
         const titleEl = document.createElement('div');
         titleEl.className = 'calendar-tooltip__title';
+
+        const titleIcon = document.createElement('span');
+        titleIcon.className = 'calendar-tooltip__icon';
+        titleIcon.setAttribute('aria-hidden', 'true');
+        titleEl.appendChild(titleIcon);
+
+        const titleText = document.createElement('span');
+        titleText.className = 'calendar-tooltip__title-text';
+        titleEl.appendChild(titleText);
+
         tooltip.appendChild(titleEl);
 
         const subtitleEl = document.createElement('div');
@@ -208,7 +218,23 @@
         }
 
         function renderTooltip(info) {
-            titleEl.textContent = info.title || 'Pagamentos';
+            const iconClassMap = {
+                regular: 'bi-cash-coin',
+                thirteenth: 'bi-gift-fill',
+                vacation: 'bi-umbrella-fill',
+                termination: 'bi-exclamation-triangle-fill'
+            };
+
+            const category = typeof info.category === 'string' ? info.category : '';
+            const iconClass = iconClassMap[category] || 'bi-cash-coin';
+            titleIcon.innerHTML = '<i class="bi ' + iconClass + '"></i>';
+            titleText.textContent = info.title || 'Pagamentos';
+
+            if (category) {
+                tooltip.setAttribute('data-category', category);
+            } else {
+                tooltip.removeAttribute('data-category');
+            }
 
             if (info.date) {
                 subtitleEl.textContent = info.date;
