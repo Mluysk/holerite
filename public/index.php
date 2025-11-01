@@ -9,6 +9,7 @@ use Holerite\Controllers\EmployeeController;
 use Holerite\Controllers\PayrollController;
 use Holerite\Controllers\BackupController;
 use Holerite\Repositories\CompanyRepository;
+use Holerite\Repositories\ContributionSettingsRepository;
 use Holerite\Repositories\EmployeeRepository;
 use Holerite\Repositories\PayrollRepository;
 use Holerite\Repositories\UserRepository;
@@ -21,11 +22,12 @@ require __DIR__ . '/../autoload.php';
 session_start();
 
 $companyRepository = new CompanyRepository();
+$contributionRepository = new ContributionSettingsRepository();
 $employeeRepository = new EmployeeRepository();
 $payrollRepository = new PayrollRepository();
 $userRepository = new UserRepository();
 $employeeBenefitService = new EmployeeBenefitService();
-$payrollService = new PayrollService($employeeRepository, $payrollRepository);
+$payrollService = new PayrollService($employeeRepository, $payrollRepository, $contributionRepository);
 $backupService = new BackupService();
 
 $activeCompany = $companyRepository->get();
@@ -70,7 +72,7 @@ if (isset($_SESSION['user']) && is_array($_SESSION['user'])) {
 $GLOBALS['holerite_appearance'] = $appearance;
 
 $dashboardController = new DashboardController($employeeRepository, $payrollRepository);
-$companyController = new CompanyController($companyRepository, $userRepository);
+$companyController = new CompanyController($companyRepository, $userRepository, $contributionRepository);
 $employeeController = new EmployeeController($employeeRepository, $payrollRepository, $employeeBenefitService);
 $payrollController = new PayrollController($employeeRepository, $payrollRepository, $payrollService, $companyRepository);
 $authController = new AuthController($userRepository);
@@ -137,6 +139,13 @@ switch ($action) {
     case 'update_color_palette':
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $companyController->updateColorPalette($_POST);
+        } else {
+            $companyController->edit();
+        }
+        break;
+    case 'update_contributions':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $companyController->updateContributions($_POST);
         } else {
             $companyController->edit();
         }

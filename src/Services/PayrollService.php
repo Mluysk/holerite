@@ -7,6 +7,7 @@ namespace Holerite\Services;
 use DateTimeImmutable;
 use Holerite\Models\Payroll;
 use Holerite\Models\PayrollItem;
+use Holerite\Repositories\ContributionSettingsRepository;
 use Holerite\Repositories\EmployeeRepository;
 use Holerite\Repositories\PayrollRepository;
 use RuntimeException;
@@ -16,6 +17,7 @@ final class PayrollService
     public function __construct(
         private EmployeeRepository $employeeRepository,
         private PayrollRepository $payrollRepository,
+        private ContributionSettingsRepository $contributionRepository,
     ) {
     }
 
@@ -55,6 +57,10 @@ final class PayrollService
         $automaticDeductions = [];
         $thirteenthAccrual = 0.0;
         $thirteenthTotalGross = 0.0;
+        $contributions = $this->contributionRepository->get();
+        $fgtsRate = $contributions->getFgtsRate();
+        $inssBrackets = $contributions->getInssBrackets();
+        $irrfBrackets = $contributions->getIrrfBrackets();
 
         if ($type === 'vacation') {
             $vacationDays = $this->sanitizeInt($data['vacation_days'] ?? 30, 1, 30, 30);
@@ -157,17 +163,17 @@ final class PayrollService
             if ($withholdThirteenthTaxes) {
                 $inssBase = $this->roundMoney($thirteenthTotalGross);
                 $fgtsBase = $inssBase;
-                $inssAmount = $this->calculateInss($inssBase);
+                $inssAmount = $this->calculateInss($inssBase, $inssBrackets);
                 $irrfBase = $this->roundMoney(max(0, $inssBase - $inssAmount));
-                $irrfAmount = $this->calculateIrrf($irrfBase);
+                $irrfAmount = $this->calculateIrrf($irrfBase, $irrfBrackets);
             } else {
                 $inssBase = $defaultContributionBase;
                 $fgtsBase = 0.0;
             }
         } else {
-            $inssAmount = $this->calculateInss($inssBase);
+            $inssAmount = $this->calculateInss($inssBase, $inssBrackets);
             $irrfBase = $this->roundMoney(max(0, $inssBase - $inssAmount));
-            $irrfAmount = $this->calculateIrrf($irrfBase);
+            $irrfAmount = $this->calculateIrrf($irrfBase, $irrfBrackets);
 
             if ($inssAmount > 0) {
                 $automaticDeductions[] = new PayrollItem(null, null, 'INSS', $inssAmount, 'deduction');
@@ -192,7 +198,7 @@ final class PayrollService
             $automaticDeductions[] = new PayrollItem(null, null, 'Desconto de vale (informado)', $valeDeduction, 'deduction');
         }
 
-        $fgtsAmount = $this->roundMoney($fgtsBase * 0.08);
+        $fgtsAmount = $this->roundMoney($fgtsBase * $fgtsRate);
 
         $allDeductions = array_merge($automaticDeductions, $manualDeductions);
 
@@ -395,29 +401,40 @@ final class PayrollService
         return round($value, 2);
     }
 
-    private function calculateInss(float $base): float
+    /**
+     * @param array<int, array{limit: float|null, rate: float}> $brackets
+     */
+    private function calculateInss(float $base, array $brackets): float
     {
         if ($base <= 0) {
             return 0.0;
         }
 
-        $ranges = [
-            [1320.00, 0.075],
-            [2571.29, 0.09],
-            [3856.94, 0.12],
-            [7507.49, 0.14],
-        ];
+        if ($brackets === []) {
+            $brackets = $this->contributionRepository->getDefault()->getInssBrackets();
+        }
 
         $remaining = $base;
         $contribution = 0.0;
         $previousLimit = 0.0;
+        $lastRate = 0.0;
 
-        foreach ($ranges as [$limit, $rate]) {
+        foreach ($brackets as $bracket) {
+            $rate = isset($bracket['rate']) ? (float) $bracket['rate'] : 0.0;
+            $limit = $bracket['limit'] ?? null;
+            $lastRate = $rate;
+
             if ($remaining <= 0) {
                 break;
             }
 
-            $rangeAmount = min($remaining, $limit - $previousLimit);
+            if ($limit === null) {
+                $contribution += max(0.0, $remaining) * $rate;
+                $remaining = 0.0;
+                break;
+            }
+
+            $rangeAmount = min($remaining, max(0.0, $limit - $previousLimit));
             if ($rangeAmount > 0) {
                 $contribution += $rangeAmount * $rate;
                 $remaining -= $rangeAmount;
@@ -426,32 +443,44 @@ final class PayrollService
             $previousLimit = $limit;
         }
 
-        if ($remaining > 0) {
-            $contribution += $remaining * 0.14;
+        if ($remaining > 0 && $lastRate > 0) {
+            $contribution += $remaining * $lastRate;
         }
 
         return $this->roundMoney($contribution);
     }
 
-    private function calculateIrrf(float $base): float
+    /**
+     * @param array<int, array{limit: float|null, rate: float, deduction?: float}> $brackets
+     */
+    private function calculateIrrf(float $base, array $brackets): float
     {
         if ($base <= 0) {
             return 0.0;
         }
 
-        $bands = [
-            [1903.98, 0.0, 0.0],
-            [2826.65, 0.075, 142.80],
-            [3751.05, 0.15, 354.80],
-            [4664.68, 0.225, 636.13],
-        ];
+        if ($brackets === []) {
+            $brackets = $this->contributionRepository->getDefault()->getIrrfBrackets();
+        }
 
-        foreach ($bands as [$limit, $rate, $deduction]) {
-            if ($base <= $limit) {
-                return $this->roundMoney(max(0, $base * $rate - $deduction));
+        foreach ($brackets as $bracket) {
+            $limit = $bracket['limit'] ?? null;
+            $rate = isset($bracket['rate']) ? (float) $bracket['rate'] : 0.0;
+            $deduction = isset($bracket['deduction']) ? (float) $bracket['deduction'] : 0.0;
+
+            if ($limit === null || $base <= $limit) {
+                return $this->roundMoney(max(0.0, $base * $rate - $deduction));
             }
         }
 
-        return $this->roundMoney(max(0, $base * 0.275 - 869.36));
+        $last = end($brackets);
+        if (is_array($last)) {
+            $rate = isset($last['rate']) ? (float) $last['rate'] : 0.0;
+            $deduction = isset($last['deduction']) ? (float) $last['deduction'] : 0.0;
+
+            return $this->roundMoney(max(0.0, $base * $rate - $deduction));
+        }
+
+        return 0.0;
     }
 }

@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Holerite\Controllers;
 
 use Holerite\Models\Company;
+use Holerite\Models\ContributionSettings;
 use Holerite\Models\User;
 use Holerite\Repositories\CompanyRepository;
+use Holerite\Repositories\ContributionSettingsRepository;
 use Holerite\Repositories\UserRepository;
 use RuntimeException;
 use Throwable;
@@ -45,18 +47,20 @@ final class CompanyController extends Controller
     public function __construct(
         private CompanyRepository $companyRepository,
         private UserRepository $userRepository,
+        private ContributionSettingsRepository $contributionRepository,
     ) {
     }
 
     public function edit(): void
     {
         $company = $this->companyRepository->get();
+        $contributions = $this->contributionRepository->get();
         $currentUser = isset($_SESSION['user']) && is_array($_SESSION['user']) ? $_SESSION['user'] : null;
         $isAdmin = $this->isAdmin();
         $users = $isAdmin ? $this->userRepository->all() : [];
         $requestedTab = isset($_GET['tab']) ? strtolower((string) $_GET['tab']) : ($isAdmin ? 'company' : 'appearance');
         $allowedTabs = $isAdmin
-            ? ['company', 'appearance', 'password', 'users', 'backups']
+            ? ['company', 'appearance', 'discounts', 'password', 'users', 'backups']
             : ['appearance', 'password'];
         if (!in_array($requestedTab, $allowedTabs, true)) {
             $requestedTab = $isAdmin ? 'company' : 'appearance';
@@ -128,6 +132,7 @@ final class CompanyController extends Controller
             'defaultTab' => $requestedTab,
             'availableTabs' => $allowedTabs,
             'isAdmin' => $isAdmin,
+            'contributionSettings' => $contributions,
             'pageScripts' => $pageScripts,
         ]);
     }
@@ -228,6 +233,180 @@ final class CompanyController extends Controller
     /**
      * @param array<string, mixed> $data
      */
+    public function updateContributions(array $data): void
+    {
+        $this->ensureAdmin();
+
+        $current = $this->contributionRepository->get();
+        $defaults = $this->contributionRepository->getDefault();
+
+        try {
+            $settings = $this->buildContributionSettings($current, $defaults, $data);
+            $this->contributionRepository->save($settings);
+            $this->flash('success', 'Tabela de descontos atualizada com sucesso.');
+        } catch (RuntimeException $exception) {
+            $this->flash('error', $exception->getMessage());
+        } catch (Throwable $exception) {
+            $this->flash('error', 'Não foi possível atualizar os descontos: ' . $exception->getMessage());
+        }
+
+        $this->redirect('?action=edit_company&tab=discounts');
+    }
+
+    private function buildContributionSettings(
+        ContributionSettings $current,
+        ContributionSettings $defaults,
+        array $data
+    ): ContributionSettings {
+        $fgtsPercent = $this->parseDecimal($data['fgts_rate'] ?? $current->getFgtsRatePercent());
+        $fgtsRate = $this->clampRate($fgtsPercent / 100);
+
+        $inss = $this->parseContributionBrackets($data['inss'] ?? [], false);
+        if ($inss === []) {
+            $inss = $current->getInssBrackets();
+        }
+        $inss = $this->finalizeContributionBrackets($inss, $defaults->getInssBrackets(), false);
+
+        $irrf = $this->parseContributionBrackets($data['irrf'] ?? [], true);
+        if ($irrf === []) {
+            $irrf = $current->getIrrfBrackets();
+        }
+        $irrf = $this->finalizeContributionBrackets($irrf, $defaults->getIrrfBrackets(), true);
+
+        return new ContributionSettings(
+            $current->getId(),
+            $fgtsRate,
+            $inss,
+            $irrf,
+        );
+    }
+
+    /**
+     * @param array<int, mixed> $rows
+     * @return array<int, array{limit: float|null, rate: float, deduction?: float}>
+     */
+    private function parseContributionBrackets(array $rows, bool $withDeduction): array
+    {
+        $brackets = [];
+
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+
+            $hasLimit = isset($row['limit']) && trim((string) $row['limit']) !== '';
+            $hasRate = isset($row['rate']) && trim((string) $row['rate']) !== '';
+
+            if (!$hasLimit && !$hasRate) {
+                continue;
+            }
+
+            $limit = null;
+            if ($hasLimit) {
+                $parsedLimit = $this->parseDecimal($row['limit']);
+                if ($parsedLimit > 0) {
+                    $limit = round($parsedLimit, 2);
+                }
+            }
+
+            $ratePercent = $this->parseDecimal($row['rate'] ?? 0);
+            $rate = $this->clampRate($ratePercent / 100);
+
+            $bracket = [
+                'limit' => $limit,
+                'rate' => $rate,
+            ];
+
+            if ($withDeduction) {
+                $deduction = $this->parseDecimal($row['deduction'] ?? 0);
+                $bracket['deduction'] = round($deduction, 2);
+            }
+
+            $brackets[] = $bracket;
+        }
+
+        return $brackets;
+    }
+
+    /**
+     * @param array<int, array{limit: float|null, rate: float, deduction?: float}> $input
+     * @param array<int, array{limit: float|null, rate: float, deduction?: float}> $fallback
+     * @return array<int, array{limit: float|null, rate: float, deduction?: float}>
+     */
+    private function finalizeContributionBrackets(array $input, array $fallback, bool $withDeduction): array
+    {
+        if ($input === []) {
+            return $fallback;
+        }
+
+        usort($input, static function (array $a, array $b): int {
+            $limitA = $a['limit'];
+            $limitB = $b['limit'];
+
+            if ($limitA === $limitB) {
+                return 0;
+            }
+
+            if ($limitA === null) {
+                return 1;
+            }
+
+            if ($limitB === null) {
+                return -1;
+            }
+
+            return $limitA <=> $limitB;
+        });
+
+        $last = end($input);
+
+        if ($last === false) {
+            return $fallback;
+        }
+
+        if ($last['limit'] !== null) {
+            $tail = $withDeduction
+                ? ['limit' => null, 'rate' => $last['rate'], 'deduction' => $last['deduction'] ?? 0.0]
+                : ['limit' => null, 'rate' => $last['rate']];
+
+            $input[] = $tail;
+        }
+
+        return array_values($input);
+    }
+
+    private function parseDecimal(mixed $value): float
+    {
+        if (is_numeric($value)) {
+            return (float) $value;
+        }
+
+        if (is_string($value)) {
+            $normalized = trim(str_replace(',', '.', $value));
+
+            if ($normalized === '') {
+                return 0.0;
+            }
+
+            return (float) $normalized;
+        }
+
+        return 0.0;
+    }
+
+    private function clampRate(float $rate): float
+    {
+        if ($rate < 0.0) {
+            return 0.0;
+        }
+
+        if ($rate > 1.0) {
+            return 1.0;
+        }
+
+        return round($rate, 6);
+    }
+
     private function fillCompany(Company $company, array $data): Company
     {
         $name = trim((string) ($data['name'] ?? ''));

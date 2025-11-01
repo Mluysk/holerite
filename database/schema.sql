@@ -30,6 +30,26 @@ CREATE TABLE IF NOT EXISTS companies (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS contribution_settings (
+    id INT PRIMARY KEY,
+    fgts_rate DECIMAL(6,4) NOT NULL DEFAULT 0.0800,
+    inss_brackets TEXT NOT NULL,
+    irrf_brackets TEXT NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+INSERT INTO contribution_settings (id, fgts_rate, inss_brackets, irrf_brackets)
+VALUES (
+    1,
+    0.08,
+    '[{"limit":1320,"rate":0.075},{"limit":2571.29,"rate":0.09},{"limit":3856.94,"rate":0.12},{"limit":7507.49,"rate":0.14},{"limit":null,"rate":0.14}]',
+    '[{"limit":1903.98,"rate":0,"deduction":0},{"limit":2826.65,"rate":0.075,"deduction":142.8},{"limit":3751.05,"rate":0.15,"deduction":354.8},{"limit":4664.68,"rate":0.225,"deduction":636.13},{"limit":null,"rate":0.275,"deduction":869.36}]'
+)
+ON DUPLICATE KEY UPDATE
+    fgts_rate = VALUES(fgts_rate),
+    inss_brackets = VALUES(inss_brackets),
+    irrf_brackets = VALUES(irrf_brackets);
+
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(100) NOT NULL UNIQUE,

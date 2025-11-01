@@ -1,6 +1,7 @@
 <?php
 /** @var string $title */
 /** @var Holerite\Models\Company $company */
+/** @var Holerite\Models\ContributionSettings $contributionSettings */
 /** @var Holerite\Models\User[] $users */
 /** @var array{id?: int, username?: string, role?: string, theme_mode?: string, color_palette?: string}|null $currentUser */
 /** @var array<string, string> $themeModes */
@@ -27,6 +28,12 @@ $availableTabs = isset($availableTabs) && is_array($availableTabs) ? $availableT
 if (!in_array($defaultTab, $availableTabs, true)) {
     $defaultTab = in_array('company', $availableTabs, true) ? 'company' : (in_array('password', $availableTabs, true) ? 'password' : $availableTabs[0]);
 }
+$fgtsRatePercent = number_format($contributionSettings->getFgtsRatePercent(), 2, '.', '');
+$inssBrackets = $contributionSettings->getInssBrackets();
+$irrfBrackets = $contributionSettings->getIrrfBrackets();
+$inssFormRows = array_values(array_merge($inssBrackets, [['limit' => null, 'rate' => null]]));
+$irrfFormRows = array_values(array_merge($irrfBrackets, [['limit' => null, 'rate' => null, 'deduction' => null]]));
+$contributionsUpdatedAt = $contributionSettings->getUpdatedAt();
 ?>
 <section>
     <header style="margin-bottom:1.5rem;">
@@ -47,6 +54,9 @@ if (!in_array($defaultTab, $availableTabs, true)) {
             <?php endif; ?>
             <?php if (in_array('appearance', $availableTabs, true)): ?>
                 <button type="button" class="tab-button<?php if ($defaultTab === 'appearance'): ?> active<?php endif; ?>" data-tab="appearance">Aparência</button>
+            <?php endif; ?>
+            <?php if (in_array('discounts', $availableTabs, true)): ?>
+                <button type="button" class="tab-button<?php if ($defaultTab === 'discounts'): ?> active<?php endif; ?>" data-tab="discounts">Ajuste de descontos</button>
             <?php endif; ?>
             <?php if (in_array('password', $availableTabs, true)): ?>
                 <button type="button" class="tab-button<?php if ($defaultTab === 'password'): ?> active<?php endif; ?>" data-tab="password">Segurança</button>
@@ -166,6 +176,104 @@ if (!in_array($defaultTab, $availableTabs, true)) {
                     </div>
 
                     <button type="submit" class="button">Aplicar paleta</button>
+                </form>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <?php if (in_array('discounts', $availableTabs, true)): ?>
+        <div class="tab-content<?php if ($defaultTab === 'discounts'): ?> active<?php endif; ?>" id="tab-discounts">
+            <div class="card">
+                <h3 style="margin-top:0;">Tabelas de descontos e contribuições</h3>
+                <p class="muted" style="margin-top:0;">Atualize as alíquotas de FGTS, INSS e IRRF conforme as mudanças legais. Deixe o limite em branco para representar a faixa acima do teto.</p>
+                <?php if ($contributionsUpdatedAt instanceof DateTimeImmutable): ?>
+                    <p class="muted" style="margin:0.5rem 0 0;">Última atualização: <strong><?= htmlspecialchars($contributionsUpdatedAt->setTimezone(new DateTimeZone('America/Sao_Paulo'))->format('d/m/Y H:i')); ?></strong></p>
+                <?php endif; ?>
+
+                <form method="post" action="?action=update_contributions" style="margin-top:1.5rem; display:flex; flex-direction:column; gap:1.5rem;">
+                    <section>
+                        <h4 style="margin:0 0 0.5rem;">FGTS</h4>
+                        <p class="muted" style="margin:0 0 1rem;">Informe a alíquota padrão do FGTS aplicada aos vínculos ativos.</p>
+                        <label for="fgts_rate">Alíquota (%):</label>
+                        <input type="number" id="fgts_rate" name="fgts_rate" min="0" max="100" step="0.01" value="<?= htmlspecialchars($fgtsRatePercent); ?>" required>
+                    </section>
+
+                    <section>
+                        <h4 style="margin:0 0 0.5rem;">Tabela do INSS</h4>
+                        <p class="muted" style="margin:0 0 1rem;">Defina as faixas salariais progressivas e suas alíquotas. A última linha em branco permite incluir novas faixas quando necessário.</p>
+                        <div class="table-wrapper" style="overflow-x:auto;">
+                            <table class="table" style="min-width:540px;">
+                                <thead>
+                                    <tr>
+                                        <th style="width:15%;">Faixa</th>
+                                        <th style="width:35%;">Limite (R$)</th>
+                                        <th style="width:35%;">Alíquota (%)</th>
+                                        <th style="width:15%;">Observação</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($inssFormRows as $index => $row): ?>
+                                        <?php $isFinal = $row['limit'] === null && isset($row['rate']) && $row['rate'] !== null; ?>
+                                        <tr>
+                                            <td style="text-align:center;">Faixa <?= htmlspecialchars((string) ($index + 1)); ?></td>
+                                            <td>
+                                                <input type="number" step="0.01" min="0" name="inss[<?= $index; ?>][limit]" value="<?= $row['limit'] !== null ? htmlspecialchars(number_format((float) $row['limit'], 2, '.', '')) : ''; ?>" placeholder="Informe o teto da faixa">
+                                            </td>
+                                            <td>
+                                                <input type="number" step="0.01" min="0" max="100" name="inss[<?= $index; ?>][rate]" value="<?= isset($row['rate']) ? htmlspecialchars(number_format((float) $row['rate'] * 100, 2, '.', '')) : ''; ?>" placeholder="Ex.: 7.50">
+                                            </td>
+                                            <td style="text-align:center;">
+                                                <?php if ($isFinal): ?>
+                                                    <span class="badge" style="display:inline-block;padding:0.25rem 0.5rem;border-radius:999px;background:var(--accent-muted);color:var(--accent-strong);font-size:0.75rem;">Acima do teto</span>
+                                                <?php else: ?>
+                                                    <span class="muted" style="font-size:0.75rem;">Até o limite indicado</span>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h4 style="margin:0 0 0.5rem;">Tabela do IRRF</h4>
+                        <p class="muted" style="margin:0 0 1rem;">Informe as faixas do Imposto de Renda Retido na Fonte, com alíquota e parcela a deduzir.</p>
+                        <div class="table-wrapper" style="overflow-x:auto;">
+                            <table class="table" style="min-width:640px;">
+                                <thead>
+                                    <tr>
+                                        <th style="width:15%;">Faixa</th>
+                                        <th style="width:30%;">Limite (R$)</th>
+                                        <th style="width:25%;">Alíquota (%)</th>
+                                        <th style="width:30%;">Parcela a deduzir (R$)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($irrfFormRows as $index => $row): ?>
+                                        <?php $isFinal = $row['limit'] === null && isset($row['rate']) && $row['rate'] !== null; ?>
+                                        <tr>
+                                            <td style="text-align:center;">Faixa <?= htmlspecialchars((string) ($index + 1)); ?></td>
+                                            <td>
+                                                <input type="number" step="0.01" min="0" name="irrf[<?= $index; ?>][limit]" value="<?= $row['limit'] !== null ? htmlspecialchars(number_format((float) $row['limit'], 2, '.', '')) : ''; ?>" placeholder="Informe o teto da faixa">
+                                            </td>
+                                            <td>
+                                                <input type="number" step="0.01" min="0" max="100" name="irrf[<?= $index; ?>][rate]" value="<?= isset($row['rate']) ? htmlspecialchars(number_format((float) $row['rate'] * 100, 2, '.', '')) : ''; ?>" placeholder="Ex.: 7.50">
+                                            </td>
+                                            <td>
+                                                <input type="number" step="0.01" min="0" name="irrf[<?= $index; ?>][deduction]" value="<?= isset($row['deduction']) ? htmlspecialchars(number_format((float) $row['deduction'], 2, '.', '')) : ''; ?>" placeholder="Ex.: 142.80">
+                                                <?php if ($isFinal): ?>
+                                                    <span class="muted" style="display:block;font-size:0.75rem;margin-top:0.25rem;">Aplicada aos valores acima do teto</span>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <button type="submit" class="button">Salvar ajustes de descontos</button>
                 </form>
             </div>
         </div>

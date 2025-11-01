@@ -25,6 +25,7 @@ final class BackupService
     {
         $tables = [
             'companies',
+            'contribution_settings',
             'employees',
             'payrolls',
             'payroll_items',
@@ -50,12 +51,14 @@ final class BackupService
     {
         $config = $this->loadConfig();
         $company = $this->fetchSingle('SELECT * FROM companies ORDER BY id ASC LIMIT 1');
+        $contributions = $this->fetchSingle('SELECT * FROM contribution_settings ORDER BY id ASC LIMIT 1');
 
         return $this->encode([
             'type' => 'configuration',
             'generated_at' => $this->timestamp(),
             'config_file' => $config,
             'company' => $company,
+            'contribution_settings' => $this->formatContributionForBackup($contributions),
         ]);
     }
 
@@ -96,8 +99,8 @@ final class BackupService
             throw new RuntimeException('Backup de banco de dados inválido.');
         }
 
-        $allowedTables = ['companies', 'employees', 'payrolls', 'payroll_items', 'users'];
-        $clearOrder = ['payroll_items', 'payrolls', 'employees', 'companies', 'users'];
+        $allowedTables = ['companies', 'contribution_settings', 'employees', 'payrolls', 'payroll_items', 'users'];
+        $clearOrder = ['payroll_items', 'payrolls', 'employees', 'companies', 'contribution_settings', 'users'];
 
         $this->pdo->exec('SET FOREIGN_KEY_CHECKS=0');
 
@@ -113,7 +116,7 @@ final class BackupService
                 $this->pdo->exec(sprintf('DELETE FROM %s', $wrapped));
             }
 
-            foreach (['companies', 'employees', 'payrolls', 'payroll_items', 'users'] as $table) {
+            foreach (['companies', 'contribution_settings', 'employees', 'payrolls', 'payroll_items', 'users'] as $table) {
                 if (!in_array($table, $allowedTables, true)) {
                     continue;
                 }
@@ -196,6 +199,7 @@ final class BackupService
 
         $configData = $payload['config_file'] ?? null;
         $companyData = $payload['company'] ?? null;
+        $contributionData = $payload['contribution_settings'] ?? null;
 
         if (!is_array($configData)) {
             throw new RuntimeException('Backup de configuração inválido.');
@@ -240,6 +244,30 @@ final class BackupService
                         $exception
                     );
                 }
+            }
+        }
+
+        if (is_array($contributionData) && $contributionData !== []) {
+            $filtered = $this->filterContributionData($contributionData);
+
+            if ($filtered !== []) {
+                $columns = array_keys($filtered);
+                $placeholders = array_map(fn (string $column): string => ':' . $column, $columns);
+                $updates = array_map(
+                    fn (string $column): string => sprintf('%s = VALUES(%s)', $this->wrapIdentifier($column), $this->wrapIdentifier($column)),
+                    $columns
+                );
+
+                $sql = sprintf(
+                    'INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s',
+                    $this->wrapIdentifier('contribution_settings'),
+                    implode(', ', array_map([$this, 'wrapIdentifier'], $columns)),
+                    implode(', ', $placeholders),
+                    implode(', ', $updates)
+                );
+
+                $statement = $this->pdo->prepare($sql);
+                $statement->execute($filtered);
             }
         }
     }
@@ -423,6 +451,128 @@ final class BackupService
         }
 
         return $filtered;
+    }
+
+    /**
+     * @param array<string, mixed>|null $row
+     * @return array<string, mixed>|null
+     */
+    private function formatContributionForBackup(?array $row): ?array
+    {
+        if ($row === null) {
+            return null;
+        }
+
+        return [
+            'id' => isset($row['id']) ? (int) $row['id'] : 1,
+            'fgts_rate' => isset($row['fgts_rate']) ? (float) $row['fgts_rate'] : 0.08,
+            'inss_brackets' => $this->decodeContributionField($row['inss_brackets'] ?? null),
+            'irrf_brackets' => $this->decodeContributionField($row['irrf_brackets'] ?? null),
+            'updated_at' => $row['updated_at'] ?? null,
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function filterContributionData(array $data): array
+    {
+        $id = isset($data['id']) ? (int) $data['id'] : 1;
+        $fgtsRate = isset($data['fgts_rate']) ? (float) $data['fgts_rate'] : 0.08;
+
+        $inss = $this->normalizeContributionBrackets($data['inss_brackets'] ?? []);
+        $irrf = $this->normalizeContributionBrackets($data['irrf_brackets'] ?? [], true);
+
+        $inssJson = json_encode($inss, JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION);
+        $irrfJson = json_encode($irrf, JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION);
+
+        if ($inssJson === false || $irrfJson === false) {
+            return [];
+        }
+
+        return [
+            'id' => $id,
+            'fgts_rate' => $this->clampRate($fgtsRate),
+            'inss_brackets' => $inssJson,
+            'irrf_brackets' => $irrfJson,
+        ];
+    }
+
+    /**
+     * @return array<int, array{limit: float|null, rate: float, deduction?: float}>
+     */
+    private function normalizeContributionBrackets(mixed $raw, bool $withDeduction = false): array
+    {
+        $decoded = $this->decodeContributionField($raw);
+        $normalized = [];
+
+        foreach ($decoded as $entry) {
+            if (!is_array($entry)) {
+                continue;
+            }
+
+            $rate = $entry['rate'] ?? null;
+            if (!is_numeric($rate)) {
+                continue;
+            }
+
+            $limit = $entry['limit'] ?? null;
+            $limitValue = null;
+            if ($limit !== null && $limit !== '') {
+                if (!is_numeric($limit)) {
+                    continue;
+                }
+
+                $limitValue = round((float) $limit, 2);
+            }
+
+            $bracket = [
+                'limit' => $limitValue,
+                'rate' => $this->clampRate((float) $rate),
+            ];
+
+            if ($withDeduction) {
+                $bracket['deduction'] = round((float) ($entry['deduction'] ?? 0), 2);
+            }
+
+            $normalized[] = $bracket;
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * @return array<int, mixed>
+     */
+    private function decodeContributionField(mixed $value): array
+    {
+        if (is_string($value) && $value !== '') {
+            $decoded = json_decode($value, true);
+
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        if (is_array($value)) {
+            return $value;
+        }
+
+        return [];
+    }
+
+    private function clampRate(float $rate): float
+    {
+        if ($rate < 0.0) {
+            return 0.0;
+        }
+
+        if ($rate > 1.0) {
+            return 1.0;
+        }
+
+        return round($rate, 6);
     }
 
     /**
