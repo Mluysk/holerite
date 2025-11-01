@@ -1294,6 +1294,46 @@ tr:nth-child(even) td {
     gap: 0.25rem;
 }
 
+.stats-card--transport {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    align-items: stretch;
+    gap: 1.1rem;
+    padding: 1.5rem;
+}
+
+.stats-card--transport .stats-card__icon {
+    margin-bottom: 0;
+}
+
+.transport-card__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.transport-card__meta header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.transport-card__breakdown {
+    align-self: stretch;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
+}
+
+.stats-card--transport .stats-card__split {
+    display: contents;
+}
+
+.stats-card--transport .stats-card__split-item {
+    flex: 0 0 auto;
+    height: 100%;
+}
+
 .stats-card__value-number {
     font-size: 2.45rem;
     font-weight: 700;
@@ -1881,9 +1921,9 @@ tr:nth-child(even) td {
     top: 0;
     left: 0;
     z-index: 60;
-    width: min(320px, calc(100vw - 1.5rem));
-    padding: 1.1rem 1.3rem 1.2rem;
-    border-radius: 1.15rem;
+    width: min(300px, calc(100vw - 1.5rem));
+    padding: 0.95rem 1.15rem 1.05rem;
+    border-radius: 1.05rem;
     border: 1px solid rgba(var(--tooltip-accent-rgb), 0.32);
     background: linear-gradient(160deg, rgba(var(--tooltip-accent-rgb), 0.16), rgba(var(--tooltip-accent-rgb), 0.06)), var(--color-surface);
     box-shadow: 0 30px 55px -26px rgba(var(--tooltip-accent-rgb), 0.45), 0 22px 45px -32px rgba(15, 23, 42, 0.42);
@@ -1961,15 +2001,15 @@ tr:nth-child(even) td {
 .calendar-tooltip__title {
     font-weight: 700;
     color: var(--color-text);
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.35rem;
     display: flex;
     align-items: center;
-    gap: 0.65rem;
+    gap: 0.55rem;
 }
 
 .calendar-tooltip__icon {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     border-radius: 14px;
     display: inline-flex;
     align-items: center;
@@ -1990,14 +2030,14 @@ tr:nth-child(even) td {
 }
 
 .calendar-tooltip__title-text {
-    font-size: 1.05rem;
+    font-size: 0.98rem;
     letter-spacing: -0.01em;
 }
 
 .calendar-tooltip__subtitle {
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     color: var(--color-text-muted);
-    margin-bottom: 0.85rem;
+    margin-bottom: 0.7rem;
 }
 
 .calendar-tooltip__list {
@@ -2006,16 +2046,16 @@ tr:nth-child(even) td {
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.7rem;
+    gap: 0.55rem;
 }
 
 .calendar-tooltip__item {
     position: relative;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.25rem 1.3rem;
-    padding: 0.75rem 1rem 0.75rem 1.6rem;
-    border-radius: 0.95rem;
+    gap: 0.2rem 1rem;
+    padding: 0.6rem 0.85rem 0.6rem 1.4rem;
+    border-radius: 0.85rem;
     background: linear-gradient(145deg, rgba(var(--tooltip-accent-rgb), 0.08), rgba(255, 255, 255, 0.75));
     box-shadow: inset 0 0 0 1px rgba(var(--tooltip-accent-rgb), 0.14);
 }
@@ -2023,10 +2063,10 @@ tr:nth-child(even) td {
 .calendar-tooltip__item::before {
     content: "";
     position: absolute;
-    left: 0.9rem;
-    top: 1.05rem;
-    width: 0.5rem;
-    height: 0.5rem;
+    left: 0.78rem;
+    top: 0.9rem;
+    width: 0.45rem;
+    height: 0.45rem;
     border-radius: 50%;
     background: rgb(var(--tooltip-accent-rgb));
     box-shadow: 0 0 0 4px rgba(var(--tooltip-accent-rgb), 0.18);
@@ -2046,16 +2086,17 @@ tr:nth-child(even) td {
     font-weight: 600;
     color: var(--color-text);
     grid-column: 1;
+    font-size: 0.9rem;
 }
 
 .calendar-tooltip__details {
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     color: var(--color-text-muted);
     grid-column: 1;
 }
 
 .calendar-tooltip__amount {
-    font-size: 1.05rem;
+    font-size: 0.96rem;
     color: var(--color-text);
     font-weight: 600;
     grid-column: 2;
@@ -3121,6 +3162,15 @@ body.theme-dark .badge--soon {
         padding: 1.75rem;
     }
 
+    .stats-card--transport {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        padding: 1.35rem;
+    }
+
+    .transport-card__breakdown {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .report__header {
         flex-direction: column;
         align-items: flex-start;
@@ -3133,6 +3183,14 @@ body.theme-dark .badge--soon {
 }
 
 @media (max-width: 900px) {
+    .stats-card--transport {
+        grid-template-columns: 1fr;
+    }
+
+    .transport-card__breakdown {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
     .layout-header {
         padding: 1.25rem 1.5rem;
     }

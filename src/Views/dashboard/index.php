@@ -161,18 +161,20 @@ $transportCompanyCurrentYear = $transportTotals['companyCurrentYear'] ?? max(0.0
             </dl>
         </article>
         <article class="stats-card stats-card--vale stats-card--transport">
-            <div class="stats-card__icon icon-circle icon-circle--info" aria-hidden="true">
-                <i class="bi bi-bus-front"></i>
+            <div class="transport-card__meta">
+                <div class="stats-card__icon icon-circle icon-circle--info" aria-hidden="true">
+                    <i class="bi bi-bus-front"></i>
+                </div>
+                <header>
+                    <span class="stats-card__subtitle">Vale-transporte</span>
+                    <h3>Total acumulado</h3>
+                </header>
+                <div class="stats-card__value">
+                    <span class="stats-card__value-number">R$ <?= number_format($transportCostOverall, 2, ',', '.'); ?></span>
+                    <span class="stats-card__value-label">Consumo total de passagens</span>
+                </div>
             </div>
-            <header>
-                <span class="stats-card__subtitle">Vale-transporte</span>
-                <h3>Total acumulado</h3>
-            </header>
-            <div class="stats-card__value">
-                <span class="stats-card__value-number">R$ <?= number_format($transportCostOverall, 2, ',', '.'); ?></span>
-                <span class="stats-card__value-label">Consumo total de passagens</span>
-            </div>
-            <div class="stats-card__split">
+            <div class="transport-card__breakdown stats-card__split">
                 <div class="stats-card__split-item">
                     <span class="stats-card__chip stats-card__chip--employee">
                         <i class="bi bi-person-check-fill" aria-hidden="true"></i>
