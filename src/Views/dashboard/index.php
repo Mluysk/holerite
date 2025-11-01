@@ -168,11 +168,14 @@ $transportCompanyCurrentYear = $transportTotals['companyCurrentYear'] ?? max(0.0
                     </span>
                     <div>
                         <span class="transport-card__eyebrow">Vale-transporte</span>
-                        <h3 id="transport-card-summary-title">Total acumulado</h3>
-                        <p class="transport-card__note">Consumo total de passagens fornecidas pela empresa.</p>
+                        <h3 id="transport-card-summary-title">Consumo de passagens</h3>
+                        <p class="transport-card__note">Monitoramento do benefício considerando o limite legal do colaborador.</p>
                     </div>
                 </header>
-                <div class="transport-card__total">R$ <?= number_format($transportCostOverall, 2, ',', '.'); ?></div>
+                <div class="transport-card__summary-total">
+                    <span class="transport-card__label">Acumulado</span>
+                    <span class="transport-card__total">R$ <?= number_format($transportCostOverall, 2, ',', '.'); ?></span>
+                </div>
                 <dl class="transport-card__periods">
                     <div>
                         <dt>Este mês</dt>
@@ -184,56 +187,58 @@ $transportCompanyCurrentYear = $transportTotals['companyCurrentYear'] ?? max(0.0
                     </div>
                 </dl>
             </section>
-            <section class="transport-card__column transport-card__column--employee" aria-labelledby="transport-card-employee-title">
-                <header class="transport-card__column-header">
-                    <span class="transport-card__column-icon icon-circle icon-circle--accent" aria-hidden="true">
-                        <i class="bi bi-person-check-fill"></i>
-                    </span>
-                    <div>
-                        <h4 id="transport-card-employee-title">Colaborador</h4>
-                        <p class="muted">Descontos limitados a 6% do salário base.</p>
+            <div class="transport-card__panels">
+                <section class="transport-card__panel transport-card__panel--employee" aria-labelledby="transport-card-employee-title">
+                    <header class="transport-card__panel-header">
+                        <span class="transport-card__panel-icon icon-circle icon-circle--accent" aria-hidden="true">
+                            <i class="bi bi-person-check-fill"></i>
+                        </span>
+                        <div>
+                            <h4 id="transport-card-employee-title">Colaborador</h4>
+                            <p class="muted">Desconto máximo permitido de 6% sobre o salário base.</p>
+                        </div>
+                    </header>
+                    <div class="transport-card__panel-figure">
+                        <span>Descontado</span>
+                        <strong>R$ <?= number_format($transportDeductionOverall, 2, ',', '.'); ?></strong>
                     </div>
-                </header>
-                <div class="transport-card__column-total">
-                    <span>Total descontado</span>
-                    <strong>R$ <?= number_format($transportDeductionOverall, 2, ',', '.'); ?></strong>
-                </div>
-                <dl class="transport-card__column-meta">
-                    <div>
-                        <dt>Este mês</dt>
-                        <dd>R$ <?= number_format($transportDeductionCurrentMonth, 2, ',', '.'); ?></dd>
+                    <dl class="transport-card__panel-metrics">
+                        <div>
+                            <dt>Este mês</dt>
+                            <dd>R$ <?= number_format($transportDeductionCurrentMonth, 2, ',', '.'); ?></dd>
+                        </div>
+                        <div>
+                            <dt>No ano</dt>
+                            <dd>R$ <?= number_format($transportDeductionCurrentYear, 2, ',', '.'); ?></dd>
+                        </div>
+                    </dl>
+                </section>
+                <section class="transport-card__panel transport-card__panel--company" aria-labelledby="transport-card-company-title">
+                    <header class="transport-card__panel-header">
+                        <span class="transport-card__panel-icon icon-circle icon-circle--primary" aria-hidden="true">
+                            <i class="bi bi-building-fill"></i>
+                        </span>
+                        <div>
+                            <h4 id="transport-card-company-title">Custeio da empresa</h4>
+                            <p class="muted">Complemento pago quando o desconto do colaborador é atingido.</p>
+                        </div>
+                    </header>
+                    <div class="transport-card__panel-figure">
+                        <span>Cobertura</span>
+                        <strong>R$ <?= number_format($transportCompanyOverall, 2, ',', '.'); ?></strong>
                     </div>
-                    <div>
-                        <dt>No ano</dt>
-                        <dd>R$ <?= number_format($transportDeductionCurrentYear, 2, ',', '.'); ?></dd>
-                    </div>
-                </dl>
-            </section>
-            <section class="transport-card__column transport-card__column--company" aria-labelledby="transport-card-company-title">
-                <header class="transport-card__column-header">
-                    <span class="transport-card__column-icon icon-circle icon-circle--primary" aria-hidden="true">
-                        <i class="bi bi-building-fill"></i>
-                    </span>
-                    <div>
-                        <h4 id="transport-card-company-title">Custeio da empresa</h4>
-                        <p class="muted">Montante financiado após o limite legal do colaborador.</p>
-                    </div>
-                </header>
-                <div class="transport-card__column-total">
-                    <span>Total coberto</span>
-                    <strong>R$ <?= number_format($transportCompanyOverall, 2, ',', '.'); ?></strong>
-                </div>
-                <dl class="transport-card__column-meta">
-                    <div>
-                        <dt>Este mês</dt>
-                        <dd>R$ <?= number_format($transportCompanyCurrentMonth, 2, ',', '.'); ?></dd>
-                    </div>
-                    <div>
-                        <dt>No ano</dt>
-                        <dd>R$ <?= number_format($transportCompanyCurrentYear, 2, ',', '.'); ?></dd>
-                    </div>
-                </dl>
-            </section>
+                    <dl class="transport-card__panel-metrics">
+                        <div>
+                            <dt>Este mês</dt>
+                            <dd>R$ <?= number_format($transportCompanyCurrentMonth, 2, ',', '.'); ?></dd>
+                        </div>
+                        <div>
+                            <dt>No ano</dt>
+                            <dd>R$ <?= number_format($transportCompanyCurrentYear, 2, ',', '.'); ?></dd>
+                        </div>
+                    </dl>
+                </section>
+            </div>
         </article>
     </div>
 

@@ -1287,9 +1287,10 @@ tr:nth-child(even) td {
     color: var(--color-text);
 }
 
+
 .stats-card--transport {
-    display: grid;
-    grid-template-columns: minmax(0, 1.15fr) repeat(2, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     align-items: stretch;
     gap: 1.75rem;
     padding: 2.1rem 1.9rem;
@@ -1307,8 +1308,9 @@ tr:nth-child(even) td {
     box-shadow: 0 28px 60px -36px rgba(0, 0, 0, 0.7);
 }
 
+
 .transport-card__summary,
-.transport-card__column {
+.transport-card__panel {
     border-radius: 22px;
     padding: 1.45rem 1.6rem;
     display: flex;
@@ -1318,6 +1320,8 @@ tr:nth-child(even) td {
 }
 
 .transport-card__summary {
+    flex: 1 1 340px;
+    min-width: 280px;
     background: linear-gradient(135deg, rgba(var(--color-primary-rgb), 0.16), rgba(var(--color-primary-rgb), 0.05));
     border: 1px solid rgba(var(--color-primary-rgb), 0.18);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
@@ -1329,6 +1333,15 @@ tr:nth-child(even) td {
     box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.1);
 }
 
+.transport-card__panels {
+    flex: 1 1 420px;
+    min-width: 300px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 1.15rem;
+}
+
 .transport-card__header {
     display: flex;
     align-items: flex-start;
@@ -1336,13 +1349,13 @@ tr:nth-child(even) td {
 }
 
 .transport-card__icon,
-.transport-card__column-icon {
+.transport-card__panel-icon {
     width: 64px;
     height: 64px;
     font-size: 1.75rem;
 }
 
-.transport-card__column-icon {
+.transport-card__panel-icon {
     width: 54px;
     height: 54px;
     font-size: 1.4rem;
@@ -1365,6 +1378,19 @@ tr:nth-child(even) td {
     font-size: 0.9rem;
     color: var(--color-text-muted);
     max-width: 26rem;
+}
+
+.transport-card__summary-total {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.transport-card__label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--color-text-muted);
 }
 
 .transport-card__total {
@@ -1408,62 +1434,63 @@ tr:nth-child(even) td {
     color: var(--color-text);
 }
 
-.transport-card__column {
+.transport-card__panel {
+    flex: 1 1 200px;
     background: rgba(255, 255, 255, 0.9);
     border: 1px solid rgba(255, 255, 255, 0.55);
     box-shadow: 0 18px 40px -34px rgba(0, 0, 0, 0.32);
 }
 
-.theme-dark .transport-card__column {
+.theme-dark .transport-card__panel {
     background: rgba(15, 23, 42, 0.78);
     border-color: rgba(148, 163, 184, 0.32);
     box-shadow: 0 18px 40px -32px rgba(0, 0, 0, 0.85);
 }
 
-.transport-card__column-header {
+.transport-card__panel-header {
     display: flex;
     align-items: flex-start;
     gap: 0.75rem;
 }
 
-.transport-card__column-header h4 {
+.transport-card__panel-header h4 {
     margin: 0;
     font-size: 1.15rem;
 }
 
-.transport-card__column-header p {
+.transport-card__panel-header p {
     margin: 0.2rem 0 0;
     font-size: 0.85rem;
     color: var(--color-text-muted);
 }
 
-.transport-card__column-total {
+.transport-card__panel-figure {
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
 }
 
-.transport-card__column-total span {
+.transport-card__panel-figure span {
     font-size: 0.78rem;
     text-transform: uppercase;
     letter-spacing: 0.14em;
     color: var(--color-text-muted);
 }
 
-.transport-card__column-total strong {
+.transport-card__panel-figure strong {
     font-size: 1.7rem;
     font-weight: 700;
     color: var(--color-text);
 }
 
-.transport-card__column-meta {
+.transport-card__panel-metrics {
     margin: 0;
     display: flex;
     gap: 0.85rem;
     flex-wrap: wrap;
 }
 
-.transport-card__column-meta > div {
+.transport-card__panel-metrics > div {
     flex: 1 1 140px;
     background: rgba(var(--color-primary-rgb), 0.08);
     border: 1px solid rgba(var(--color-primary-rgb), 0.2);
@@ -1474,7 +1501,7 @@ tr:nth-child(even) td {
     gap: 0.25rem;
 }
 
-.transport-card__column-meta dt {
+.transport-card__panel-metrics dt {
     margin: 0;
     font-size: 0.78rem;
     text-transform: uppercase;
@@ -1482,7 +1509,7 @@ tr:nth-child(even) td {
     color: var(--color-text-muted);
 }
 
-.transport-card__column-meta dd {
+.transport-card__panel-metrics dd {
     margin: 0;
     font-size: 1rem;
     font-weight: 600;
@@ -3237,11 +3264,10 @@ body.theme-dark .badge--soon {
     .stats-card--transport {
         padding: 1.85rem 1.65rem;
         gap: 1.5rem;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .stats-card--transport .transport-card__summary {
-        grid-column: 1 / -1;
+    .transport-card__panels {
+        flex: 1 1 100%;
     }
 
     .transport-card__header {
@@ -3255,14 +3281,14 @@ body.theme-dark .badge--soon {
         font-size: 1.55rem;
     }
 
-    .transport-card__column-icon {
+    .transport-card__panel-icon {
         width: 48px;
         height: 48px;
         font-size: 1.2rem;
     }
 
     .transport-card__periods div,
-    .transport-card__column-meta > div {
+    .transport-card__panel-metrics > div {
         flex: 1 1 180px;
     }
 
@@ -3279,23 +3305,29 @@ body.theme-dark .badge--soon {
 
 @media (max-width: 900px) {
     .stats-card--transport {
-        grid-template-columns: 1fr;
+        flex-direction: column;
         gap: 1.35rem;
+        padding: 1.6rem 1.5rem;
+    }
+
+    .transport-card__panels {
+        flex-direction: column;
     }
 
     .transport-card__summary,
-    .transport-card__column {
+    .transport-card__panel {
         padding: 1.3rem 1.4rem;
+        min-width: 0;
     }
 
     .transport-card__periods,
-    .transport-card__column-meta {
+    .transport-card__panel-metrics {
         gap: 0.75rem;
     }
 
     .transport-card__periods div,
-    .transport-card__column-meta > div {
-        flex: 1 1 140px;
+    .transport-card__panel-metrics > div {
+        flex: 1 1 160px;
     }
 
     .layout-header {
@@ -3456,7 +3488,7 @@ body.theme-dark .badge--soon {
         align-self: flex-start;
     }
 
-    .transport-card__column-icon {
+    .transport-card__panel-icon {
         width: 40px;
         height: 40px;
         font-size: 1.05rem;
@@ -3467,17 +3499,17 @@ body.theme-dark .badge--soon {
     }
 
     .transport-card__summary,
-    .transport-card__column {
+    .transport-card__panel {
         padding: 1.1rem 1.2rem;
     }
 
     .transport-card__periods,
-    .transport-card__column-meta {
+    .transport-card__panel-metrics {
         gap: 0.65rem;
     }
 
     .transport-card__periods div,
-    .transport-card__column-meta > div {
+    .transport-card__panel-metrics > div {
         flex: 1 1 120px;
     }
 
