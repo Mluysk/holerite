@@ -1690,6 +1690,36 @@ tr:nth-child(even) td {
     color: var(--color-text-strong);
 }
 
+.chart-card__delta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.chart-card__delta i {
+    font-size: 1rem;
+}
+
+.chart-card__delta small {
+    font-size: 0.75rem;
+    font-weight: 500;
+    opacity: 0.75;
+}
+
+.chart-card__delta--up {
+    color: var(--color-icon-success);
+}
+
+.chart-card__delta--down {
+    color: var(--color-icon-danger);
+}
+
+.chart-card__delta--neutral {
+    color: var(--color-text-muted);
+}
+
 .tag {
     display: inline-flex;
     align-items: center;

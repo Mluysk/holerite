@@ -44,6 +44,8 @@ final class DashboardController extends Controller
         $yearlyTotals = $this->aggregateTotals($payrolls, 'yearly');
         $monthlyValeTotals = $this->aggregateValeTotals($payrolls, 'monthly');
         $yearlyValeTotals = $this->aggregateValeTotals($payrolls, 'yearly');
+        $monthlyValeComparisons = $this->buildValeComparisons($monthlyValeTotals);
+        $yearlyValeComparisons = $this->buildValeComparisons($yearlyValeTotals);
 
         $calendarEvents = [];
         $paidRegularPayrolls = [];
@@ -168,6 +170,8 @@ final class DashboardController extends Controller
             'yearlyTotals' => $yearlyTotals,
             'monthlyValeTotals' => $monthlyValeTotals,
             'yearlyValeTotals' => $yearlyValeTotals,
+            'monthlyValeComparisons' => $monthlyValeComparisons,
+            'yearlyValeComparisons' => $yearlyValeComparisons,
             'monthlyChart' => $monthlyChart,
             'yearlyChart' => $yearlyChart,
             'monthlyValeManualChart' => $monthlyValeManualChart,
@@ -466,6 +470,52 @@ final class DashboardController extends Controller
             ],
             $totals
         );
+    }
+
+    /**
+     * @param array<int, array{period: string, manual: float, transport: float, total: float}> $totals
+     * @return array{
+     *     manual: array{current: array{period: string, value: float|null}|null, previous: array{period: string, value: float|null}|null, difference: float|null, percentage: float|null},
+     *     transport: array{current: array{period: string, value: float|null}|null, previous: array{period: string, value: float|null}|null, difference: float|null, percentage: float|null}
+     * }
+     */
+    private function buildValeComparisons(array $totals): array
+    {
+        $current = $totals[0] ?? null;
+        $previous = $totals[1] ?? null;
+
+        $comparisons = [];
+
+        foreach (['manual', 'transport'] as $key) {
+            $currentValue = $current !== null ? round((float) $current[$key], 2) : null;
+            $previousValue = $previous !== null ? round((float) $previous[$key], 2) : null;
+
+            $difference = null;
+            $percentage = null;
+
+            if ($currentValue !== null && $previousValue !== null) {
+                $difference = round($currentValue - $previousValue, 2);
+
+                if (abs($previousValue) > 0.00001) {
+                    $percentage = round((($currentValue - $previousValue) / $previousValue) * 100, 1);
+                }
+            }
+
+            $comparisons[$key] = [
+                'current' => $current !== null ? [
+                    'period' => $current['period'],
+                    'value' => $currentValue,
+                ] : null,
+                'previous' => $previous !== null ? [
+                    'period' => $previous['period'],
+                    'value' => $previousValue,
+                ] : null,
+                'difference' => $difference,
+                'percentage' => $percentage,
+            ];
+        }
+
+        return $comparisons;
     }
 
     private function getMonthDisplayName(DateTimeImmutable $date): string

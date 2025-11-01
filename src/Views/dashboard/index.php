@@ -10,6 +10,18 @@
 /** @var array{labels: array<int, string>, values: array<int, float>, percentages: array<int, float>, total: float} $yearlyChart */
 /** @var array<int, array{period: string, manual: float, transport: float, total: float}> $monthlyValeTotals */
 /** @var array<int, array{period: string, manual: float, transport: float, total: float}> $yearlyValeTotals */
+/**
+ * @var array{
+ *     manual: array{current: array{period: string, value: float|null}|null, previous: array{period: string, value: float|null}|null, difference: float|null, percentage: float|null},
+ *     transport: array{current: array{period: string, value: float|null}|null, previous: array{period: string, value: float|null}|null, difference: float|null, percentage: float|null}
+ * } $monthlyValeComparisons
+ */
+/**
+ * @var array{
+ *     manual: array{current: array{period: string, value: float|null}|null, previous: array{period: string, value: float|null}|null, difference: float|null, percentage: float|null},
+ *     transport: array{current: array{period: string, value: float|null}|null, previous: array{period: string, value: float|null}|null, difference: float|null, percentage: float|null}
+ * } $yearlyValeComparisons
+ */
 /** @var array{labels: array<int, string>, values: array<int, float>, percentages: array<int, float>, total: float} $monthlyValeManualChart */
 /** @var array{labels: array<int, string>, values: array<int, float>, percentages: array<int, float>, total: float} $monthlyValeTransportChart */
 /** @var array{labels: array<int, string>, values: array<int, float>, percentages: array<int, float>, total: float} $yearlyValeManualChart */
@@ -65,18 +77,99 @@ $hasCharts = $monthlyChart['labels'] !== []
     || $yearlyValeManualChart['labels'] !== []
     || $yearlyValeTransportChart['labels'] !== [];
 
-$latestMonthlyVale = $monthlyValeTotals[0] ?? null;
-$latestYearlyVale = $yearlyValeTotals[0] ?? null;
+$emptyComparison = static fn (): array => [
+    'current' => null,
+    'previous' => null,
+    'difference' => null,
+    'percentage' => null,
+];
 
-$latestMonthlyManualLabel = $latestMonthlyVale['period'] ?? null;
-$latestMonthlyManualValue = isset($latestMonthlyVale['manual']) ? (float) $latestMonthlyVale['manual'] : null;
-$latestMonthlyTransportLabel = $latestMonthlyVale['period'] ?? null;
-$latestMonthlyTransportValue = isset($latestMonthlyVale['transport']) ? (float) $latestMonthlyVale['transport'] : null;
+$normalizeComparisons = static function (?array $data) use ($emptyComparison): array {
+    $payload = is_array($data) ? $data : [];
 
-$latestYearlyManualLabel = $latestYearlyVale['period'] ?? null;
-$latestYearlyManualValue = isset($latestYearlyVale['manual']) ? (float) $latestYearlyVale['manual'] : null;
-$latestYearlyTransportLabel = $latestYearlyVale['period'] ?? null;
-$latestYearlyTransportValue = isset($latestYearlyVale['transport']) ? (float) $latestYearlyVale['transport'] : null;
+    return [
+        'manual' => array_merge($emptyComparison(), $payload['manual'] ?? []),
+        'transport' => array_merge($emptyComparison(), $payload['transport'] ?? []),
+    ];
+};
+
+$monthlyValeComparisons = $normalizeComparisons($monthlyValeComparisons ?? null);
+$yearlyValeComparisons = $normalizeComparisons($yearlyValeComparisons ?? null);
+
+$monthlyManualComparison = $monthlyValeComparisons['manual'];
+$monthlyTransportComparison = $monthlyValeComparisons['transport'];
+$yearlyManualComparison = $yearlyValeComparisons['manual'];
+$yearlyTransportComparison = $yearlyValeComparisons['transport'];
+
+$formatCurrencyValue = static function (?float $value): string {
+    if ($value === null) {
+        return '—';
+    }
+
+    return 'R$ ' . number_format($value, 2, ',', '.');
+};
+
+$formatDifferenceValue = static function (?float $value): string {
+    if ($value === null) {
+        return '—';
+    }
+
+    if ($value > 0.0) {
+        return '+R$ ' . number_format($value, 2, ',', '.');
+    }
+
+    if ($value < 0.0) {
+        return '-R$ ' . number_format(abs($value), 2, ',', '.');
+    }
+
+    return 'R$ ' . number_format(0.0, 2, ',', '.');
+};
+
+$formatPercentageValue = static function (?float $value): ?string {
+    if ($value === null) {
+        return null;
+    }
+
+    if ($value === 0.0) {
+        return '0%';
+    }
+
+    $sign = $value > 0 ? '+' : '-';
+
+    return $sign . number_format(abs($value), 1, ',', '.') . '%';
+};
+
+$getTrendModifier = static function (?float $value): string {
+    if ($value === null) {
+        return 'chart-card__delta--neutral';
+    }
+
+    if ($value > 0.0) {
+        return 'chart-card__delta--up';
+    }
+
+    if ($value < 0.0) {
+        return 'chart-card__delta--down';
+    }
+
+    return 'chart-card__delta--neutral';
+};
+
+$getTrendIcon = static function (?float $value): string {
+    if ($value === null) {
+        return 'bi-dash-lg';
+    }
+
+    if ($value > 0.0) {
+        return 'bi-arrow-up-right';
+    }
+
+    if ($value < 0.0) {
+        return 'bi-arrow-down-right';
+    }
+
+    return 'bi-dash-lg';
+};
 
 if (!isset($pageScripts) || !is_array($pageScripts)) {
     $pageScripts = [];
@@ -586,48 +679,104 @@ $pageScripts[] = [
                         <div class="chart-card__canvas-item">
                             <h4>Vales de produtos</h4>
                             <canvas id="monthlyValeProductsChart" aria-label="Evolução mensal dos vales de produtos"></canvas>
+                            <?php
+                            $monthlyManualCurrent = $monthlyManualComparison['current'];
+                            $monthlyManualPrevious = $monthlyManualComparison['previous'];
+                            $monthlyManualDifference = $monthlyManualComparison['difference'];
+                            $monthlyManualPercentage = $monthlyManualComparison['percentage'];
+                            $monthlyManualCurrentLabel = $monthlyManualCurrent['period'] ?? null;
+                            $monthlyManualPreviousLabel = $monthlyManualPrevious['period'] ?? null;
+                            $monthlyManualCurrentText = $formatCurrencyValue($monthlyManualCurrent['value'] ?? null);
+                            $monthlyManualPreviousText = $formatCurrencyValue($monthlyManualPrevious['value'] ?? null);
+                            $monthlyManualDifferenceText = $formatDifferenceValue($monthlyManualDifference);
+                            $monthlyManualPercentageText = $formatPercentageValue($monthlyManualPercentage);
+                            $monthlyManualTrendClass = $getTrendModifier($monthlyManualDifference);
+                            $monthlyManualTrendIcon = $getTrendIcon($monthlyManualDifference);
+                            ?>
                             <dl class="chart-card__stats">
                                 <div>
-                                    <dt>Último mês<?= $latestMonthlyManualLabel ? ' (' . htmlspecialchars($latestMonthlyManualLabel) . ')' : ''; ?></dt>
+                                    <dt>Último mês<?= $monthlyManualCurrentLabel ? ' (' . htmlspecialchars($monthlyManualCurrentLabel) . ')' : ''; ?></dt>
+                                    <dd><?= htmlspecialchars($monthlyManualCurrentText, ENT_QUOTES, 'UTF-8'); ?></dd>
+                                </div>
+                                <div>
+                                    <dt>Mês anterior<?= $monthlyManualPreviousLabel ? ' (' . htmlspecialchars($monthlyManualPreviousLabel) . ')' : ''; ?></dt>
+                                    <dd><?= htmlspecialchars($monthlyManualPreviousText, ENT_QUOTES, 'UTF-8'); ?></dd>
+                                </div>
+                                <div>
+                                    <dt>Variação mensal</dt>
                                     <dd>
-                                        <?php if ($latestMonthlyManualValue !== null): ?>
-                                            R$ <?= number_format($latestMonthlyManualValue, 2, ',', '.'); ?>
+                                        <?php if ($monthlyManualDifference !== null): ?>
+                                            <span class="chart-card__delta <?= htmlspecialchars($monthlyManualTrendClass, ENT_QUOTES, 'UTF-8'); ?>">
+                                                <i class="bi <?= htmlspecialchars($monthlyManualTrendIcon, ENT_QUOTES, 'UTF-8'); ?>" aria-hidden="true"></i>
+                                                <?= htmlspecialchars($monthlyManualDifferenceText, ENT_QUOTES, 'UTF-8'); ?>
+                                                <?php if ($monthlyManualPercentageText !== null): ?>
+                                                    <small><?= htmlspecialchars($monthlyManualPercentageText, ENT_QUOTES, 'UTF-8'); ?></small>
+                                                <?php endif; ?>
+                                            </span>
                                         <?php else: ?>
-                                            —
+                                            <span class="muted">Sem histórico</span>
                                         <?php endif; ?>
                                     </dd>
                                 </div>
                                 <div>
                                     <dt>Total acumulado</dt>
-                                    <dd>R$ <?= number_format($valeTotals['manual']['overall'], 2, ',', '.'); ?></dd>
+                                    <dd><?= htmlspecialchars($formatCurrencyValue($valeTotals['manual']['overall'] ?? null), ENT_QUOTES, 'UTF-8'); ?></dd>
                                 </div>
                                 <div>
                                     <dt>No ano</dt>
-                                    <dd>R$ <?= number_format($valeTotals['manual']['currentYear'], 2, ',', '.'); ?></dd>
+                                    <dd><?= htmlspecialchars($formatCurrencyValue($valeTotals['manual']['currentYear'] ?? null), ENT_QUOTES, 'UTF-8'); ?></dd>
                                 </div>
                             </dl>
                         </div>
                         <div class="chart-card__canvas-item">
                             <h4>Vale-transporte</h4>
                             <canvas id="monthlyValeTransportChart" aria-label="Evolução mensal do vale-transporte"></canvas>
+                            <?php
+                            $monthlyTransportCurrent = $monthlyTransportComparison['current'];
+                            $monthlyTransportPrevious = $monthlyTransportComparison['previous'];
+                            $monthlyTransportDifference = $monthlyTransportComparison['difference'];
+                            $monthlyTransportPercentage = $monthlyTransportComparison['percentage'];
+                            $monthlyTransportCurrentLabel = $monthlyTransportCurrent['period'] ?? null;
+                            $monthlyTransportPreviousLabel = $monthlyTransportPrevious['period'] ?? null;
+                            $monthlyTransportCurrentText = $formatCurrencyValue($monthlyTransportCurrent['value'] ?? null);
+                            $monthlyTransportPreviousText = $formatCurrencyValue($monthlyTransportPrevious['value'] ?? null);
+                            $monthlyTransportDifferenceText = $formatDifferenceValue($monthlyTransportDifference);
+                            $monthlyTransportPercentageText = $formatPercentageValue($monthlyTransportPercentage);
+                            $monthlyTransportTrendClass = $getTrendModifier($monthlyTransportDifference);
+                            $monthlyTransportTrendIcon = $getTrendIcon($monthlyTransportDifference);
+                            ?>
                             <dl class="chart-card__stats">
                                 <div>
-                                    <dt>Último mês<?= $latestMonthlyTransportLabel ? ' (' . htmlspecialchars($latestMonthlyTransportLabel) . ')' : ''; ?></dt>
+                                    <dt>Último mês<?= $monthlyTransportCurrentLabel ? ' (' . htmlspecialchars($monthlyTransportCurrentLabel) . ')' : ''; ?></dt>
+                                    <dd><?= htmlspecialchars($monthlyTransportCurrentText, ENT_QUOTES, 'UTF-8'); ?></dd>
+                                </div>
+                                <div>
+                                    <dt>Mês anterior<?= $monthlyTransportPreviousLabel ? ' (' . htmlspecialchars($monthlyTransportPreviousLabel) . ')' : ''; ?></dt>
+                                    <dd><?= htmlspecialchars($monthlyTransportPreviousText, ENT_QUOTES, 'UTF-8'); ?></dd>
+                                </div>
+                                <div>
+                                    <dt>Variação mensal</dt>
                                     <dd>
-                                        <?php if ($latestMonthlyTransportValue !== null): ?>
-                                            R$ <?= number_format($latestMonthlyTransportValue, 2, ',', '.'); ?>
+                                        <?php if ($monthlyTransportDifference !== null): ?>
+                                            <span class="chart-card__delta <?= htmlspecialchars($monthlyTransportTrendClass, ENT_QUOTES, 'UTF-8'); ?>">
+                                                <i class="bi <?= htmlspecialchars($monthlyTransportTrendIcon, ENT_QUOTES, 'UTF-8'); ?>" aria-hidden="true"></i>
+                                                <?= htmlspecialchars($monthlyTransportDifferenceText, ENT_QUOTES, 'UTF-8'); ?>
+                                                <?php if ($monthlyTransportPercentageText !== null): ?>
+                                                    <small><?= htmlspecialchars($monthlyTransportPercentageText, ENT_QUOTES, 'UTF-8'); ?></small>
+                                                <?php endif; ?>
+                                            </span>
                                         <?php else: ?>
-                                            —
+                                            <span class="muted">Sem histórico</span>
                                         <?php endif; ?>
                                     </dd>
                                 </div>
                                 <div>
                                     <dt>Desconto acumulado</dt>
-                                    <dd>R$ <?= number_format($valeTotals['transport']['overall'], 2, ',', '.'); ?></dd>
+                                    <dd><?= htmlspecialchars($formatCurrencyValue($valeTotals['transport']['overall'] ?? null), ENT_QUOTES, 'UTF-8'); ?></dd>
                                 </div>
                                 <div>
                                     <dt>Diferença custeada</dt>
-                                    <dd>R$ <?= number_format($valeTotals['transport']['companyOverall'], 2, ',', '.'); ?></dd>
+                                    <dd><?= htmlspecialchars($formatCurrencyValue($valeTotals['transport']['companyOverall'] ?? null), ENT_QUOTES, 'UTF-8'); ?></dd>
                                 </div>
                             </dl>
                         </div>
@@ -651,44 +800,100 @@ $pageScripts[] = [
                         <div class="chart-card__canvas-item">
                             <h4>Vales de produtos</h4>
                             <canvas id="yearlyValeProductsChart" aria-label="Evolução anual dos vales de produtos"></canvas>
+                            <?php
+                            $yearlyManualCurrent = $yearlyManualComparison['current'];
+                            $yearlyManualPrevious = $yearlyManualComparison['previous'];
+                            $yearlyManualDifference = $yearlyManualComparison['difference'];
+                            $yearlyManualPercentage = $yearlyManualComparison['percentage'];
+                            $yearlyManualCurrentLabel = $yearlyManualCurrent['period'] ?? null;
+                            $yearlyManualPreviousLabel = $yearlyManualPrevious['period'] ?? null;
+                            $yearlyManualCurrentText = $formatCurrencyValue($yearlyManualCurrent['value'] ?? null);
+                            $yearlyManualPreviousText = $formatCurrencyValue($yearlyManualPrevious['value'] ?? null);
+                            $yearlyManualDifferenceText = $formatDifferenceValue($yearlyManualDifference);
+                            $yearlyManualPercentageText = $formatPercentageValue($yearlyManualPercentage);
+                            $yearlyManualTrendClass = $getTrendModifier($yearlyManualDifference);
+                            $yearlyManualTrendIcon = $getTrendIcon($yearlyManualDifference);
+                            ?>
                             <dl class="chart-card__stats">
                                 <div>
-                                    <dt>Último ano<?= $latestYearlyManualLabel ? ' (' . htmlspecialchars($latestYearlyManualLabel) . ')' : ''; ?></dt>
+                                    <dt>Último ano<?= $yearlyManualCurrentLabel ? ' (' . htmlspecialchars($yearlyManualCurrentLabel) . ')' : ''; ?></dt>
+                                    <dd><?= htmlspecialchars($yearlyManualCurrentText, ENT_QUOTES, 'UTF-8'); ?></dd>
+                                </div>
+                                <div>
+                                    <dt>Ano anterior<?= $yearlyManualPreviousLabel ? ' (' . htmlspecialchars($yearlyManualPreviousLabel) . ')' : ''; ?></dt>
+                                    <dd><?= htmlspecialchars($yearlyManualPreviousText, ENT_QUOTES, 'UTF-8'); ?></dd>
+                                </div>
+                                <div>
+                                    <dt>Variação anual</dt>
                                     <dd>
-                                        <?php if ($latestYearlyManualValue !== null): ?>
-                                            R$ <?= number_format($latestYearlyManualValue, 2, ',', '.'); ?>
+                                        <?php if ($yearlyManualDifference !== null): ?>
+                                            <span class="chart-card__delta <?= htmlspecialchars($yearlyManualTrendClass, ENT_QUOTES, 'UTF-8'); ?>">
+                                                <i class="bi <?= htmlspecialchars($yearlyManualTrendIcon, ENT_QUOTES, 'UTF-8'); ?>" aria-hidden="true"></i>
+                                                <?= htmlspecialchars($yearlyManualDifferenceText, ENT_QUOTES, 'UTF-8'); ?>
+                                                <?php if ($yearlyManualPercentageText !== null): ?>
+                                                    <small><?= htmlspecialchars($yearlyManualPercentageText, ENT_QUOTES, 'UTF-8'); ?></small>
+                                                <?php endif; ?>
+                                            </span>
                                         <?php else: ?>
-                                            —
+                                            <span class="muted">Sem histórico</span>
                                         <?php endif; ?>
                                     </dd>
                                 </div>
                                 <div>
                                     <dt>Total acumulado</dt>
-                                    <dd>R$ <?= number_format($valeTotals['manual']['overall'], 2, ',', '.'); ?></dd>
+                                    <dd><?= htmlspecialchars($formatCurrencyValue($valeTotals['manual']['overall'] ?? null), ENT_QUOTES, 'UTF-8'); ?></dd>
                                 </div>
                             </dl>
                         </div>
                         <div class="chart-card__canvas-item">
                             <h4>Vale-transporte</h4>
                             <canvas id="yearlyValeTransportChart" aria-label="Evolução anual do vale-transporte"></canvas>
+                            <?php
+                            $yearlyTransportCurrent = $yearlyTransportComparison['current'];
+                            $yearlyTransportPrevious = $yearlyTransportComparison['previous'];
+                            $yearlyTransportDifference = $yearlyTransportComparison['difference'];
+                            $yearlyTransportPercentage = $yearlyTransportComparison['percentage'];
+                            $yearlyTransportCurrentLabel = $yearlyTransportCurrent['period'] ?? null;
+                            $yearlyTransportPreviousLabel = $yearlyTransportPrevious['period'] ?? null;
+                            $yearlyTransportCurrentText = $formatCurrencyValue($yearlyTransportCurrent['value'] ?? null);
+                            $yearlyTransportPreviousText = $formatCurrencyValue($yearlyTransportPrevious['value'] ?? null);
+                            $yearlyTransportDifferenceText = $formatDifferenceValue($yearlyTransportDifference);
+                            $yearlyTransportPercentageText = $formatPercentageValue($yearlyTransportPercentage);
+                            $yearlyTransportTrendClass = $getTrendModifier($yearlyTransportDifference);
+                            $yearlyTransportTrendIcon = $getTrendIcon($yearlyTransportDifference);
+                            ?>
                             <dl class="chart-card__stats">
                                 <div>
-                                    <dt>Último ano<?= $latestYearlyTransportLabel ? ' (' . htmlspecialchars($latestYearlyTransportLabel) . ')' : ''; ?></dt>
+                                    <dt>Último ano<?= $yearlyTransportCurrentLabel ? ' (' . htmlspecialchars($yearlyTransportCurrentLabel) . ')' : ''; ?></dt>
+                                    <dd><?= htmlspecialchars($yearlyTransportCurrentText, ENT_QUOTES, 'UTF-8'); ?></dd>
+                                </div>
+                                <div>
+                                    <dt>Ano anterior<?= $yearlyTransportPreviousLabel ? ' (' . htmlspecialchars($yearlyTransportPreviousLabel) . ')' : ''; ?></dt>
+                                    <dd><?= htmlspecialchars($yearlyTransportPreviousText, ENT_QUOTES, 'UTF-8'); ?></dd>
+                                </div>
+                                <div>
+                                    <dt>Variação anual</dt>
                                     <dd>
-                                        <?php if ($latestYearlyTransportValue !== null): ?>
-                                            R$ <?= number_format($latestYearlyTransportValue, 2, ',', '.'); ?>
+                                        <?php if ($yearlyTransportDifference !== null): ?>
+                                            <span class="chart-card__delta <?= htmlspecialchars($yearlyTransportTrendClass, ENT_QUOTES, 'UTF-8'); ?>">
+                                                <i class="bi <?= htmlspecialchars($yearlyTransportTrendIcon, ENT_QUOTES, 'UTF-8'); ?>" aria-hidden="true"></i>
+                                                <?= htmlspecialchars($yearlyTransportDifferenceText, ENT_QUOTES, 'UTF-8'); ?>
+                                                <?php if ($yearlyTransportPercentageText !== null): ?>
+                                                    <small><?= htmlspecialchars($yearlyTransportPercentageText, ENT_QUOTES, 'UTF-8'); ?></small>
+                                                <?php endif; ?>
+                                            </span>
                                         <?php else: ?>
-                                            —
+                                            <span class="muted">Sem histórico</span>
                                         <?php endif; ?>
                                     </dd>
                                 </div>
                                 <div>
                                     <dt>Desconto acumulado</dt>
-                                    <dd>R$ <?= number_format($valeTotals['transport']['overall'], 2, ',', '.'); ?></dd>
+                                    <dd><?= htmlspecialchars($formatCurrencyValue($valeTotals['transport']['overall'] ?? null), ENT_QUOTES, 'UTF-8'); ?></dd>
                                 </div>
                                 <div>
                                     <dt>Diferença custeada</dt>
-                                    <dd>R$ <?= number_format($valeTotals['transport']['companyOverall'], 2, ',', '.'); ?></dd>
+                                    <dd><?= htmlspecialchars($formatCurrencyValue($valeTotals['transport']['companyOverall'] ?? null), ENT_QUOTES, 'UTF-8'); ?></dd>
                                 </div>
                             </dl>
                         </div>
