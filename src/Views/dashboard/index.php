@@ -46,6 +46,8 @@
  *     }
  * } $valeTotals
  */
+/** @var array{manual: float, transport: float, total: float, transport_days: int, transport_trips: int} $monthlyValeSummary */
+/** @var array{manual: float, transport: float, total: float, transport_days: int, transport_trips: int} $yearlyValeSummary */
 /** @var Holerite\Models\Payroll[] $thirteenthFirstInstallments */
 /** @var Holerite\Models\Payroll[] $thirteenthSecondInstallments */
 
@@ -938,6 +940,16 @@ $pageScripts[] = [
                                     </tr>
                                 <?php endforeach; ?>
                                 </tbody>
+                                <tfoot>
+                                <tr>
+                                    <th>Total</th>
+                                    <th class="text-right">R$ <?= number_format($monthlyValeSummary['manual'], 2, ',', '.'); ?></th>
+                                    <th class="text-right">R$ <?= number_format($monthlyValeSummary['transport'], 2, ',', '.'); ?></th>
+                                    <th class="text-right"><?= number_format($monthlyValeSummary['transport_days'], 0, ',', '.'); ?></th>
+                                    <th class="text-right"><?= number_format($monthlyValeSummary['transport_trips'], 0, ',', '.'); ?></th>
+                                    <th class="text-right">R$ <?= number_format($monthlyValeSummary['total'], 2, ',', '.'); ?></th>
+                                </tr>
+                                </tfoot>
                             </table>
                         </div>
                     <?php endif; ?>
@@ -979,6 +991,16 @@ $pageScripts[] = [
                                     </tr>
                                 <?php endforeach; ?>
                                 </tbody>
+                                <tfoot>
+                                <tr>
+                                    <th>Total</th>
+                                    <th class="text-right">R$ <?= number_format($yearlyValeSummary['manual'], 2, ',', '.'); ?></th>
+                                    <th class="text-right">R$ <?= number_format($yearlyValeSummary['transport'], 2, ',', '.'); ?></th>
+                                    <th class="text-right"><?= number_format($yearlyValeSummary['transport_days'], 0, ',', '.'); ?></th>
+                                    <th class="text-right"><?= number_format($yearlyValeSummary['transport_trips'], 0, ',', '.'); ?></th>
+                                    <th class="text-right">R$ <?= number_format($yearlyValeSummary['total'], 2, ',', '.'); ?></th>
+                                </tr>
+                                </tfoot>
                             </table>
                         </div>
                     <?php endif; ?>

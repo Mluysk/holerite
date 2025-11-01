@@ -44,6 +44,8 @@ final class DashboardController extends Controller
         $yearlyTotals = $this->aggregateTotals($payrolls, 'yearly');
         $monthlyValeTotals = $this->aggregateValeTotals($payrolls, 'monthly');
         $yearlyValeTotals = $this->aggregateValeTotals($payrolls, 'yearly');
+        $monthlyValeSummary = $this->summarizeValeTotals($monthlyValeTotals);
+        $yearlyValeSummary = $this->summarizeValeTotals($yearlyValeTotals);
         $monthlyValeComparisons = $this->buildValeComparisons($monthlyValeTotals);
         $yearlyValeComparisons = $this->buildValeComparisons($yearlyValeTotals);
 
@@ -170,6 +172,8 @@ final class DashboardController extends Controller
             'yearlyTotals' => $yearlyTotals,
             'monthlyValeTotals' => $monthlyValeTotals,
             'yearlyValeTotals' => $yearlyValeTotals,
+            'monthlyValeSummary' => $monthlyValeSummary,
+            'yearlyValeSummary' => $yearlyValeSummary,
             'monthlyValeComparisons' => $monthlyValeComparisons,
             'yearlyValeComparisons' => $yearlyValeComparisons,
             'monthlyChart' => $monthlyChart,
@@ -455,6 +459,35 @@ final class DashboardController extends Controller
         uksort($totals, static fn (string $a, string $b): int => strcmp($b, $a));
 
         return array_values($totals);
+    }
+
+    /**
+     * @param array<int, array{period: string, manual: float, transport: float, total: float, transport_days: int, transport_trips: int}> $totals
+     * @return array{manual: float, transport: float, total: float, transport_days: int, transport_trips: int}
+     */
+    private function summarizeValeTotals(array $totals): array
+    {
+        $summary = [
+            'manual' => 0.0,
+            'transport' => 0.0,
+            'total' => 0.0,
+            'transport_days' => 0,
+            'transport_trips' => 0,
+        ];
+
+        foreach ($totals as $row) {
+            $summary['manual'] += (float) $row['manual'];
+            $summary['transport'] += (float) $row['transport'];
+            $summary['total'] += (float) $row['total'];
+            $summary['transport_days'] += (int) $row['transport_days'];
+            $summary['transport_trips'] += (int) $row['transport_trips'];
+        }
+
+        $summary['manual'] = round($summary['manual'], 2);
+        $summary['transport'] = round($summary['transport'], 2);
+        $summary['total'] = round($summary['total'], 2);
+
+        return $summary;
     }
 
     /**
