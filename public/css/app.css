@@ -1662,8 +1662,33 @@ tr:nth-child(even) td {
     width: 12px;
     height: 12px;
     border-radius: 999px;
-    background: rgba(var(--color-primary-rgb), 0.75);
+    background: rgba(var(--color-primary-rgb), 0.45);
     box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.18);
+}
+
+.calendar-day__marker--default {
+    background: rgba(148, 163, 184, 0.65);
+    box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.22);
+}
+
+.calendar-day__marker--salary {
+    background: #ef4444;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25);
+}
+
+.calendar-day__marker--thirteenth {
+    background: #16a34a;
+    box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.25);
+}
+
+.calendar-day__marker--vacation {
+    background: #f59e0b;
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.28);
+}
+
+.calendar-day__marker--termination {
+    background: #64748b;
+    box-shadow: 0 0 0 2px rgba(100, 116, 139, 0.24);
 }
 
 .calendar-day__list {
@@ -1685,6 +1710,30 @@ tr:nth-child(even) td {
     font-size: 0.85rem;
 }
 
+.calendar-legend {
+    margin-top: 0.85rem;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0.5rem 0 0.25rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.calendar-legend__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+}
+
+.calendar-legend__marker {
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+}
+
 .dashboard-status {
     display: flex;
     flex-direction: column;
@@ -1692,6 +1741,19 @@ tr:nth-child(even) td {
 }
 
 .dashboard-status__card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.dashboard-thirteenth {
+    margin: 1.75rem 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.25rem;
+}
+
+.dashboard-thirteenth__card {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
@@ -1761,6 +1823,12 @@ tr:nth-child(even) td {
     background: rgba(245, 158, 11, 0.16);
     color: var(--color-icon-warning);
     box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.35);
+}
+
+.status-list__bullet--info {
+    background: rgba(14, 165, 233, 0.16);
+    color: var(--color-icon-info);
+    box-shadow: inset 0 0 0 1px rgba(14, 165, 233, 0.35);
 }
 
 .status-list--pending li {

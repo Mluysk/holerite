@@ -19,6 +19,8 @@
 /** @var Holerite\Models\Payroll[] $paidMonthlyPayrolls */
 /** @var Holerite\Models\Employee[] $pendingMonthlyEmployees */
 /** @var array{manual: array{overall: float, currentMonth: float, currentYear: float}, transport: array{overall: float, currentMonth: float, currentYear: float}} $valeTotals */
+/** @var Holerite\Models\Payroll[] $thirteenthFirstInstallments */
+/** @var Holerite\Models\Payroll[] $thirteenthSecondInstallments */
 
 $employeeNames = [];
 foreach ($employees as $employee) {
@@ -30,6 +32,13 @@ $typeLabels = [
     'vacation' => 'Férias',
     'termination' => 'Rescisão',
     'thirteenth' => '13º Salário',
+];
+
+$calendarMarkerClasses = [
+    'regular' => 'calendar-day__marker--salary',
+    'thirteenth' => 'calendar-day__marker--thirteenth',
+    'vacation' => 'calendar-day__marker--vacation',
+    'termination' => 'calendar-day__marker--termination',
 ];
 
 $weekDays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
@@ -197,9 +206,10 @@ if ($hasCharts) {
                                             <?php $paymentCount = count($cellPayrolls); ?>
                                             <?php $ariaLabel = $paymentCount === 1 ? '1 pagamento registrado' : sprintf('%d pagamentos registrados', $paymentCount); ?>
                                             <div class="calendar-day__markers" aria-label="<?= htmlspecialchars($ariaLabel); ?>">
-                                                <?php for ($index = 0; $index < $paymentCount; $index++): ?>
-                                                    <span class="calendar-day__marker" role="presentation"></span>
-                                                <?php endfor; ?>
+                                                <?php foreach ($cellPayrolls as $cellPayroll): ?>
+                                                    <?php $markerType = $calendarMarkerClasses[$cellPayroll->getType()] ?? 'calendar-day__marker--default'; ?>
+                                                    <span class="calendar-day__marker <?= $markerType; ?>" role="presentation"></span>
+                                                <?php endforeach; ?>
                                             </div>
                                         <?php else: ?>
                                             <div class="calendar-day__placeholder muted">Sem pagamentos</div>
@@ -211,6 +221,20 @@ if ($hasCharts) {
                     <?php endforeach; ?>
                     </tbody>
                 </table>
+            </div>
+            <div class="calendar-legend">
+                <span class="calendar-legend__item">
+                    <span class="calendar-legend__marker calendar-day__marker calendar-day__marker--salary" aria-hidden="true"></span>
+                    <small>Salário mensal</small>
+                </span>
+                <span class="calendar-legend__item">
+                    <span class="calendar-legend__marker calendar-day__marker calendar-day__marker--thirteenth" aria-hidden="true"></span>
+                    <small>13º salário</small>
+                </span>
+                <span class="calendar-legend__item">
+                    <span class="calendar-legend__marker calendar-day__marker calendar-day__marker--vacation" aria-hidden="true"></span>
+                    <small>Férias</small>
+                </span>
             </div>
         </div>
         <div class="dashboard-status">
@@ -271,6 +295,65 @@ if ($hasCharts) {
                 <?php endif; ?>
             </div>
         </div>
+    </div>
+
+    <div class="dashboard-thirteenth">
+        <article class="card dashboard-thirteenth__card">
+            <header class="section-heading section-heading--compact">
+                <span class="icon-circle icon-circle--success" aria-hidden="true">
+                    <i class="bi bi-gift"></i>
+                </span>
+                <div>
+                    <h3>13º — 1ª parcela paga</h3>
+                    <p class="muted">Adiantamentos registrados no mês corrente.</p>
+                </div>
+            </header>
+            <?php if ($thirteenthFirstInstallments === []): ?>
+                <p class="muted">Nenhum pagamento da 1ª parcela registrado neste mês.</p>
+            <?php else: ?>
+                <ul class="status-list">
+                    <?php foreach ($thirteenthFirstInstallments as $payroll): ?>
+                        <li>
+                            <span class="status-list__bullet status-list__bullet--success" aria-hidden="true">
+                                <i class="bi bi-cash-coin"></i>
+                            </span>
+                            <div class="status-list__content">
+                                <strong><?= htmlspecialchars($employeeNames[$payroll->getEmployeeId()] ?? 'Colaborador'); ?></strong>
+                                <small class="muted">Pagamento em <?= htmlspecialchars($payroll->getPaymentDate()->format('d/m/Y')); ?> • Ref. <?= htmlspecialchars($payroll->getReferenceMonth()); ?> • R$ <?= number_format($payroll->getNetSalary(), 2, ',', '.'); ?></small>
+                            </div>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+        </article>
+        <article class="card dashboard-thirteenth__card">
+            <header class="section-heading section-heading--compact">
+                <span class="icon-circle icon-circle--primary" aria-hidden="true">
+                    <i class="bi bi-gift-fill"></i>
+                </span>
+                <div>
+                    <h3>13º — 2ª parcela paga</h3>
+                    <p class="muted">Liquidações e descontos aplicados este mês.</p>
+                </div>
+            </header>
+            <?php if ($thirteenthSecondInstallments === []): ?>
+                <p class="muted">Nenhum pagamento da 2ª parcela registrado neste mês.</p>
+            <?php else: ?>
+                <ul class="status-list">
+                    <?php foreach ($thirteenthSecondInstallments as $payroll): ?>
+                        <li>
+                            <span class="status-list__bullet status-list__bullet--info" aria-hidden="true">
+                                <i class="bi bi-clipboard-check"></i>
+                            </span>
+                            <div class="status-list__content">
+                                <strong><?= htmlspecialchars($employeeNames[$payroll->getEmployeeId()] ?? 'Colaborador'); ?></strong>
+                                <small class="muted">Pagamento em <?= htmlspecialchars($payroll->getPaymentDate()->format('d/m/Y')); ?> • Ref. <?= htmlspecialchars($payroll->getReferenceMonth()); ?> • R$ <?= number_format($payroll->getNetSalary(), 2, ',', '.'); ?></small>
+                            </div>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+        </article>
     </div>
 
     <div class="dashboard-charts">

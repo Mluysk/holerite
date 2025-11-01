@@ -44,6 +44,8 @@ final class DashboardController extends Controller
 
         $calendarEvents = [];
         $paidRegularPayrolls = [];
+        $thirteenthFirstInstallments = [];
+        $thirteenthSecondInstallments = [];
 
         foreach ($payrolls as $payroll) {
             $paymentDate = $payroll->getPaymentDate();
@@ -63,6 +65,16 @@ final class DashboardController extends Controller
 
                 if ($payroll->getType() === 'regular') {
                     $paidRegularPayrolls[$payroll->getEmployeeId()] = $payroll;
+                }
+
+                if ($payroll->getType() === 'thirteenth') {
+                    $installment = $payroll->getThirteenthInstallment() ?? 'first';
+
+                    if ($installment === 'second') {
+                        $thirteenthSecondInstallments[] = $payroll;
+                    } else {
+                        $thirteenthFirstInstallments[] = $payroll;
+                    }
                 }
             }
 
@@ -89,8 +101,7 @@ final class DashboardController extends Controller
             }
         }
 
-        $paidMonthlyPayrolls = array_values($paidRegularPayrolls);
-        usort($paidMonthlyPayrolls, function (Payroll $a, Payroll $b) use ($employeesById): int {
+        $compareByEmployeeName = function (Payroll $a, Payroll $b) use ($employeesById): int {
             $nameA = isset($employeesById[$a->getEmployeeId()])
                 ? $employeesById[$a->getEmployeeId()]->getName()
                 : '';
@@ -99,7 +110,12 @@ final class DashboardController extends Controller
                 : '';
 
             return strcasecmp($nameA, $nameB);
-        });
+        };
+
+        $paidMonthlyPayrolls = array_values($paidRegularPayrolls);
+        usort($paidMonthlyPayrolls, $compareByEmployeeName);
+        usort($thirteenthFirstInstallments, $compareByEmployeeName);
+        usort($thirteenthSecondInstallments, $compareByEmployeeName);
 
         $pendingMonthlyEmployees = [];
         foreach ($employees as $employee) {
@@ -159,6 +175,8 @@ final class DashboardController extends Controller
             ],
             'currentMonthNet' => $currentMonthNet,
             'currentMonthLabel' => $this->getMonthDisplayName($currentMonth),
+            'thirteenthFirstInstallments' => $thirteenthFirstInstallments,
+            'thirteenthSecondInstallments' => $thirteenthSecondInstallments,
         ]);
     }
 
