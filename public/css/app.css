@@ -3179,3 +3179,299 @@ body.theme-dark .badge--soon {
     height: 3.4rem;
     font-size: 1.5rem;
 }
+
+/* Payroll creation layout refresh */
+.payroll-create {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.payroll-create__hero {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.75rem;
+    background: linear-gradient(135deg, rgba(var(--color-primary-rgb, 37, 99, 235), 0.12), rgba(var(--color-primary-rgb, 37, 99, 235), 0.04));
+    border: 1px solid rgba(var(--color-primary-rgb, 37, 99, 235), 0.2);
+    box-shadow: none;
+}
+
+.payroll-create__hero h2 {
+    margin: 0 0 0.35rem 0;
+    font-size: 1.85rem;
+}
+
+.payroll-create__hero-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+    background: var(--color-primary);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-size: 1.85rem;
+    flex-shrink: 0;
+    box-shadow: 0 16px 36px -26px rgba(var(--color-primary-rgb, 37, 99, 235), 0.7);
+}
+
+.payroll-create__hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.85rem;
+}
+
+.payroll-create__hero-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    background: rgba(var(--color-primary-rgb, 37, 99, 235), 0.15);
+    color: var(--color-primary-dark);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.payroll-create__form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.payroll-create__grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.payroll-create__main,
+.payroll-create__aside {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+@media (min-width: 1040px) {
+    .payroll-create__grid {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+        align-items: flex-start;
+    }
+}
+
+.form-card__header {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.form-card__icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    background: rgba(var(--color-primary-rgb, 37, 99, 235), 0.12);
+    color: var(--color-primary);
+    font-size: 1.35rem;
+    flex-shrink: 0;
+}
+
+.form-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.form-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.form-grid--auto {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.form-grid--two {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.form-grid--thirds {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.form-card__checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.form-card__checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-primary);
+}
+
+.form-card__toggle {
+    margin-top: 1rem;
+}
+
+.form-subcard {
+    background: var(--color-surface);
+    border-radius: 12px;
+    border: 1px dashed var(--color-border);
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-height: 100%;
+}
+
+.form-subcard h4 {
+    margin: 0;
+    font-size: 1.05rem;
+}
+
+.transport-highlights {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.75rem;
+    background: var(--color-surface-soft);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+}
+
+.transport-highlights p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.transport-highlights strong {
+    font-size: 1.05rem;
+    color: var(--color-text);
+}
+
+.payroll-summary__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.payroll-summary__list li {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.payroll-summary__list span {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    font-weight: 600;
+}
+
+.payroll-summary__list strong {
+    font-size: 1.05rem;
+    color: var(--color-text);
+    font-variant-numeric: tabular-nums;
+}
+
+.payroll-summary__list small {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+}
+
+.payroll-summary__highlight {
+    border: 1px solid rgba(var(--color-primary-rgb, 37, 99, 235), 0.35);
+    background: rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
+}
+
+.payroll-summary__highlight strong {
+    font-size: 1.2rem;
+}
+
+.payroll-summary__messages {
+    margin-top: 1rem;
+    background: var(--color-surface-soft);
+    border: 1px dashed var(--color-border);
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    min-height: 1.5rem;
+}
+
+.payroll-create__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.payroll-create__actions .button {
+    flex: 1 1 180px;
+}
+
+.button-success {
+    background: #10b981;
+}
+
+.button-success:hover,
+.button-success:focus {
+    background: #059669;
+}
+
+.button-warning {
+    background: #f97316;
+}
+
+.button-warning:hover,
+.button-warning:focus {
+    background: #ea580c;
+}
+
+@media (min-width: 640px) {
+    .payroll-create__actions {
+        flex-direction: row;
+    }
+}
+
+@media (max-width: 720px) {
+    .payroll-create__hero {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .payroll-create__hero-icon {
+        width: 56px;
+        height: 56px;
+        font-size: 1.6rem;
+    }
+
+    .payroll-create__hero h2 {
+        font-size: 1.6rem;
+    }
+
+    .payroll-create__hero-meta span {
+        font-size: 0.85rem;
+    }
+}
