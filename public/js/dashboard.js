@@ -258,6 +258,7 @@
             }
 
             list.innerHTML = '';
+            let itemCount = 0;
             if (Array.isArray(info.items)) {
                 info.items.forEach(function (item) {
                     const element = document.createElement('li');
@@ -296,7 +297,16 @@
                     }
 
                     list.appendChild(element);
+                    itemCount += 1;
                 });
+            }
+
+            if (itemCount > 10) {
+                list.classList.add('calendar-tooltip__list--scrollable');
+                list.setAttribute('data-scrollable', 'true');
+            } else {
+                list.classList.remove('calendar-tooltip__list--scrollable');
+                list.removeAttribute('data-scrollable');
             }
         }
 

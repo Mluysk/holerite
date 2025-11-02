@@ -2262,6 +2262,27 @@ tr:nth-child(even) td {
     gap: 0.32rem;
 }
 
+.calendar-tooltip__list--scrollable {
+    max-height: 14.5rem;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(var(--tooltip-accent-rgb), 0.5) transparent;
+}
+
+.calendar-tooltip__list--scrollable::-webkit-scrollbar {
+    width: 6px;
+}
+
+.calendar-tooltip__list--scrollable::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.calendar-tooltip__list--scrollable::-webkit-scrollbar-thumb {
+    background: rgba(var(--tooltip-accent-rgb), 0.45);
+    border-radius: 999px;
+}
+
 .calendar-tooltip__item {
     display: flex;
     align-items: center;
