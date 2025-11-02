@@ -1631,6 +1631,19 @@ tr:nth-child(even) td {
     gap: 1.5rem;
 }
 
+.dashboard-vale__tables table {
+    table-layout: fixed;
+    width: 100%;
+    font-size: 0.9rem;
+}
+
+.dashboard-vale__tables th,
+.dashboard-vale__tables td {
+    padding: 0.6rem 0.5rem;
+    white-space: normal;
+    word-break: break-word;
+}
+
 .chart-card__canvas--stacked {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
