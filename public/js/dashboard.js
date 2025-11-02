@@ -166,6 +166,11 @@
         tooltip.setAttribute('role', 'dialog');
         tooltip.setAttribute('aria-hidden', 'true');
 
+        const statusEl = document.createElement('span');
+        statusEl.className = 'calendar-tooltip__status';
+        statusEl.textContent = 'Pago';
+        tooltip.appendChild(statusEl);
+
         const titleEl = document.createElement('div');
         titleEl.className = 'calendar-tooltip__title';
 
@@ -229,6 +234,7 @@
             const iconClass = iconClassMap[category] || 'bi-cash-coin';
             titleIcon.innerHTML = '<i class="bi ' + iconClass + '"></i>';
             titleText.textContent = info.title || 'Pagamentos';
+            statusEl.textContent = info.status || 'Pago';
 
             if (category) {
                 tooltip.setAttribute('data-category', category);
@@ -250,28 +256,23 @@
                     const element = document.createElement('li');
                     element.className = 'calendar-tooltip__item';
 
-                    const header = document.createElement('div');
-                    header.className = 'calendar-tooltip__item-header';
-
                     const name = document.createElement('span');
                     name.className = 'calendar-tooltip__name';
                     name.textContent = item.name || 'Colaborador';
-                    header.appendChild(name);
-
-                    if (item.amount) {
-                        const amount = document.createElement('span');
-                        amount.className = 'calendar-tooltip__amount';
-                        amount.textContent = item.amount;
-                        header.appendChild(amount);
-                    }
-
-                    element.appendChild(header);
+                    element.appendChild(name);
 
                     if (item.details) {
                         const details = document.createElement('span');
                         details.className = 'calendar-tooltip__details';
                         details.textContent = item.details;
                         element.appendChild(details);
+                    }
+
+                    if (item.amount) {
+                        const amount = document.createElement('span');
+                        amount.className = 'calendar-tooltip__amount';
+                        amount.textContent = item.amount;
+                        element.appendChild(amount);
                     }
 
                     list.appendChild(element);

@@ -436,6 +436,7 @@ $pageScripts[] = [
                                                 'date' => $cellDate->format('d/m/Y'),
                                                 'items' => $infoItems,
                                                 'category' => $groupType,
+                                                'status' => 'Pago',
                                             ];
                                                     $infoJson = htmlspecialchars(json_encode($infoPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
                                                     $ariaLabel = $markerTitle . ' em ' . $cellDate->format('d/m/Y') . ': ' . implode('; ', $summaryParts);
