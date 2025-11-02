@@ -2094,16 +2094,16 @@ tr:nth-child(even) td {
     top: 0;
     left: 0;
     z-index: 60;
-    width: min(260px, calc(100vw - 0.75rem));
-    padding: 0.38rem 0.5rem 0.45rem;
-    border-radius: 0.65rem;
+    width: min(240px, calc(100vw - 0.75rem));
+    padding: 0.32rem 0.44rem 0.4rem;
+    border-radius: 0.6rem;
     border: 1px solid rgba(var(--tooltip-accent-rgb), 0.32);
     background: linear-gradient(160deg, rgba(var(--tooltip-accent-rgb), 0.14), rgba(var(--tooltip-accent-rgb), 0.05)), var(--color-surface);
-    box-shadow: 0 14px 30px -26px rgba(var(--tooltip-accent-rgb), 0.4), 0 14px 26px -28px rgba(15, 23, 42, 0.35);
+    box-shadow: 0 12px 26px -24px rgba(var(--tooltip-accent-rgb), 0.38), 0 10px 20px -24px rgba(15, 23, 42, 0.32);
     opacity: 0;
     pointer-events: none;
-    transform: translateY(10px) scale(0.97);
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    transform: translateY(8px) scale(0.97);
+    transition: opacity 0.18s ease, transform 0.18s ease;
     backdrop-filter: blur(10px);
 }
 
@@ -2174,10 +2174,10 @@ tr:nth-child(even) td {
 .calendar-tooltip__title {
     font-weight: 700;
     color: var(--color-text);
-    margin-bottom: 0.18rem;
+    margin-bottom: 0.16rem;
     display: flex;
     align-items: center;
-    gap: 0.3rem;
+    gap: 0.28rem;
 }
 
 .calendar-tooltip__icon {
@@ -2208,38 +2208,38 @@ tr:nth-child(even) td {
 }
 
 .calendar-tooltip__subtitle {
-    font-size: 0.56rem;
+    font-size: 0.52rem;
     color: var(--color-text-muted);
-    margin-bottom: 0.35rem;
+    margin-bottom: 0.3rem;
 }
 
 .calendar-tooltip__list {
     list-style: none;
     margin: 0;
     padding: 0;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 0.18rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.16rem;
 }
 
 .calendar-tooltip__item {
     position: relative;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.06rem 0.45rem;
-    padding: 0.28rem 0.42rem 0.28rem 0.72rem;
-    border-radius: 0.6rem;
-    background: linear-gradient(145deg, rgba(var(--tooltip-accent-rgb), 0.08), rgba(255, 255, 255, 0.7));
+    display: flex;
+    flex-direction: column;
+    gap: 0.16rem;
+    padding: 0.32rem 0.42rem 0.32rem 0.86rem;
+    border-radius: 0.58rem;
+    background: linear-gradient(140deg, rgba(var(--tooltip-accent-rgb), 0.08), rgba(255, 255, 255, 0.74));
     box-shadow: inset 0 0 0 1px rgba(var(--tooltip-accent-rgb), 0.14);
 }
 
 .calendar-tooltip__item::before {
     content: "";
     position: absolute;
-    left: 0.38rem;
-    top: 0.36rem;
-    width: 0.24rem;
-    height: 0.24rem;
+    left: 0.36rem;
+    top: 0.42rem;
+    width: 0.22rem;
+    height: 0.22rem;
     border-radius: 50%;
     background: rgb(var(--tooltip-accent-rgb));
     box-shadow: 0 0 0 2px rgba(var(--tooltip-accent-rgb), 0.18);
@@ -2255,28 +2255,46 @@ tr:nth-child(even) td {
     box-shadow: 0 0 0 2px rgba(var(--tooltip-accent-rgb), 0.28);
 }
 
+.calendar-tooltip__item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.45rem;
+}
+
 .calendar-tooltip__name {
     font-weight: 600;
     color: var(--color-text);
-    grid-column: 1;
-    font-size: 0.64rem;
-    line-height: 1.15;
+    font-size: 0.6rem;
+    line-height: 1.05;
 }
 
 .calendar-tooltip__details {
-    font-size: 0.48rem;
+    font-size: 0.46rem;
     color: var(--color-text-muted);
-    grid-column: 1;
+    line-height: 1.1;
+    padding-left: 0.1rem;
 }
 
 .calendar-tooltip__amount {
-    font-size: 0.64rem;
-    color: var(--color-text);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.18rem 0.38rem;
+    border-radius: 999px;
+    background: rgba(var(--tooltip-accent-rgb), 0.12);
+    box-shadow: inset 0 0 0 1px rgba(var(--tooltip-accent-rgb), 0.18);
+    font-size: 0.58rem;
     font-weight: 600;
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    align-self: center;
+    color: rgb(var(--tooltip-accent-rgb));
+    white-space: nowrap;
+    min-width: 4.4rem;
     text-align: right;
+}
+
+.theme-dark .calendar-tooltip__amount {
+    background: rgba(var(--tooltip-accent-rgb), 0.24);
+    color: #f8fafc;
 }
 
 .calendar-day__list {

@@ -250,23 +250,28 @@
                     const element = document.createElement('li');
                     element.className = 'calendar-tooltip__item';
 
+                    const header = document.createElement('div');
+                    header.className = 'calendar-tooltip__item-header';
+
                     const name = document.createElement('span');
                     name.className = 'calendar-tooltip__name';
                     name.textContent = item.name || 'Colaborador';
-                    element.appendChild(name);
+                    header.appendChild(name);
+
+                    if (item.amount) {
+                        const amount = document.createElement('span');
+                        amount.className = 'calendar-tooltip__amount';
+                        amount.textContent = item.amount;
+                        header.appendChild(amount);
+                    }
+
+                    element.appendChild(header);
 
                     if (item.details) {
                         const details = document.createElement('span');
                         details.className = 'calendar-tooltip__details';
                         details.textContent = item.details;
                         element.appendChild(details);
-                    }
-
-                    if (item.amount) {
-                        const amount = document.createElement('span');
-                        amount.className = 'calendar-tooltip__amount';
-                        amount.textContent = item.amount;
-                        element.appendChild(amount);
                     }
 
                     list.appendChild(element);
