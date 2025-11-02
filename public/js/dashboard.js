@@ -166,28 +166,35 @@
         tooltip.setAttribute('role', 'dialog');
         tooltip.setAttribute('aria-hidden', 'true');
 
-        const statusEl = document.createElement('span');
-        statusEl.className = 'calendar-tooltip__status';
-        statusEl.textContent = 'Pago';
-        tooltip.appendChild(statusEl);
+        const headerEl = document.createElement('div');
+        headerEl.className = 'calendar-tooltip__header';
+        tooltip.appendChild(headerEl);
 
-        const titleEl = document.createElement('div');
-        titleEl.className = 'calendar-tooltip__title';
+        const headingEl = document.createElement('div');
+        headingEl.className = 'calendar-tooltip__heading';
+        headerEl.appendChild(headingEl);
 
         const titleIcon = document.createElement('span');
         titleIcon.className = 'calendar-tooltip__icon';
         titleIcon.setAttribute('aria-hidden', 'true');
-        titleEl.appendChild(titleIcon);
+        headingEl.appendChild(titleIcon);
+
+        const titleGroup = document.createElement('div');
+        titleGroup.className = 'calendar-tooltip__title-group';
+        headingEl.appendChild(titleGroup);
 
         const titleText = document.createElement('span');
-        titleText.className = 'calendar-tooltip__title-text';
-        titleEl.appendChild(titleText);
+        titleText.className = 'calendar-tooltip__title';
+        titleGroup.appendChild(titleText);
 
-        tooltip.appendChild(titleEl);
+        const statusEl = document.createElement('span');
+        statusEl.className = 'calendar-tooltip__status';
+        statusEl.textContent = 'Pago';
+        titleGroup.appendChild(statusEl);
 
-        const subtitleEl = document.createElement('div');
-        subtitleEl.className = 'calendar-tooltip__subtitle';
-        tooltip.appendChild(subtitleEl);
+        const dateEl = document.createElement('span');
+        dateEl.className = 'calendar-tooltip__date';
+        headerEl.appendChild(dateEl);
 
         const list = document.createElement('ul');
         list.className = 'calendar-tooltip__list';
@@ -243,11 +250,11 @@
             }
 
             if (info.date) {
-                subtitleEl.textContent = info.date;
-                subtitleEl.style.display = '';
+                dateEl.textContent = info.date;
+                dateEl.style.display = '';
             } else {
-                subtitleEl.textContent = '';
-                subtitleEl.style.display = 'none';
+                dateEl.textContent = '';
+                dateEl.style.display = 'none';
             }
 
             list.innerHTML = '';
@@ -256,16 +263,29 @@
                     const element = document.createElement('li');
                     element.className = 'calendar-tooltip__item';
 
+                    const person = document.createElement('div');
+                    person.className = 'calendar-tooltip__person';
+                    element.appendChild(person);
+
+                    const dot = document.createElement('span');
+                    dot.className = 'calendar-tooltip__dot';
+                    dot.setAttribute('aria-hidden', 'true');
+                    person.appendChild(dot);
+
+                    const personInfo = document.createElement('div');
+                    personInfo.className = 'calendar-tooltip__person-info';
+                    person.appendChild(personInfo);
+
                     const name = document.createElement('span');
                     name.className = 'calendar-tooltip__name';
                     name.textContent = item.name || 'Colaborador';
-                    element.appendChild(name);
+                    personInfo.appendChild(name);
 
                     if (item.details) {
                         const details = document.createElement('span');
                         details.className = 'calendar-tooltip__details';
                         details.textContent = item.details;
-                        element.appendChild(details);
+                        personInfo.appendChild(details);
                     }
 
                     if (item.amount) {
