@@ -3889,24 +3889,27 @@ body.theme-dark .badge--soon {
 
     .receipt-wrapper {
         display: block;
-        gap: 0.75cm;
+        gap: 0.5cm;
+        page-break-inside: avoid;
     }
 
     .receipt-wrapper .holerite {
         width: 100%;
         max-width: none;
         border: 1px solid #111827;
-        padding: 12mm 10mm;
-        font-size: 9pt;
+        padding: 10mm 8mm;
+        font-size: 8.6pt;
         page-break-inside: avoid;
+        page-break-before: auto;
+        page-break-after: avoid;
     }
 
     .receipt-wrapper .holerite + .holerite {
-        margin-top: 0.75cm;
+        margin-top: 0.5cm;
     }
 
     .receipt-wrapper .holerite + .holerite::before {
-        top: -0.75cm;
+        top: -0.5cm;
     }
 
     .holerite-copy-label {
@@ -3918,12 +3921,12 @@ body.theme-dark .badge--soon {
     }
 
     .holerite-table {
-        font-size: 0.82em;
+        font-size: 0.78em;
     }
 
     .holerite-table th,
     .holerite-table td {
-        padding: 4px;
+        padding: 3px 3.5px;
     }
 
     .holerite-signature {
