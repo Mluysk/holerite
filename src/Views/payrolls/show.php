@@ -294,7 +294,13 @@ if ($payroll->getType() === 'thirteenth') {
                 </div>
                 <div class="holerite-signature-footer">
                     <div class="holerite-signature-field holerite-signature-field--date">
-                        <span class="holerite-signature-line holerite-signature-line--date"></span>
+                        <div class="holerite-date-grid" aria-hidden="true">
+                            <span class="holerite-date-cell"><span class="holerite-date-placeholder">DIA</span></span>
+                            <span class="holerite-date-separator">/</span>
+                            <span class="holerite-date-cell"><span class="holerite-date-placeholder">MÊS</span></span>
+                            <span class="holerite-date-separator">/</span>
+                            <span class="holerite-date-cell holerite-date-cell--year"><span class="holerite-date-placeholder">ANO</span></span>
+                        </div>
                         <span class="holerite-signature-label">DATA</span>
                     </div>
                     <div class="holerite-signature-field holerite-signature-field--signature">

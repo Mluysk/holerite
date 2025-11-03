@@ -3436,6 +3436,42 @@ body.theme-dark .badge--soon {
     flex: 1 1 auto;
 }
 
+
+.holerite-date-grid {
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 0.4rem;
+}
+
+.holerite-date-separator {
+    font-weight: 600;
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+    color: #111827;
+}
+
+.holerite-date-cell {
+    min-width: 1.6cm;
+    border-bottom: 1px solid #111827;
+    height: 22px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 2px;
+}
+
+.holerite-date-cell--year {
+    min-width: 2.3cm;
+}
+
+.holerite-date-placeholder {
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    color: #6b7280;
+}
+
 .holerite-signature-line {
     width: 100%;
     border-bottom: 1px solid #111827;
@@ -3443,21 +3479,6 @@ body.theme-dark .badge--soon {
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    font-size: 0.78rem;
-    letter-spacing: 0.06em;
-}
-
-.holerite-signature-line::after {
-    content: '\00a0';
-}
-
-.holerite-signature-line--date {
-    letter-spacing: 0.18em;
-}
-
-.holerite-signature-line--date::after {
-    content: '__/__/____';
-    font-size: 0.75rem;
 }
 
 .holerite-signature-label {
@@ -3906,7 +3927,7 @@ body.theme-dark .badge--soon {
 @media print {
     @page {
         size: A4 portrait;
-        margin: 6mm;
+        margin: 5mm;
     }
 
     body {
@@ -3942,9 +3963,9 @@ body.theme-dark .badge--soon {
         width: 100%;
         max-width: none;
         border: 1px solid #111827;
-        padding: 6mm 5mm;
-        font-size: 7.2pt;
-        line-height: 1.08;
+        padding: 5mm 4mm;
+        font-size: 6.9pt;
+        line-height: 1.06;
         page-break-inside: avoid;
         page-break-before: auto;
         page-break-after: avoid;
@@ -3962,9 +3983,17 @@ body.theme-dark .badge--soon {
         height: 18px;
     }
 
-    .receipt-wrapper .holerite-signature-line--date::after {
-        font-size: 7pt;
-        letter-spacing: 0.22em;
+    .receipt-wrapper .holerite-date-cell {
+        min-width: 1.3cm;
+        height: 18px;
+    }
+
+    .receipt-wrapper .holerite-date-cell--year {
+        min-width: 1.8cm;
+    }
+
+    .receipt-wrapper .holerite-date-placeholder {
+        font-size: 6.4pt;
     }
 
     .receipt-wrapper .holerite + .holerite {
@@ -3989,12 +4018,12 @@ body.theme-dark .badge--soon {
 
     .holerite-table th,
     .holerite-table td {
-        padding: 2mm 1.6mm;
+        padding: 1.8mm 1.4mm;
     }
 
     .holerite-signature {
-        margin-top: 0.35cm;
-        font-size: 0.64rem;
+        margin-top: 0.3cm;
+        font-size: 0.62rem;
     }
 
     .report__paper {
