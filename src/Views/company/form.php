@@ -15,7 +15,9 @@
 /** @var string $companyThemeMode */
 /** @var string $companyColorPalette */
 /** @var array<string, mixed> $contributionApi */
+/** @var Holerite\Models\AuditLog[] $auditLogs */
 
+use Holerite\Models\AuditLog;
 use Holerite\Models\User;
 
 $activeUserId = $currentUser['id'] ?? null;
@@ -41,6 +43,7 @@ $apiEndpoint = trim((string) ($contributionApi['endpoint'] ?? ''));
 $apiProvider = trim((string) ($contributionApi['provider'] ?? ''));
 $apiHasToken = !empty($contributionApi['hasToken']);
 $apiTimeout = isset($contributionApi['timeout']) ? (int) $contributionApi['timeout'] : 10;
+$auditLogs = isset($auditLogs) && is_array($auditLogs) ? $auditLogs : [];
 ?>
 <section>
     <header style="margin-bottom:1.5rem;">
@@ -355,6 +358,50 @@ $apiTimeout = isset($contributionApi['timeout']) ? (int) $contributionApi['timeo
                     <button type="submit" class="button">Atualizar senha</button>
                 </form>
             </div>
+
+            <?php if (!empty($isAdmin)): ?>
+                <div class="card" style="margin-top:1.5rem;">
+                    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+                        <div>
+                            <h3 style="margin:0;">Auditoria do sistema</h3>
+                            <p class="muted" style="margin:0.25rem 0 0 0;">Acompanhe as últimas ações administrativas registradas no sistema.</p>
+                        </div>
+                        <span style="display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;background:rgba(var(--color-primary-rgb),0.12);color:var(--color-primary);">
+                            <i class="bi bi-clipboard-check" aria-hidden="true"></i>
+                        </span>
+                    </div>
+
+                    <?php if ($auditLogs === []): ?>
+                        <p class="muted" style="margin-top:1rem;">Nenhum evento de auditoria foi registrado até o momento.</p>
+                    <?php else: ?>
+                        <?php $auditTimezone = new DateTimeZone('America/Sao_Paulo'); ?>
+                        <div class="table-responsive audit-log__table" style="margin-top:1rem;">
+                            <table>
+                                <thead>
+                                <tr>
+                                    <th style="width:20%;">Data</th>
+                                    <th style="width:20%;">Responsável</th>
+                                    <th style="width:20%;">Ação</th>
+                                    <th>Detalhes</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <?php foreach ($auditLogs as $log): ?>
+                                    <?php if (!$log instanceof AuditLog) { continue; } ?>
+                                    <?php $loggedAt = $log->getCreatedAt()->setTimezone($auditTimezone); ?>
+                                    <tr>
+                                        <td><?= $loggedAt->format('d/m/Y H:i'); ?></td>
+                                        <td><?= htmlspecialchars($log->getUsername() ?? 'Administrador'); ?></td>
+                                        <td><?= htmlspecialchars($log->getAction()); ?></td>
+                                        <td><?= htmlspecialchars($log->getDescription()); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
         </div>
         <?php endif; ?>
 

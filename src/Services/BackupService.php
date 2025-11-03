@@ -30,6 +30,7 @@ final class BackupService
             'payrolls',
             'payroll_items',
             'users',
+            'audit_logs',
         ];
 
         $data = [];
@@ -99,8 +100,8 @@ final class BackupService
             throw new RuntimeException('Backup de banco de dados inválido.');
         }
 
-        $allowedTables = ['companies', 'contribution_settings', 'employees', 'payrolls', 'payroll_items', 'users'];
-        $clearOrder = ['payroll_items', 'payrolls', 'employees', 'companies', 'contribution_settings', 'users'];
+        $allowedTables = ['companies', 'contribution_settings', 'employees', 'payrolls', 'payroll_items', 'users', 'audit_logs'];
+        $clearOrder = ['payroll_items', 'payrolls', 'employees', 'audit_logs', 'companies', 'contribution_settings', 'users'];
 
         $this->pdo->exec('SET FOREIGN_KEY_CHECKS=0');
 
@@ -116,7 +117,7 @@ final class BackupService
                 $this->pdo->exec(sprintf('DELETE FROM %s', $wrapped));
             }
 
-            foreach (['companies', 'contribution_settings', 'employees', 'payrolls', 'payroll_items', 'users'] as $table) {
+            foreach (['companies', 'contribution_settings', 'employees', 'payrolls', 'payroll_items', 'users', 'audit_logs'] as $table) {
                 if (!in_array($table, $allowedTables, true)) {
                     continue;
                 }

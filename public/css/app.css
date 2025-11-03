@@ -607,6 +607,17 @@ a:focus {
     background: var(--color-secondary-hover);
 }
 
+.button-danger {
+    background: var(--color-icon-danger);
+    color: #fff;
+}
+
+.button-danger:hover,
+.button-danger:focus {
+    filter: brightness(0.92);
+    color: #fff;
+}
+
 .actions {
     display: flex;
     flex-wrap: wrap;
@@ -616,6 +627,23 @@ a:focus {
 .actions a,
 .actions form {
     display: inline-flex;
+}
+
+.payroll-delete-form {
+    align-items: center;
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.payroll-delete-form input[type="password"] {
+    width: 160px;
+    min-width: 140px;
+    padding: 0.45rem 0.65rem;
+}
+
+.payroll-delete-form .button {
+    padding: 0.45rem 0.95rem;
 }
 
 form label {
@@ -937,6 +965,22 @@ form textarea::placeholder {
 .table-responsive {
     width: 100%;
     overflow-x: auto;
+}
+
+.audit-log__table table th,
+.audit-log__table table td {
+    font-size: 0.95rem;
+    vertical-align: top;
+}
+
+.audit-log__table table td:nth-child(1),
+.audit-log__table table td:nth-child(2),
+.audit-log__table table td:nth-child(3) {
+    white-space: nowrap;
+}
+
+.audit-log__table table td:last-child {
+    white-space: normal;
 }
 
 .auth-wrapper {
@@ -3152,6 +3196,20 @@ body.theme-dark .badge--soon {
 
     .table-responsive table {
         min-width: 500px;
+    }
+
+    .payroll-delete-form {
+        align-items: stretch;
+        width: 100%;
+    }
+
+    .payroll-delete-form input[type="password"],
+    .payroll-delete-form .button {
+        width: 100%;
+    }
+
+    .payroll-delete-form .button {
+        justify-content: center;
     }
 
     .layout-session {

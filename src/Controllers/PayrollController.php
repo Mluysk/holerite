@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Holerite\Controllers;
 
+use Holerite\Models\User;
+use Holerite\Repositories\AuditLogRepository;
 use Holerite\Repositories\CompanyRepository;
 use Holerite\Repositories\EmployeeRepository;
 use Holerite\Repositories\PayrollRepository;
+use Holerite\Repositories\UserRepository;
 use Holerite\Services\PayrollService;
 use RuntimeException;
 use Throwable;
@@ -18,6 +21,8 @@ final class PayrollController extends Controller
         private PayrollRepository $payrollRepository,
         private PayrollService $payrollService,
         private CompanyRepository $companyRepository,
+        private UserRepository $userRepository,
+        private AuditLogRepository $auditLogRepository,
     ) {
     }
 
@@ -29,6 +34,7 @@ final class PayrollController extends Controller
             'title' => 'Holerites gerados',
             'payrolls' => $payrolls,
             'employees' => $this->employeeRepository->all(),
+            'canDelete' => $this->isAdmin(),
         ]);
     }
 
@@ -107,5 +113,103 @@ final class PayrollController extends Controller
             'employee' => $employee,
             'company' => $this->companyRepository->get(),
         ]);
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    public function delete(int $id, array $data): void
+    {
+        if (!$this->isAdmin()) {
+            $this->flash('error', 'Apenas administradores podem excluir holerites.');
+            $this->redirect('?action=list_payrolls');
+            return;
+        }
+
+        $password = trim((string) ($data['password'] ?? ''));
+
+        if (!$this->validateAdministratorPassword($password)) {
+            $this->redirect('?action=list_payrolls');
+            return;
+        }
+
+        $payroll = $this->payrollRepository->find($id);
+
+        if ($payroll === null) {
+            $this->flash('error', 'Holerite não encontrado.');
+            $this->redirect('?action=list_payrolls');
+            return;
+        }
+
+        try {
+            $this->payrollRepository->delete($id);
+        } catch (RuntimeException $exception) {
+            $this->flash('error', $exception->getMessage());
+            $this->redirect('?action=list_payrolls');
+            return;
+        }
+
+        $employee = $this->employeeRepository->find($payroll->getEmployeeId());
+        $employeeName = $employee?->getName() ?? ('Colaborador #' . $payroll->getEmployeeId());
+        $userId = $this->currentUserId();
+
+        $description = sprintf(
+            'Holerite %d (%s) do colaborador %s excluído.',
+            $payroll->getId(),
+            $payroll->getReferenceMonth(),
+            $employeeName,
+        );
+
+        $this->auditLogRepository->log(
+            $userId,
+            'delete_payroll',
+            'payroll',
+            $payroll->getId(),
+            $description,
+        );
+
+        $this->flash('success', 'Holerite excluído com sucesso.');
+        $this->redirect('?action=list_payrolls');
+    }
+
+    private function isAdmin(): bool
+    {
+        $user = $_SESSION['user'] ?? null;
+        $role = is_array($user) ? ($user['role'] ?? null) : null;
+
+        return $role === User::ROLE_ADMINISTRATOR;
+    }
+
+    private function currentUserId(): int
+    {
+        $user = $_SESSION['user'] ?? null;
+
+        return is_array($user) ? (int) ($user['id'] ?? 0) : 0;
+    }
+
+    private function validateAdministratorPassword(string $password): bool
+    {
+        $user = $_SESSION['user'] ?? null;
+        $userId = is_array($user) ? (int) ($user['id'] ?? 0) : 0;
+        $role = is_array($user) ? ($user['role'] ?? null) : null;
+
+        if ($role !== User::ROLE_ADMINISTRATOR || $userId <= 0) {
+            $this->flash('error', 'Sessão inválida. Faça login novamente.');
+            return false;
+        }
+
+        if ($password === '') {
+            $this->flash('error', 'Informe sua senha de administrador para confirmar a exclusão.');
+            return false;
+        }
+
+        $account = $this->userRepository->findById($userId);
+
+        if ($account === null || !password_verify($password, $account->getPasswordHash())) {
+            $this->flash('error', 'Senha de administrador incorreta.');
+            return false;
+        }
+
+        return true;
     }
 }

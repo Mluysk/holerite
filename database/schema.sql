@@ -64,6 +64,17 @@ INSERT INTO users (username, password_hash, role, theme_mode, color_palette)
 VALUES ('admin', '$2y$12$xYtysTzDWmNVJUtrv3xcnO62KGT24U774wEy8RTIA7H5IsczQS9fu', 'administrator', 'light', 'dark-red')
 ON DUPLICATE KEY UPDATE username = VALUES(username), role = VALUES(role), theme_mode = VALUES(theme_mode), color_palette = VALUES(color_palette);
 
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NULL,
+    action VARCHAR(100) NOT NULL,
+    entity_type VARCHAR(100) NOT NULL,
+    entity_id INT NULL,
+    description TEXT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
 CREATE TABLE IF NOT EXISTS payrolls (
     id INT AUTO_INCREMENT PRIMARY KEY,
     employee_id INT NOT NULL,

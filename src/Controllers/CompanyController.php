@@ -7,6 +7,7 @@ namespace Holerite\Controllers;
 use Holerite\Models\Company;
 use Holerite\Models\ContributionSettings;
 use Holerite\Models\User;
+use Holerite\Repositories\AuditLogRepository;
 use Holerite\Repositories\CompanyRepository;
 use Holerite\Repositories\ContributionSettingsRepository;
 use Holerite\Repositories\UserRepository;
@@ -54,6 +55,7 @@ final class CompanyController extends Controller
         private ContributionSettingsRepository $contributionRepository,
         private ContributionSyncService $contributionSyncService,
         private array $contributionApiConfig = [],
+        private ?AuditLogRepository $auditLogRepository = null,
     ) {
     }
 
@@ -119,6 +121,10 @@ final class CompanyController extends Controller
             $companyColorPalette = 'dark-red';
         }
 
+        $auditLogs = $isAdmin && $this->auditLogRepository !== null
+            ? $this->auditLogRepository->latest(25)
+            : [];
+
         $this->render('company/form', [
             'title' => 'Configurações',
             'company' => $company,
@@ -140,6 +146,7 @@ final class CompanyController extends Controller
             'isAdmin' => $isAdmin,
             'contributionSettings' => $contributions,
             'contributionApi' => $this->describeContributionApi(),
+            'auditLogs' => $auditLogs,
             'pageScripts' => $pageScripts,
         ]);
     }

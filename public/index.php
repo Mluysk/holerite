@@ -12,6 +12,7 @@ use Holerite\Repositories\CompanyRepository;
 use Holerite\Repositories\ContributionSettingsRepository;
 use Holerite\Repositories\EmployeeRepository;
 use Holerite\Repositories\PayrollRepository;
+use Holerite\Repositories\AuditLogRepository;
 use Holerite\Repositories\UserRepository;
 use Holerite\Services\EmployeeBenefitService;
 use Holerite\Services\PayrollService;
@@ -37,6 +38,7 @@ $contributionRepository = new ContributionSettingsRepository();
 $employeeRepository = new EmployeeRepository();
 $payrollRepository = new PayrollRepository();
 $userRepository = new UserRepository();
+$auditLogRepository = new AuditLogRepository();
 $employeeBenefitService = new EmployeeBenefitService();
 $payrollService = new PayrollService($employeeRepository, $payrollRepository, $contributionRepository);
 $backupService = new BackupService();
@@ -90,9 +92,17 @@ $companyController = new CompanyController(
     $contributionRepository,
     $contributionSyncService,
     $contributionsApiConfig,
+    $auditLogRepository,
 );
 $employeeController = new EmployeeController($employeeRepository, $payrollRepository, $employeeBenefitService);
-$payrollController = new PayrollController($employeeRepository, $payrollRepository, $payrollService, $companyRepository);
+$payrollController = new PayrollController(
+    $employeeRepository,
+    $payrollRepository,
+    $payrollService,
+    $companyRepository,
+    $userRepository,
+    $auditLogRepository,
+);
 $authController = new AuthController($userRepository);
 $backupController = new BackupController($backupService, $userRepository);
 
@@ -312,6 +322,15 @@ switch ($action) {
     case 'show_payroll':
         $id = (int) ($_GET['id'] ?? 0);
         $payrollController->show($id);
+        break;
+
+    case 'delete_payroll':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $id = (int) ($_GET['id'] ?? 0);
+            $payrollController->delete($id, $_POST);
+        } else {
+            $payrollController->index();
+        }
         break;
 
     default:

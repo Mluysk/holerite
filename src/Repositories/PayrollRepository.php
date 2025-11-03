@@ -9,6 +9,8 @@ use Holerite\Database\Connection;
 use Holerite\Models\Payroll;
 use Holerite\Models\PayrollItem;
 use PDO;
+use RuntimeException;
+use Throwable;
 
 final class PayrollRepository
 {
@@ -173,5 +175,26 @@ final class PayrollRepository
             'amount' => $item->getAmount(),
             'type' => $item->getType(),
         ]);
+    }
+
+    public function delete(int $id): void
+    {
+        try {
+            $this->pdo->beginTransaction();
+
+            $statement = $this->pdo->prepare('DELETE FROM payroll_items WHERE payroll_id = :id');
+            $statement->execute(['id' => $id]);
+
+            $statement = $this->pdo->prepare('DELETE FROM payrolls WHERE id = :id');
+            $statement->execute(['id' => $id]);
+
+            $this->pdo->commit();
+        } catch (Throwable $exception) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+
+            throw new RuntimeException('Não foi possível excluir o holerite.', 0, $exception);
+        }
     }
 }

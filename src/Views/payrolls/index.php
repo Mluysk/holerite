@@ -2,10 +2,13 @@
 /** @var Holerite\Models\Payroll[] $payrolls */
 /** @var Holerite\Models\Employee[] $employees */
 /** @var string $title */
+/** @var bool $canDelete */
 $employeeNames = [];
 foreach ($employees as $employee) {
     $employeeNames[$employee->getId() ?? 0] = $employee->getName();
 }
+
+$canDelete = isset($canDelete) && $canDelete;
 
 $typeLabels = [
     'regular' => 'Mensal',
@@ -68,6 +71,14 @@ $typeLabels = [
                         <td><strong>R$ <?= number_format($payroll->getNetSalary(), 2, ',', '.'); ?></strong></td>
                         <td class="text-right actions">
                             <a href="?action=show_payroll&id=<?= $payroll->getId(); ?>" class="button button-secondary">Visualizar</a>
+                            <?php if ($canDelete): ?>
+                                <form method="post" action="?action=delete_payroll&id=<?= $payroll->getId(); ?>" class="payroll-delete-form">
+                                    <?php $inputId = 'delete-password-' . $payroll->getId(); ?>
+                                    <label for="<?= htmlspecialchars($inputId); ?>" class="visually-hidden">Senha do administrador</label>
+                                    <input type="password" name="password" id="<?= htmlspecialchars($inputId); ?>" placeholder="Senha admin" required>
+                                    <button type="submit" class="button button-danger" onclick="return confirm('Confirmar a exclusão deste holerite?');">Excluir</button>
+                                </form>
+                            <?php endif; ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>
