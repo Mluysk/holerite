@@ -3859,6 +3859,11 @@ body.theme-dark .badge--soon {
 }
 
 @media print {
+    @page {
+        size: A4 portrait;
+        margin: 10mm;
+    }
+
     body {
         background: #fff;
     }
@@ -3882,8 +3887,47 @@ body.theme-dark .badge--soon {
         box-shadow: none;
     }
 
-    .holerite {
+    .receipt-wrapper {
+        display: block;
+        gap: 0.75cm;
+    }
+
+    .receipt-wrapper .holerite {
+        width: 100%;
+        max-width: none;
         border: 1px solid #111827;
+        padding: 12mm 10mm;
+        font-size: 9pt;
+        page-break-inside: avoid;
+    }
+
+    .receipt-wrapper .holerite + .holerite {
+        margin-top: 0.75cm;
+    }
+
+    .receipt-wrapper .holerite + .holerite::before {
+        top: -0.75cm;
+    }
+
+    .holerite-copy-label {
+        font-size: 0.62rem;
+    }
+
+    .holerite-copy-label-subtitle {
+        font-size: 0.6rem;
+    }
+
+    .holerite-table {
+        font-size: 0.82em;
+    }
+
+    .holerite-table th,
+    .holerite-table td {
+        padding: 4px;
+    }
+
+    .holerite-signature {
+        margin-top: 0.6cm;
     }
 
     .report__paper {
