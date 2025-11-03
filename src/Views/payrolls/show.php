@@ -190,12 +190,6 @@ if ($transportTotalCost > 0.0) {
     $messages[] = 'Vale-transporte: ' . implode(' · ', $messageParts);
     $messages[] = 'O vale-transporte permite desconto de até 6% do salário base, conforme legislação brasileira.';
 }
-if ($manualValeDeduction > 0.0) {
-    $messages[] = 'Vales de produtos: R$ ' . number_format($manualValeDeduction, 2, ',', '.');
-}
-if ($valeDeductionAmount > 0.0 && ($transportDeduction > 0.0 || $manualValeDeduction > 0.0)) {
-    $messages[] = 'Total de vales aplicados: R$ ' . number_format($valeDeductionAmount, 2, ',', '.');
-}
 if ($payroll->getNotes() !== '') {
     $messages[] = nl2br(htmlspecialchars($payroll->getNotes()));
 }
