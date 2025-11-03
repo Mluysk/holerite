@@ -158,11 +158,6 @@ $employeeFunction = $employee?->getPosition() ?? '';
 $employeeCbo = $employeeDepartment !== '' ? $employeeDepartment : '-';
 
 $messages = [];
-if ($advanceAmount > 0.0) {
-    $messages[] = 'Adiantamento: R$ ' . number_format($advanceAmount, 2, ',', '.')
-        . ($advanceRatioLabel !== null ? ' (' . $advanceRatioLabel . ')' : '');
-    $messages[] = 'Pagamento restante: R$ ' . number_format($remainingAmount, 2, ',', '.');
-}
 if ($transportTotalCost > 0.0) {
     $transportDetails = [];
     if ($transportDays > 0) {
