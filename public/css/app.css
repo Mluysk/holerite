@@ -3858,10 +3858,15 @@ body.theme-dark .badge--soon {
     }
 }
 
+@page {
+    size: A4 portrait;
+    margin: 6mm;
+}
+
 @media print {
     @page {
         size: A4 portrait;
-        margin: 8mm;
+        margin: 6mm;
     }
 
     body {
@@ -3889,7 +3894,7 @@ body.theme-dark .badge--soon {
 
     .receipt-wrapper {
         display: block;
-        gap: 0.35cm;
+        gap: 0.28cm;
         page-break-inside: avoid;
     }
 
@@ -3897,42 +3902,42 @@ body.theme-dark .badge--soon {
         width: 100%;
         max-width: none;
         border: 1px solid #111827;
-        padding: 8mm 7mm;
-        font-size: 8pt;
-        line-height: 1.18;
+        padding: 6mm 5mm;
+        font-size: 7.2pt;
+        line-height: 1.08;
         page-break-inside: avoid;
         page-break-before: auto;
         page-break-after: avoid;
     }
 
     .receipt-wrapper .holerite + .holerite {
-        margin-top: 0.35cm;
+        margin-top: 0.28cm;
     }
 
     .receipt-wrapper .holerite + .holerite::before {
-        top: -0.35cm;
+        top: -0.28cm;
     }
 
     .holerite-copy-label {
-        font-size: 0.58rem;
+        font-size: 0.5rem;
     }
 
     .holerite-copy-label-subtitle {
-        font-size: 0.56rem;
+        font-size: 0.48rem;
     }
 
     .holerite-table {
-        font-size: 0.74em;
+        font-size: 0.64em;
     }
 
     .holerite-table th,
     .holerite-table td {
-        padding: 2.5mm 2mm;
+        padding: 2mm 1.6mm;
     }
 
     .holerite-signature {
-        margin-top: 0.45cm;
-        font-size: 0.74rem;
+        margin-top: 0.35cm;
+        font-size: 0.64rem;
     }
 
     .report__paper {
