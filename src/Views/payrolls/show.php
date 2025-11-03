@@ -158,38 +158,6 @@ $employeeFunction = $employee?->getPosition() ?? '';
 $employeeCbo = $employeeDepartment !== '' ? $employeeDepartment : '-';
 
 $messages = [];
-if ($transportTotalCost > 0.0) {
-    $transportDetails = [];
-    if ($transportDays > 0) {
-        $transportDetails[] = $transportDays . ' dia' . ($transportDays === 1 ? '' : 's');
-    }
-    if ($transportTrips > 0) {
-        $transportDetails[] = $transportTrips . ' passagem' . ($transportTrips === 1 ? '' : 's');
-    }
-    if ($transportTripCost > 0.0) {
-        $transportDetails[] = 'R$ ' . number_format($transportTripCost, 2, ',', '.') . ' por passagem';
-    }
-
-    $messageParts = [
-        'custo total R$ ' . number_format($transportTotalCost, 2, ',', '.'),
-        'desconto aplicado R$ ' . number_format($transportDeduction, 2, ',', '.'),
-    ];
-
-    if ($transportLegalLimit > 0.0) {
-        $messageParts[] = 'limite legal (6%) R$ ' . number_format($transportLegalLimit, 2, ',', '.');
-    }
-
-    if ($transportCompanyShare > 0.0) {
-        $messageParts[] = 'custeado pela empresa R$ ' . number_format($transportCompanyShare, 2, ',', '.');
-    }
-
-    if ($transportDetails !== []) {
-        $messageParts[] = implode(' · ', $transportDetails);
-    }
-
-    $messages[] = 'Vale-transporte: ' . implode(' · ', $messageParts);
-    $messages[] = 'O vale-transporte permite desconto de até 6% do salário base, conforme legislação brasileira.';
-}
 if ($payroll->getNotes() !== '') {
     $messages[] = nl2br(htmlspecialchars($payroll->getNotes()));
 }
