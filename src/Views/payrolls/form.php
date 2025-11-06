@@ -27,7 +27,18 @@ $linkedAdvanceRecord = isset($linkedAdvance) && $linkedAdvance instanceof Holeri
 if ($linkedAdvanceRecord !== null) {
     $defaultAdvanceReferenceId = $linkedAdvanceRecord->getId();
 }
-$advanceLocked = $defaultAdvanceReferenceId > 0;
+$selectedEmployee = null;
+foreach ($employees as $employeeCandidate) {
+    if ($employeeCandidate->getId() === $selectedEmployeeId) {
+        $selectedEmployee = $employeeCandidate;
+        break;
+    }
+}
+$isAdvanceType = $selectedType === 'advance';
+if ($isAdvanceType) {
+    $defaultAdvanceRatioRaw = '0.4';
+    $defaultAdvanceRatioCustomRaw = '';
+}
 $linkedAdvanceAmountLabel = $linkedAdvanceRecord !== null
     ? 'R$ ' . number_format($linkedAdvanceRecord->getAdvanceAmount(), 2, ',', '.')
     : '';
@@ -110,11 +121,29 @@ if ($normalizedRatio !== null) {
     $defaultAdvanceRatioMode = '0.5';
 }
 
+if ($isAdvanceType && $selectedEmployee !== null) {
+    $baseSalaryValue = $selectedEmployee->getBaseSalary();
+    $advanceCalculated = round($baseSalaryValue * 0.4, 2);
+    $remainingCalculated = round(max(0.0, $baseSalaryValue - $advanceCalculated), 2);
+    $defaultAdvanceAmount = number_format($advanceCalculated, 2, '.', '');
+    $defaultRemainingAmount = number_format($remainingCalculated, 2, '.', '');
+}
+
+if ($isAdvanceType) {
+    $defaultAdvanceRatioMode = '0.4';
+    $defaultAdvanceCustomPercent = '';
+}
+
 $defaultHasAdvance = $defaults['has_advance'] ?? null;
 if ($defaultHasAdvance === null) {
     $defaultHasAdvance = in_array($selectedType, ['regular', 'advance'], true);
 }
 $defaultHasAdvance = (bool) $defaultHasAdvance;
+if ($isAdvanceType) {
+    $defaultHasAdvance = true;
+}
+$advanceLocked = $defaultAdvanceReferenceId > 0 || $isAdvanceType;
+$remainingLocked = $isAdvanceType;
 $defaultUseTransport = !empty($defaults['use_transport']);
 $defaultTransportDays = max(0, min(31, (int) ($defaults['transport_days'] ?? 22)));
 $defaultTransportTripCost = number_format((float) ($defaults['transport_trip_cost'] ?? 6.0), 2, '.', '');
@@ -168,6 +197,12 @@ $pageScripts[] = [
                 Adiantamento registrado de <strong><?= htmlspecialchars($linkedAdvanceAmountLabel); ?></strong>
                 pago em <?= htmlspecialchars($linkedAdvanceDateLabel); ?> (ref. <?= htmlspecialchars($linkedAdvanceReferenceLabel); ?>)
                 será descontado automaticamente nesta folha mensal.
+            </div>
+        <?php endif; ?>
+        <?php if ($isAdvanceType && $linkedAdvanceRecord === null): ?>
+            <div class="flash flash-info" style="margin-bottom:1.5rem;">
+                Este holerite gera a via de adiantamento salarial com 40% do salário base. Ao emitir o holerite mensal,
+                o sistema abaterá automaticamente o valor já adiantado como segunda parcela.
             </div>
         <?php endif; ?>
         <div class="payroll-create__grid">
@@ -414,7 +449,13 @@ $pageScripts[] = [
                         <li><span>1ª parcela (adiantamento)</span><strong id="advance-display">R$ 0,00</strong></li>
                         <li><span>2ª parcela (restante)</span><strong id="remaining-display">R$ 0,00</strong></li>
                     </ul>
-                    <p class="muted" id="advance-note" style="display: <?= $defaultHasAdvance ? 'block' : 'none'; ?>;">Com o adiantamento habilitado, escolha antecipar 40%, 50% ou defina um percentual personalizado do bruto; o desconto aparecerá logo abaixo do salário base no holerite impresso.</p>
+                    <p class="muted" id="advance-note" style="display: <?= $defaultHasAdvance || $isAdvanceType ? 'block' : 'none'; ?>;">
+                        <?php if ($isAdvanceType): ?>
+                            Este recibo registra automaticamente 40% do salário base como 1ª parcela; o restante será abatido ao gerar o holerite mensal.
+                        <?php else: ?>
+                            Com o adiantamento habilitado, escolha antecipar 40%, 50% ou defina um percentual personalizado do bruto; o desconto aparecerá logo abaixo do salário base no holerite impresso.
+                        <?php endif; ?>
+                    </p>
                     <div id="automatic-descriptions" class="muted payroll-summary__messages"></div>
                 </div>
 
@@ -427,24 +468,27 @@ $pageScripts[] = [
                         </div>
                     </header>
                     <div class="form-card__body">
-                        <input type="hidden" name="has_advance" value="0">
+                        <input type="hidden" name="has_advance" value="<?= $isAdvanceType ? '1' : '0'; ?>">
                         <label class="muted form-card__checkbox" for="has_advance">
-                            <input type="checkbox" id="has_advance" name="has_advance" value="1" <?= $defaultHasAdvance ? 'checked' : ''; ?>>
-                            Registrar adiantamento salarial (1ª parcela)
+                            <input type="checkbox" id="has_advance" name="has_advance" value="1" <?= $defaultHasAdvance ? 'checked' : ''; ?> <?= $isAdvanceType ? 'disabled' : ''; ?>>
+                            <?= $isAdvanceType ? 'Adiantamento de 40% aplicado automaticamente' : 'Registrar adiantamento salarial (1ª parcela)'; ?>
                         </label>
-                        <div id="advance-fields" class="form-card__toggle" style="display: <?= $defaultHasAdvance ? 'block' : 'none'; ?>;">
+                        <div id="advance-fields" class="form-card__toggle" style="display: <?= ($defaultHasAdvance || $isAdvanceType) ? 'block' : 'none'; ?>;">
                             <div class="form-grid form-grid--thirds">
                                 <div class="form-field">
                                     <label for="advance_ratio">Percentual do adiantamento</label>
-                                    <select name="advance_ratio" id="advance_ratio">
+                                    <?php if ($isAdvanceType): ?>
+                                        <input type="hidden" name="advance_ratio" value="0.4">
+                                    <?php endif; ?>
+                                    <select name="advance_ratio" id="advance_ratio" <?= $isAdvanceType ? 'disabled' : ''; ?>>
                                         <option value="0.4" <?= $defaultAdvanceRatioMode === '0.4' ? 'selected' : ''; ?>>40% do bruto</option>
                                         <option value="0.5" <?= $defaultAdvanceRatioMode === '0.5' ? 'selected' : ''; ?>>50% do bruto</option>
                                         <option value="custom" <?= $defaultAdvanceRatioMode === 'custom' ? 'selected' : ''; ?>>Personalizar</option>
                                     </select>
                                 </div>
-                                <div class="form-field" id="advance_ratio_custom_wrapper" style="display: <?= $defaultAdvanceRatioMode === 'custom' ? 'block' : 'none'; ?>;">
+                                <div class="form-field" id="advance_ratio_custom_wrapper" style="display: <?= ($defaultAdvanceRatioMode === 'custom' && !$isAdvanceType) ? 'block' : 'none'; ?>;">
                                     <label for="advance_ratio_custom">Percentual personalizado (%)</label>
-                                    <input type="number" min="1" max="99" step="0.01" id="advance_ratio_custom" name="advance_ratio_custom" value="<?= htmlspecialchars($defaultAdvanceCustomPercent); ?>" placeholder="Ex.: 45,00" <?= $defaultAdvanceRatioMode === 'custom' ? '' : 'disabled'; ?>>
+                                    <input type="number" min="1" max="99" step="0.01" id="advance_ratio_custom" name="advance_ratio_custom" value="<?= htmlspecialchars($defaultAdvanceCustomPercent); ?>" placeholder="Ex.: 45,00" <?= $defaultAdvanceRatioMode === 'custom' && !$isAdvanceType ? '' : 'disabled'; ?>>
                                 </div>
                                 <div class="form-field">
                                     <label for="advance_amount">Adiantamento (1ª parcela)</label>
@@ -452,7 +496,7 @@ $pageScripts[] = [
                                 </div>
                                 <div class="form-field">
                                     <label for="remaining_amount">Pagamento restante (2ª parcela)</label>
-                                    <input type="number" min="0" step="0.01" id="remaining_amount" name="remaining_amount" value="<?= htmlspecialchars($defaultRemainingAmount); ?>" placeholder="0,00">
+                                    <input type="number" min="0" step="0.01" id="remaining_amount" name="remaining_amount" value="<?= htmlspecialchars($defaultRemainingAmount); ?>" placeholder="0,00" data-locked="<?= $remainingLocked ? 'true' : 'false'; ?>" <?= $remainingLocked ? 'readonly' : ''; ?>>
                                 </div>
                             </div>
                             <p class="muted">O sistema ajusta os valores automaticamente para corresponder ao líquido calculado.</p>

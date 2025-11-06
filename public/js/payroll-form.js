@@ -274,18 +274,28 @@
         }, 0);
     }
 
-    function syncAdvanceFields() {
+    function syncAdvanceFields(triggerSummary = false) {
         const wrapper = document.getElementById('advance-fields');
         const advanceInput = document.getElementById('advance_amount');
         const remainingInput = document.getElementById('remaining_amount');
         const checkbox = document.getElementById('has_advance');
-        const lockedAdvance = advanceInput instanceof HTMLInputElement && advanceInput.dataset.locked === 'true';
+        const typeSelect = document.getElementById('type');
+        const selectedType = typeSelect instanceof HTMLSelectElement ? typeSelect.value : 'regular';
+        const isAdvanceType = selectedType === 'advance';
 
-        if (lockedAdvance && checkbox instanceof HTMLInputElement && !checkbox.checked) {
-            checkbox.checked = true;
+        if (checkbox instanceof HTMLInputElement) {
+            if (isAdvanceType) {
+                checkbox.checked = true;
+                checkbox.disabled = true;
+            } else {
+                checkbox.disabled = false;
+            }
         }
 
-        const enabled = isAdvanceEnabled();
+        let enabled = isAdvanceEnabled();
+        if (isAdvanceType) {
+            enabled = true;
+        }
 
         if (wrapper instanceof HTMLElement) {
             wrapper.style.display = enabled ? 'block' : 'none';
@@ -320,7 +330,25 @@
             }
         });
 
-        updateSummary();
+        const advanceRatio = document.getElementById('advance_ratio');
+        if (advanceRatio instanceof HTMLSelectElement) {
+            if (isAdvanceType) {
+                advanceRatio.value = '0.4';
+                advanceRatio.disabled = true;
+            } else {
+                advanceRatio.disabled = false;
+            }
+        }
+
+        const customRatio = document.getElementById('advance_ratio_custom');
+        if (customRatio instanceof HTMLInputElement && isAdvanceType) {
+            customRatio.value = '';
+            customRatio.disabled = true;
+        }
+
+        if (triggerSummary) {
+            updateSummary();
+        }
     }
 
     function resolveInstallmentsForForm(netSalary, grossSalary) {
@@ -342,6 +370,25 @@
 
         let advance = roundMoney(Math.max(0, Number.parseFloat(advanceInput.value || '0') || 0));
         let remaining = roundMoney(Math.max(0, Number.parseFloat(remainingInput.value || '0') || 0));
+
+        if (selectedType === 'advance') {
+            const baseSalary = roundMoney(getEmployeeBaseSalary());
+            const computedAdvance = roundMoney(Math.max(0, baseSalary * 0.4));
+            const computedRemaining = roundMoney(Math.max(0, baseSalary - computedAdvance));
+
+            if (advanceInput.value !== computedAdvance.toFixed(2)) {
+                advanceInput.value = computedAdvance.toFixed(2);
+            }
+
+            if (remainingInput.value !== computedRemaining.toFixed(2)) {
+                remainingInput.value = computedRemaining.toFixed(2);
+            }
+
+            advanceInput.dataset.mode = 'auto';
+            remainingInput.dataset.mode = 'auto';
+
+            return { advance: computedAdvance, remaining: computedRemaining, enabled: true };
+        }
 
         const updateInputs = () => {
             const formattedAdvance = advance.toFixed(2);
@@ -548,6 +595,7 @@
 
         const type = typeSelect.value;
         const baseSalary = calculateBaseSalary(type);
+        const isAdvance = type === 'advance';
 
         const thirteenthHidden = document.getElementById('thirteenth_months');
         const thirteenthInput = document.getElementById('thirteenth_months_input');
@@ -562,8 +610,8 @@
         const allowanceInputs = document.querySelectorAll('input[name="allowance_amount[]"]');
         const deductionInputs = document.querySelectorAll('input[name="deduction_amount[]"]');
 
-        const manualAllowances = roundMoney(sumInputs(allowanceInputs));
-        const manualDeductions = roundMoney(sumInputs(deductionInputs));
+        let manualAllowances = roundMoney(sumInputs(allowanceInputs));
+        let manualDeductions = roundMoney(sumInputs(deductionInputs));
         const valeInput = document.getElementById('vale_deduction');
         let manualVale = 0;
         if (valeInput instanceof HTMLInputElement) {
@@ -583,7 +631,7 @@
         let transportDeduction = 0;
         let transportLimit = 0;
 
-        if (transportCheckbox instanceof HTMLInputElement && transportCheckbox.checked) {
+        if (transportCheckbox instanceof HTMLInputElement && transportCheckbox.checked && !isAdvance) {
             if (transportDaysInput instanceof HTMLInputElement) {
                 const rawDays = transportDaysInput.value || transportDaysInput.dataset.defaultValue || '0';
                 transportDays = Math.round(clamp(rawDays, 0, 31));
@@ -608,6 +656,17 @@
         }
 
         const totalVale = roundMoney(manualVale + transportDeduction);
+        if (isAdvance) {
+            manualAllowances = 0;
+            manualDeductions = 0;
+            manualVale = 0;
+            transportDays = 0;
+            transportTripCost = 0;
+            transportTrips = 0;
+            transportCostTotal = 0;
+            transportDeduction = 0;
+            transportLimit = roundMoney(baseSalary * 0.06);
+        }
 
         const automaticItems = automaticAllowances(type, baseSalary);
         const automaticTotal = roundMoney(automaticItems.reduce((total, item) => total + item.amount, 0));
@@ -634,6 +693,12 @@
                 irrfBase = 0;
                 irrf = 0;
             }
+        } else if (isAdvance) {
+            contributionBase = 0;
+            fgtsBase = 0;
+            inss = 0;
+            irrfBase = 0;
+            irrf = 0;
         } else {
             inss = calculateInss(contributionBase);
             irrfBase = Math.max(0, contributionBase - inss);
@@ -648,12 +713,22 @@
         let fgts = roundMoney(fgtsBase * 0.08);
         const thirteenthDisplay = roundMoney(thirteenthTotal);
 
-        const totalAllowances = roundMoney(manualAllowances + automaticTotal);
-        const grossSalary = roundMoney(baseSalary + totalAllowances);
+        let totalAllowances = roundMoney(manualAllowances + automaticTotal);
+        let grossSalary = roundMoney(baseSalary + totalAllowances);
         const automaticDeductions = roundMoney(inss + irrf);
-        const totalDeductions = roundMoney(manualDeductions + automaticDeductions + manualVale + transportDeduction);
-        const netSalary = roundMoney(baseSalary + totalAllowances - totalDeductions);
-        const installments = resolveInstallmentsForForm(netSalary, grossSalary);
+        let totalDeductions = roundMoney(manualDeductions + automaticDeductions + manualVale + transportDeduction);
+        let netSalary = roundMoney(baseSalary + totalAllowances - totalDeductions);
+
+        if (isAdvance) {
+            const advanceAmount = roundMoney(baseSalary * 0.4);
+            totalAllowances = advanceAmount;
+            grossSalary = advanceAmount;
+            totalDeductions = 0;
+            netSalary = advanceAmount;
+            fgts = 0;
+        }
+
+        const installments = resolveInstallmentsForForm(netSalary, isAdvance ? baseSalary : grossSalary);
 
         const paymentInput = document.getElementById('payment_date');
         if (paymentInput instanceof HTMLInputElement) {
@@ -749,10 +824,15 @@
             if (manualVale > 0) {
                 valeLines.push(`Vales de produtos informados: <strong>${formatter.format(manualVale)}</strong>`);
             }
-            const valeLine = valeLines.length > 0
-                ? `<p style="margin:0.5rem 0 0;">${valeLines.join(' · ')}</p>`
-                : '';
-            automaticDescriptions.innerHTML = allowanceList + deductionLine + valeLine;
+
+            if (isAdvance) {
+                automaticDescriptions.innerHTML = `<p style="margin:0;">Adiantamento: primeira parcela automática de <strong>${formatter.format(netSalary)}</strong>; gere o holerite mensal para descontar a segunda parcela.</p>`;
+            } else {
+                const valeLine = valeLines.length > 0
+                    ? `<p style="margin:0.5rem 0 0;">${valeLines.join(' · ')}</p>`
+                    : '';
+                automaticDescriptions.innerHTML = allowanceList + deductionLine + valeLine;
+            }
         }
     }
 
@@ -803,6 +883,8 @@
             thirteenthHidden.value = thirteenthInput.value || '1';
         }
 
+        syncAdvanceFields();
+        syncTransportFields();
         updateSummary();
     }
 
@@ -887,7 +969,9 @@
 
         const advanceToggle = document.getElementById('has_advance');
         if (advanceToggle instanceof HTMLInputElement) {
-            advanceToggle.addEventListener('change', syncAdvanceFields);
+            advanceToggle.addEventListener('change', () => {
+                syncAdvanceFields(true);
+            });
         }
 
         const advanceRatio = document.getElementById('advance_ratio');

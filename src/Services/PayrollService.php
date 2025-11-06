@@ -53,13 +53,20 @@ final class PayrollService
         }
 
         if ($type === 'advance') {
-            $advanceAmount = $this->roundMoney(max(0.0, (float) ($data['advance_amount'] ?? 0)));
+            $baseSalaryAmount = $employee->getBaseSalary();
+            $advanceAmount = $this->roundMoney($baseSalaryAmount * 0.4);
 
             if ($advanceAmount <= 0.0) {
-                throw new RuntimeException('Informe o valor do adiantamento salarial.');
+                throw new RuntimeException('O salário base do colaborador não permite calcular o adiantamento.');
             }
 
-            $notes = $notes !== '' ? $notes : 'Adiantamento salarial emitido pelo sistema.';
+            $remainingAmount = $this->roundMoney(max(0.0, $baseSalaryAmount - $advanceAmount));
+            $notes = $notes !== ''
+                ? $notes
+                : sprintf(
+                    'Adiantamento salarial equivalente a 40%% do salário base (R$ %s).',
+                    number_format($baseSalaryAmount, 2, ',', '.')
+                );
             $items = [
                 new PayrollItem(null, null, 'Adiantamento salarial', $advanceAmount, 'allowance'),
             ];
@@ -69,11 +76,12 @@ final class PayrollService
                 $employeeId,
                 $referenceMonth,
                 $type,
-                $employee->getBaseSalary(),
+                $baseSalaryAmount,
                 $advanceAmount,
                 0.0,
                 $advanceAmount,
                 $advanceAmount,
+                $remainingAmount,
                 0.0,
                 0.0,
                 false,

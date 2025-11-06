@@ -32,6 +32,10 @@ final class Company
 
     private string $headerLogoPath;
 
+    private bool $autoBackupEnabled;
+
+    private int $autoBackupIntervalMinutes;
+
     public function __construct(
         ?int $id,
         string $name,
@@ -46,6 +50,8 @@ final class Company
         string $headerLogoPath,
         string $themeMode,
         string $colorPalette,
+        bool $autoBackupEnabled,
+        int $autoBackupIntervalMinutes,
     ) {
         $this->id = $id;
         $this->setName($name);
@@ -60,6 +66,8 @@ final class Company
         $this->headerLogoPath = $this->sanitizeHeaderLogoPath($headerLogoPath);
         $this->themeMode = $themeMode;
         $this->colorPalette = $colorPalette;
+        $this->setAutoBackupEnabled($autoBackupEnabled);
+        $this->setAutoBackupIntervalMinutes($autoBackupIntervalMinutes);
     }
 
     public function getId(): ?int
@@ -208,6 +216,34 @@ final class Company
     public function setColorPalette(string $colorPalette): void
     {
         $this->colorPalette = $colorPalette;
+    }
+
+    public function isAutoBackupEnabled(): bool
+    {
+        return $this->autoBackupEnabled;
+    }
+
+    public function setAutoBackupEnabled(bool $enabled): void
+    {
+        $this->autoBackupEnabled = $enabled;
+    }
+
+    public function getAutoBackupIntervalMinutes(): int
+    {
+        return $this->autoBackupIntervalMinutes;
+    }
+
+    public function setAutoBackupIntervalMinutes(int $minutes): void
+    {
+        if ($minutes < 60) {
+            $minutes = 60;
+        }
+
+        if ($minutes > 10080) {
+            $minutes = 10080;
+        }
+
+        $this->autoBackupIntervalMinutes = $minutes;
     }
 
     private function sanitizeHeaderLogoPath(string $path): string

@@ -125,6 +125,11 @@ final class CompanyController extends Controller
             ? $this->auditLogRepository->latest(25)
             : [];
 
+        $backupSettings = [
+            'enabled' => $company->isAutoBackupEnabled(),
+            'intervalMinutes' => $company->getAutoBackupIntervalMinutes(),
+        ];
+
         $this->render('company/form', [
             'title' => 'Configurações',
             'company' => $company,
@@ -147,6 +152,7 @@ final class CompanyController extends Controller
             'contributionSettings' => $contributions,
             'contributionApi' => $this->describeContributionApi(),
             'auditLogs' => $auditLogs,
+            'backupSettings' => $backupSettings,
             'pageScripts' => $pageScripts,
         ]);
     }
@@ -179,6 +185,48 @@ final class CompanyController extends Controller
         }
 
         $this->redirect('?action=edit_company');
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    public function updateBackupSchedule(array $data): void
+    {
+        $this->ensureAdmin();
+
+        $company = $this->companyRepository->get();
+
+        $enabled = isset($data['auto_backup_enabled'])
+            && in_array(strtolower((string) $data['auto_backup_enabled']), ['1', 'true', 'on', 'yes'], true);
+
+        $intervalInput = isset($data['auto_backup_interval']) ? (string) $data['auto_backup_interval'] : '';
+        $intervalHours = (int) filter_var($intervalInput, FILTER_VALIDATE_INT);
+
+        if ($intervalHours <= 0) {
+            $intervalHours = (int) round($company->getAutoBackupIntervalMinutes() / 60);
+        }
+
+        if ($intervalHours < 1) {
+            $intervalHours = 1;
+        }
+
+        if ($intervalHours > 168) {
+            $intervalHours = 168;
+        }
+
+        $intervalMinutes = $intervalHours * 60;
+
+        try {
+            $company->setAutoBackupEnabled($enabled);
+            $company->setAutoBackupIntervalMinutes($intervalMinutes);
+            $this->companyRepository->save($company);
+            $GLOBALS['holerite_company'] = $company;
+            $this->flash('success', 'Agendamento de backup atualizado com sucesso.');
+        } catch (Throwable $exception) {
+            $this->flash('error', 'Não foi possível atualizar o agendamento de backup: ' . $exception->getMessage());
+        }
+
+        $this->redirect('?action=edit_company&tab=backups');
     }
 
     /**

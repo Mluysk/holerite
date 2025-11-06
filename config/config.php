@@ -24,6 +24,8 @@ return [
         'header_logo_path' => 'img/logo.png',
         'theme_mode' => 'light',
         'color_palette' => 'dark-red',
+        'auto_backup_enabled' => true,
+        'auto_backup_interval_minutes' => 1440,
     ],
     'services' => [
         'contributions_api' => [

@@ -28,6 +28,8 @@ CREATE TABLE IF NOT EXISTS companies (
     header_logo_path VARCHAR(255) NOT NULL DEFAULT 'img/logo.png',
     theme_mode ENUM('light', 'dark') NOT NULL DEFAULT 'light',
     color_palette VARCHAR(20) NOT NULL DEFAULT 'dark-red',
+    auto_backup_enabled TINYINT(1) NOT NULL DEFAULT 1,
+    auto_backup_interval_minutes INT NOT NULL DEFAULT 1440,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

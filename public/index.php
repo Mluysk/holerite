@@ -43,16 +43,19 @@ $employeeBenefitService = new EmployeeBenefitService();
 $payrollService = new PayrollService($employeeRepository, $payrollRepository, $contributionRepository);
 $backupService = new BackupService();
 
+$activeCompany = $companyRepository->get();
+$GLOBALS['holerite_company'] = $activeCompany;
 $backupDirectory = __DIR__ . '/../backup';
 
 try {
-    $backupService->runAutomaticBackups($backupDirectory);
+    $backupService->runAutomaticBackups(
+        $backupDirectory,
+        $activeCompany->isAutoBackupEnabled(),
+        $activeCompany->getAutoBackupIntervalMinutes()
+    );
 } catch (\Throwable $exception) {
     error_log('Falha ao executar backup automático: ' . $exception->getMessage());
 }
-
-$activeCompany = $companyRepository->get();
-$GLOBALS['holerite_company'] = $activeCompany;
 $appearance = [
     'themeMode' => $activeCompany->getThemeMode(),
     'colorPalette' => $activeCompany->getColorPalette(),
@@ -157,6 +160,14 @@ switch ($action) {
 
     case 'edit_company':
         $companyController->edit();
+        break;
+
+    case 'update_backup_schedule':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $companyController->updateBackupSchedule($_POST);
+        } else {
+            $companyController->edit();
+        }
         break;
 
     case 'update_company':

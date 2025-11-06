@@ -78,7 +78,7 @@ final class CompanyRepository
     public function save(Company $company): Company
     {
         if ($company->getId() === null) {
-            $statement = $this->pdo->prepare('INSERT INTO companies (name, brand_name, document, address, city, state, zip_code, phone, email, header_logo_path, theme_mode, color_palette) VALUES (:name, :brand_name, :document, :address, :city, :state, :zip_code, :phone, :email, :header_logo_path, :theme_mode, :color_palette)');
+            $statement = $this->pdo->prepare('INSERT INTO companies (name, brand_name, document, address, city, state, zip_code, phone, email, header_logo_path, theme_mode, color_palette, auto_backup_enabled, auto_backup_interval_minutes) VALUES (:name, :brand_name, :document, :address, :city, :state, :zip_code, :phone, :email, :header_logo_path, :theme_mode, :color_palette, :auto_backup_enabled, :auto_backup_interval_minutes)');
             $statement->execute([
                 'name' => $company->getName(),
                 'brand_name' => $company->getBrandName(),
@@ -92,13 +92,15 @@ final class CompanyRepository
                 'header_logo_path' => $company->getHeaderLogoPath(),
                 'theme_mode' => $company->getThemeMode(),
                 'color_palette' => $company->getColorPalette(),
+                'auto_backup_enabled' => $company->isAutoBackupEnabled() ? 1 : 0,
+                'auto_backup_interval_minutes' => $company->getAutoBackupIntervalMinutes(),
             ]);
 
             $company->setId((int) $this->pdo->lastInsertId());
             return $company;
         }
 
-        $statement = $this->pdo->prepare('UPDATE companies SET name = :name, brand_name = :brand_name, document = :document, address = :address, city = :city, state = :state, zip_code = :zip_code, phone = :phone, email = :email, header_logo_path = :header_logo_path, theme_mode = :theme_mode, color_palette = :color_palette WHERE id = :id');
+        $statement = $this->pdo->prepare('UPDATE companies SET name = :name, brand_name = :brand_name, document = :document, address = :address, city = :city, state = :state, zip_code = :zip_code, phone = :phone, email = :email, header_logo_path = :header_logo_path, theme_mode = :theme_mode, color_palette = :color_palette, auto_backup_enabled = :auto_backup_enabled, auto_backup_interval_minutes = :auto_backup_interval_minutes WHERE id = :id');
         $statement->execute([
             'id' => $company->getId(),
             'name' => $company->getName(),
@@ -113,6 +115,8 @@ final class CompanyRepository
             'header_logo_path' => $company->getHeaderLogoPath(),
             'theme_mode' => $company->getThemeMode(),
             'color_palette' => $company->getColorPalette(),
+            'auto_backup_enabled' => $company->isAutoBackupEnabled() ? 1 : 0,
+            'auto_backup_interval_minutes' => $company->getAutoBackupIntervalMinutes(),
         ]);
 
         return $company;
@@ -137,6 +141,8 @@ final class CompanyRepository
             (string) ($row['header_logo_path'] ?? $this->defaults['header_logo_path']),
             (string) ($row['theme_mode'] ?? $this->defaults['theme_mode']),
             (string) ($row['color_palette'] ?? $this->defaults['color_palette']),
+            isset($row['auto_backup_enabled']) ? (bool) $row['auto_backup_enabled'] : (bool) ($this->defaults['auto_backup_enabled'] ?? true),
+            isset($row['auto_backup_interval_minutes']) ? (int) $row['auto_backup_interval_minutes'] : (int) ($this->defaults['auto_backup_interval_minutes'] ?? 1440),
         );
     }
 
@@ -156,6 +162,8 @@ final class CompanyRepository
             $this->defaults['header_logo_path'],
             $this->defaults['theme_mode'],
             $this->defaults['color_palette'],
+            (bool) ($this->defaults['auto_backup_enabled'] ?? true),
+            (int) ($this->defaults['auto_backup_interval_minutes'] ?? 1440),
         );
     }
 
@@ -178,6 +186,8 @@ final class CompanyRepository
             'header_logo_path' => 'img/logo.png',
             'theme_mode' => 'light',
             'color_palette' => 'dark-red',
+            'auto_backup_enabled' => true,
+            'auto_backup_interval_minutes' => 1440,
         ];
 
         if (!file_exists($configPath)) {

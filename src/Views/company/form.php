@@ -16,6 +16,7 @@
 /** @var string $companyColorPalette */
 /** @var array<string, mixed> $contributionApi */
 /** @var Holerite\Models\AuditLog[] $auditLogs */
+/** @var array<string, mixed> $backupSettings */
 
 use Holerite\Models\AuditLog;
 use Holerite\Models\User;
@@ -50,6 +51,21 @@ if ($manualAllowanceOptions === []) {
 }
 $brandNameValue = $company->getBrandName();
 $headerLogoPath = $company->getHeaderLogoPath();
+$backupSettings = isset($backupSettings) && is_array($backupSettings) ? $backupSettings : ['enabled' => true, 'intervalMinutes' => 1440];
+$autoBackupEnabled = !empty($backupSettings['enabled']);
+$autoBackupIntervalMinutes = isset($backupSettings['intervalMinutes']) ? (int) $backupSettings['intervalMinutes'] : 1440;
+if ($autoBackupIntervalMinutes < 60) {
+    $autoBackupIntervalMinutes = 60;
+}
+if ($autoBackupIntervalMinutes > 10080) {
+    $autoBackupIntervalMinutes = 10080;
+}
+$autoBackupIntervalHours = max(1, (int) round($autoBackupIntervalMinutes / 60));
+$autoBackupIntervalLabel = $autoBackupIntervalHours === 1 ? '1 hora' : sprintf('%d horas', $autoBackupIntervalHours);
+if ($autoBackupIntervalHours >= 24 && $autoBackupIntervalHours % 24 === 0) {
+    $days = (int) ($autoBackupIntervalHours / 24);
+    $autoBackupIntervalLabel = $days === 1 ? '1 dia' : sprintf('%d dias', $days);
+}
 ?>
 <section>
     <header style="margin-bottom:1.5rem;">
@@ -580,6 +596,29 @@ $headerLogoPath = $company->getHeaderLogoPath();
             <div class="card">
                 <h3 style="margin-top:0;">Backups do sistema</h3>
                 <p class="muted" style="margin-top:0;">Gere arquivos JSON com uma cópia dos dados principais e faça upload aqui quando precisar restaurar.</p>
+
+                <div class="backup-schedule">
+                    <h4>Agendamento automático</h4>
+                    <p class="muted">
+                        Configure o intervalo para que o sistema gere cópias em <code>backup/</code> automaticamente com os arquivos
+                        <code>backup_aaaa-mm-dd_hh-mm-ss_tipo.json</code>.
+                    </p>
+                    <form method="post" action="?action=update_backup_schedule" class="backup-schedule__form">
+                        <label class="backup-schedule__toggle">
+                            <input type="checkbox" name="auto_backup_enabled" value="1" <?= $autoBackupEnabled ? 'checked' : ''; ?>>
+                            Ativar backups automáticos
+                        </label>
+                        <div class="backup-schedule__field">
+                            <label for="auto_backup_interval">Intervalo (em horas)</label>
+                            <input type="number" min="1" max="168" step="1" id="auto_backup_interval" name="auto_backup_interval" value="<?= htmlspecialchars((string) $autoBackupIntervalHours); ?>">
+                            <small class="muted">Atual: <?= htmlspecialchars($autoBackupIntervalLabel); ?> · mínimo de 1 hora e máximo de 7 dias.</small>
+                        </div>
+                        <button type="submit" class="button button-primary">
+                            <i class="bi bi-save" aria-hidden="true"></i>
+                            <span>Salvar agendamento</span>
+                        </button>
+                    </form>
+                </div>
 
                 <div class="backup-actions">
                     <div class="backup-option">

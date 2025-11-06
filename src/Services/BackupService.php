@@ -21,8 +21,21 @@ final class BackupService
         $this->pdo = Connection::getInstance();
     }
 
-    public function runAutomaticBackups(string $directory): void
+    public function runAutomaticBackups(string $directory, bool $enabled, int $intervalMinutes): void
     {
+        if (!$enabled) {
+            return;
+        }
+
+        if ($intervalMinutes < 60) {
+            $intervalMinutes = 60;
+        }
+
+        if ($intervalMinutes > 10080) {
+            $intervalMinutes = 10080;
+        }
+
+        $intervalSeconds = $intervalMinutes * 60;
         $directory = rtrim($directory, DIRECTORY_SEPARATOR);
 
         if ($directory === '') {
@@ -60,7 +73,7 @@ final class BackupService
         foreach ($backups as $key => $spec) {
             $lastRun = isset($meta[$key]['last_run']) ? (int) $meta[$key]['last_run'] : 0;
 
-            if ($timestamp - $lastRun < 86400) {
+            if ($timestamp - $lastRun < $intervalSeconds) {
                 continue;
             }
 

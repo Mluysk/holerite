@@ -1977,6 +1977,57 @@ tr:nth-child(even) td {
     width: 100%;
 }
 
+.backup-schedule {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    border-radius: var(--radius-lg, 16px);
+    background: var(--surface-subtle, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--border-soft, rgba(255, 255, 255, 0.08));
+}
+
+.backup-schedule h4 {
+    margin: 0 0 0.5rem;
+    font-size: 1.1rem;
+}
+
+.backup-schedule__form {
+    display: grid;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.backup-schedule__toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+}
+
+.backup-schedule__toggle input[type="checkbox"] {
+    width: 1.125rem;
+    height: 1.125rem;
+}
+
+.backup-schedule__field {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.backup-schedule__field input[type="number"] {
+    max-width: 160px;
+}
+
+@media (max-width: 640px) {
+    .backup-schedule {
+        padding: 1rem;
+    }
+
+    .backup-schedule__field input[type="number"] {
+        max-width: none;
+        width: 100%;
+    }
+}
+
 .backup-upload {
     display: grid;
     gap: 0.5rem;
