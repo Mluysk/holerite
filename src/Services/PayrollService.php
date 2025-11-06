@@ -62,6 +62,8 @@ final class PayrollService
                 $advanceRatio = 0.4;
             }
 
+            $advanceRatio = (float) $advanceRatio;
+
             $advanceAmount = $this->roundMoney($baseSalaryAmount * $advanceRatio);
 
             if ($advanceAmount <= 0.0) {
@@ -82,37 +84,38 @@ final class PayrollService
             ];
 
             $payroll = new Payroll(
-                null,
-                $employeeId,
-                $referenceMonth,
-                $type,
-                $baseSalaryAmount,
-                $advanceAmount,
-                0.0,
-                $advanceAmount,
-                $advanceAmount,
-                $remainingAmount,
-                0.0,
-                false,
-                0.0,
-                0,
-                0.0,
-                $paymentDate,
-                false,
-                null,
-                null,
-                null,
-                null,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                $payrollAdvanceRatio,
-                null,
-                $notes,
-                $items
+                id: null,
+                employeeId: $employeeId,
+                referenceMonth: $referenceMonth,
+                type: $type,
+                baseSalary: $baseSalaryAmount,
+                totalAllowances: $advanceAmount,
+                totalDeductions: 0.0,
+                netSalary: $advanceAmount,
+                advanceAmount: $advanceAmount,
+                remainingAmount: $remainingAmount,
+                valeDeduction: 0.0,
+                usesTransport: false,
+                transportDeduction: 0.0,
+                transportDays: 0,
+                transportTripCost: 0.0,
+                paymentDate: $paymentDate,
+                justCause: false,
+                vacationDays: null,
+                workedDays: null,
+                thirteenthMonths: null,
+                thirteenthInstallment: null,
+                thirteenthAccrual: 0.0,
+                inssBase: 0.0,
+                inssAmount: 0.0,
+                irrfBase: 0.0,
+                irrfAmount: 0.0,
+                fgtsBase: 0.0,
+                fgtsAmount: 0.0,
+                advanceRatio: $payrollAdvanceRatio,
+                advanceReferenceId: null,
+                notes: $notes,
+                items: $items,
             );
 
             return $this->payrollRepository->create($payroll);
@@ -339,41 +342,47 @@ final class PayrollService
             }
         }
 
-        $advanceReferenceIdValue = $this->normalizeNullableInt($advanceReferenceId ?? $advanceReferenceIdInput);
+        $advanceReferenceIdValue = $advanceReferenceId ?? $advanceReferenceIdInput;
+        if ($advanceReferenceIdValue !== null) {
+            $advanceReferenceIdValue = (int) $advanceReferenceIdValue;
+            if ($advanceReferenceIdValue <= 0) {
+                $advanceReferenceIdValue = null;
+            }
+        }
 
         $payroll = new Payroll(
-            null,
-            $employeeId,
-            $referenceMonth,
-            $type,
-            $baseSalaryAmount,
-            $totalAllowances,
-            $totalDeductions,
-            $netSalary,
-            $advanceAmount,
-            $remainingAmount,
-            $valeDeduction,
-            $useTransport,
-            $transportDeduction,
-            $transportDays,
-            $transportTripCost,
-            $paymentDate,
-            $justCause,
-            $vacationDays,
-            $workedDays,
-            $thirteenthMonths,
-            $thirteenthInstallment,
-            $thirteenthAccrual,
-            $inssBase,
-            $inssAmount,
-            $irrfBase,
-            $irrfAmount,
-            $fgtsBase,
-            $fgtsAmount,
-            $payrollAdvanceRatio,
-            $advanceReferenceIdValue,
-            $notes,
-            array_merge($allAllowances, $allDeductions)
+            id: null,
+            employeeId: $employeeId,
+            referenceMonth: $referenceMonth,
+            type: $type,
+            baseSalary: $baseSalaryAmount,
+            totalAllowances: $totalAllowances,
+            totalDeductions: $totalDeductions,
+            netSalary: $netSalary,
+            advanceAmount: $advanceAmount,
+            remainingAmount: $remainingAmount,
+            valeDeduction: $valeDeduction,
+            usesTransport: $useTransport,
+            transportDeduction: $transportDeduction,
+            transportDays: $transportDays,
+            transportTripCost: $transportTripCost,
+            paymentDate: $paymentDate,
+            justCause: $justCause,
+            vacationDays: $vacationDays,
+            workedDays: $workedDays,
+            thirteenthMonths: $thirteenthMonths,
+            thirteenthInstallment: $thirteenthInstallment,
+            thirteenthAccrual: $thirteenthAccrual,
+            inssBase: $inssBase,
+            inssAmount: $inssAmount,
+            irrfBase: $irrfBase,
+            irrfAmount: $irrfAmount,
+            fgtsBase: $fgtsBase,
+            fgtsAmount: $fgtsAmount,
+            advanceRatio: $payrollAdvanceRatio,
+            advanceReferenceId: $advanceReferenceIdValue,
+            notes: $notes,
+            items: array_merge($allAllowances, $allDeductions),
         );
 
         return $this->payrollRepository->create($payroll);

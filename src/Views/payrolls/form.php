@@ -385,7 +385,7 @@ $pageScripts[] = [
                     </div>
                 </div>
 
-                <div class="card form-card">
+                <div class="card form-card" data-hide-when-advance="true" style="display: <?= $isAdvanceType ? 'none' : 'block'; ?>;">
                     <header class="form-card__header">
                         <span class="form-card__icon" aria-hidden="true"><i class="bi bi-bus-front"></i></span>
                         <div>
