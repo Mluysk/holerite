@@ -70,6 +70,8 @@ final class DashboardController extends Controller
         $thirteenthSecondInstallments = [];
         $vacationAlerts = [];
         $birthdayAlerts = [];
+        $birthdayPopupAlerts = [];
+        $vacationPopupAlerts = [];
 
         foreach ($payrolls as $payroll) {
             $paymentDate = $payroll->getPaymentDate();
@@ -129,6 +131,8 @@ final class DashboardController extends Controller
             $calendarEvents[$dateKey]['payrolls'][] = $calendarPayroll;
         }
 
+        $todayKey = $today->format('Y-m-d');
+
         foreach ($employees as $employee) {
             $terminationDate = $employee->getTerminationDate();
 
@@ -163,6 +167,21 @@ final class DashboardController extends Controller
                         'concession_end' => $concessionEnd instanceof DateTimeImmutable ? $concessionEnd : null,
                         'status' => (string) ($nextCycle['status'] ?? ''),
                         'eligible' => (bool) ($nextCycle['eligible'] ?? false),
+                        'notice_from' => $noticeFrom instanceof DateTimeImmutable ? $noticeFrom : null,
+                    ];
+                }
+
+                if (
+                    $noticeFrom instanceof DateTimeImmutable
+                    && $availableFrom instanceof DateTimeImmutable
+                    && $noticeFrom <= $today
+                    && $today <= $availableFrom
+                ) {
+                    $vacationPopupAlerts[] = [
+                        'employee' => $employee,
+                        'available_from' => $availableFrom,
+                        'notice_from' => $noticeFrom,
+                        'status' => (string) ($nextCycle['status'] ?? ''),
                     ];
                 }
 
@@ -182,6 +201,7 @@ final class DashboardController extends Controller
                         'available_from' => $availableFrom,
                         'concession_end' => $concessionEnd instanceof DateTimeImmutable ? $concessionEnd : null,
                         'status' => (string) ($nextCycle['status'] ?? ''),
+                        'notice_from' => $noticeFrom instanceof DateTimeImmutable ? $noticeFrom : null,
                     ];
                 }
             }
@@ -211,6 +231,13 @@ final class DashboardController extends Controller
                 'employee' => $employee,
                 'date' => $birthdayDate,
             ];
+
+            if ($birthdayDate->format('Y-m-d') === $todayKey) {
+                $birthdayPopupAlerts[] = [
+                    'employee' => $employee,
+                    'date' => $birthdayDate,
+                ];
+            }
         }
 
         usort($vacationAlerts, static function (array $a, array $b): int {
@@ -228,6 +255,34 @@ final class DashboardController extends Controller
         });
 
         usort($birthdayAlerts, static function (array $a, array $b): int {
+            $dateA = $a['date'] ?? null;
+            $dateB = $b['date'] ?? null;
+
+            if ($dateA instanceof DateTimeImmutable && $dateB instanceof DateTimeImmutable) {
+                $comparison = $dateA <=> $dateB;
+                if ($comparison !== 0) {
+                    return $comparison;
+                }
+            }
+
+            return strcasecmp($a['employee']->getName(), $b['employee']->getName());
+        });
+
+        usort($vacationPopupAlerts, static function (array $a, array $b): int {
+            $noticeA = $a['notice_from'] ?? null;
+            $noticeB = $b['notice_from'] ?? null;
+
+            if ($noticeA instanceof DateTimeImmutable && $noticeB instanceof DateTimeImmutable) {
+                $comparison = $noticeA <=> $noticeB;
+                if ($comparison !== 0) {
+                    return $comparison;
+                }
+            }
+
+            return strcasecmp($a['employee']->getName(), $b['employee']->getName());
+        });
+
+        usort($birthdayPopupAlerts, static function (array $a, array $b): int {
             $dateA = $a['date'] ?? null;
             $dateB = $b['date'] ?? null;
 
@@ -312,7 +367,7 @@ final class DashboardController extends Controller
         $this->render('dashboard/index', [
             'title' => 'Dashboard',
             'totalEmployees' => count($employees),
-            'totalPayrolls' => count($payrolls),
+            'totalPayrolls' => count($allPayrolls),
             'totalNet' => $totalNet,
             'lastPayrolls' => $lastPayrolls,
             'employees' => $employees,
@@ -338,6 +393,9 @@ final class DashboardController extends Controller
             'pendingMonthlyEmployees' => $pendingMonthlyEmployees,
             'vacationAlerts' => $vacationAlerts,
             'birthdayAlerts' => $birthdayAlerts,
+            'vacationPopupAlerts' => $vacationPopupAlerts,
+            'birthdayPopupAlerts' => $birthdayPopupAlerts,
+            'today' => $today,
             'valeTotals' => [
                 'manual' => [
                     'overall' => $totalManualValeDeductions,

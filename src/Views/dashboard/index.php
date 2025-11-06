@@ -30,8 +30,11 @@
 /** @var array<int, array<int, array{date: DateTimeImmutable|null, payrolls: Holerite\Models\Payroll[], birthdays: Holerite\Models\Employee[], vacations: array<int, array{employee: Holerite\Models\Employee, available_from: DateTimeImmutable|null, concession_end: DateTimeImmutable|null, status: string}>}>> $calendarWeeks */
 /** @var Holerite\Models\Payroll[] $paidMonthlyPayrolls */
 /** @var Holerite\Models\Employee[] $pendingMonthlyEmployees */
-/** @var array<int, array{employee: Holerite\Models\Employee, available_from: DateTimeImmutable|null, concession_end: DateTimeImmutable|null, status: string, eligible: bool}> $vacationAlerts */
+/** @var array<int, array{employee: Holerite\Models\Employee, available_from: DateTimeImmutable|null, concession_end: DateTimeImmutable|null, status: string, eligible: bool, notice_from: DateTimeImmutable|null}> $vacationAlerts */
 /** @var array<int, array{employee: Holerite\Models\Employee, date: DateTimeImmutable}> $birthdayAlerts */
+/** @var array<int, array{employee: Holerite\Models\Employee, available_from: DateTimeImmutable, notice_from: DateTimeImmutable, status: string}> $vacationPopupAlerts */
+/** @var array<int, array{employee: Holerite\Models\Employee, date: DateTimeImmutable}> $birthdayPopupAlerts */
+/** @var DateTimeImmutable $today */
 /**
  * @var array{
  *     manual: array{overall: float, currentMonth: float, currentYear: float},
@@ -1341,6 +1344,44 @@ $pageScripts[] = [
                 'monthlyValeTransport' => $monthlyValeTransportChart,
                 'yearlyValeProducts' => $yearlyValeManualChart,
                 'yearlyValeTransport' => $yearlyValeTransportChart,
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
+        </script>
+    <?php endif; ?>
+
+    <?php if ($birthdayPopupAlerts !== [] || $vacationPopupAlerts !== []): ?>
+        <?php
+        $birthdayPopupData = array_map(
+            static function (array $alert): array {
+                return [
+                    'name' => $alert['employee']->getName(),
+                    'date' => $alert['date']->format('Y-m-d'),
+                    'label' => $alert['date']->format('d/m'),
+                ];
+            },
+            $birthdayPopupAlerts
+        );
+
+        $vacationPopupData = array_map(
+            static function (array $alert): array {
+                $notice = $alert['notice_from'];
+                $available = $alert['available_from'];
+
+                return [
+                    'name' => $alert['employee']->getName(),
+                    'available_from' => $available->format('Y-m-d'),
+                    'available_label' => $available->format('d/m'),
+                    'notice_from' => $notice->format('Y-m-d'),
+                    'notice_label' => $notice->format('d/m'),
+                    'status' => $alert['status'],
+                ];
+            },
+            $vacationPopupAlerts
+        );
+        ?>
+        <script id="dashboard-popups" type="application/json">
+            <?= json_encode([
+                'birthdays' => $birthdayPopupData,
+                'vacations' => $vacationPopupData,
             ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
         </script>
     <?php endif; ?>

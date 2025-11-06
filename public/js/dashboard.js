@@ -1,15 +1,9 @@
 (function () {
     'use strict';
 
-    function buildPalette(style) {
-        const accent = (style.getPropertyValue('--color-primary') || '').trim() || '#2563eb';
-        const fallback = ['#f97316', '#22c55e', '#a855f7', '#14b8a6', '#ef4444', '#0ea5e9', '#6366f1', '#f59e0b', '#8b5cf6'];
+    function parseJsonElement(id) {
+        const element = document.getElementById(id);
 
-        return [accent].concat(fallback);
-    }
-
-    function parsePayload() {
-        const element = document.getElementById('dashboard-data');
         if (!element) {
             return null;
         }
@@ -18,9 +12,20 @@
             const text = element.textContent || element.innerText || '{}';
             return JSON.parse(text) || null;
         } catch (error) {
-            console.error('Não foi possível carregar os dados do dashboard.', error);
+            console.error('Não foi possível interpretar os dados do elemento "' + id + '".', error);
             return null;
         }
+    }
+
+    function buildPalette(style) {
+        const accent = (style.getPropertyValue('--color-primary') || '').trim() || '#2563eb';
+        const fallback = ['#f97316', '#22c55e', '#a855f7', '#14b8a6', '#ef4444', '#0ea5e9', '#6366f1', '#f59e0b', '#8b5cf6'];
+
+        return [accent].concat(fallback);
+    }
+
+    function parsePayload() {
+        return parseJsonElement('dashboard-data');
     }
 
     function createDoughnutChart(canvasId, dataset) {
@@ -441,6 +446,211 @@
         });
     }
 
+    function setupAlertPopups() {
+        const payload = parseJsonElement('dashboard-popups');
+
+        if (!payload || typeof payload !== 'object') {
+            return;
+        }
+
+        const queue = [];
+
+        if (Array.isArray(payload.birthdays)) {
+            payload.birthdays.forEach(function (entry) {
+                if (!entry || typeof entry.name !== 'string') {
+                    return;
+                }
+
+                queue.push({
+                    type: 'birthday',
+                    icon: 'bi-cake2',
+                    title: 'Feliz aniversário!',
+                    subtitle: entry.name,
+                    message: 'Que o seu dia seja repleto de conquistas e alegria.',
+                    meta: entry.label ? 'Hoje • ' + entry.label : 'Hoje',
+                    duration: 7000,
+                });
+            });
+        }
+
+        if (Array.isArray(payload.vacations)) {
+            payload.vacations.forEach(function (entry) {
+                if (!entry || typeof entry.name !== 'string') {
+                    return;
+                }
+
+                const availableLabel = typeof entry.available_label === 'string' ? entry.available_label : '';
+                const noticeLabel = typeof entry.notice_label === 'string' ? entry.notice_label : '';
+                const status = typeof entry.status === 'string' && entry.status.trim() !== ''
+                    ? entry.status.trim()
+                    : null;
+
+                const metaParts = [];
+                if (noticeLabel) {
+                    metaParts.push('Aviso iniciado em ' + noticeLabel);
+                }
+                if (status) {
+                    metaParts.push(status);
+                }
+
+                queue.push({
+                    type: 'vacation',
+                    icon: 'bi-umbrella-fill',
+                    title: 'Férias chegando!',
+                    subtitle: entry.name,
+                    message: availableLabel
+                        ? 'Período previsto a partir de ' + availableLabel + '.'
+                        : 'Período de férias em preparação.',
+                    meta: metaParts.join(' • '),
+                    duration: 9000,
+                });
+            });
+        }
+
+        if (!queue.length) {
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'dashboard-popups';
+        document.body.appendChild(container);
+
+        function buildPopup(item, onComplete) {
+            const popup = document.createElement('div');
+            popup.className = 'dashboard-popup dashboard-popup--' + item.type;
+            popup.setAttribute('role', 'alert');
+            popup.setAttribute('aria-live', 'assertive');
+
+            const iconWrap = document.createElement('div');
+            iconWrap.className = 'dashboard-popup__icon';
+            iconWrap.innerHTML = '<i class="bi ' + item.icon + '"></i>';
+            popup.appendChild(iconWrap);
+
+            const content = document.createElement('div');
+            content.className = 'dashboard-popup__content';
+            popup.appendChild(content);
+
+            const title = document.createElement('h3');
+            title.className = 'dashboard-popup__title';
+            title.textContent = item.title || '';
+            content.appendChild(title);
+
+            if (item.subtitle) {
+                const subtitle = document.createElement('p');
+                subtitle.className = 'dashboard-popup__subtitle';
+                subtitle.textContent = item.subtitle;
+                content.appendChild(subtitle);
+            }
+
+            if (item.message) {
+                const message = document.createElement('p');
+                message.className = 'dashboard-popup__message';
+                message.textContent = item.message;
+                content.appendChild(message);
+            }
+
+            if (item.meta) {
+                const meta = document.createElement('p');
+                meta.className = 'dashboard-popup__meta';
+                meta.textContent = item.meta;
+                content.appendChild(meta);
+            }
+
+            const closeButton = document.createElement('button');
+            closeButton.type = 'button';
+            closeButton.className = 'dashboard-popup__close';
+            closeButton.setAttribute('aria-label', 'Fechar aviso');
+            closeButton.innerHTML = '<i class="bi bi-x-lg"></i>';
+            popup.appendChild(closeButton);
+
+            let dismissed = false;
+            let timerId = 0;
+
+            function finalize() {
+                if (typeof onComplete === 'function') {
+                    onComplete();
+                }
+            }
+
+            function removePopup() {
+                popup.remove();
+                finalize();
+            }
+
+            function dismiss() {
+                if (dismissed) {
+                    return;
+                }
+                dismissed = true;
+                if (timerId) {
+                    window.clearTimeout(timerId);
+                    timerId = 0;
+                }
+
+                popup.classList.remove('dashboard-popup--visible');
+                popup.classList.add('dashboard-popup--hide');
+
+                let completed = false;
+                const handleAnimationEnd = function (event) {
+                    if (event.animationName !== 'dashboardPopupOut' || completed) {
+                        return;
+                    }
+                    completed = true;
+                    popup.removeEventListener('animationend', handleAnimationEnd);
+                    removePopup();
+                };
+
+                popup.addEventListener('animationend', handleAnimationEnd);
+
+                window.setTimeout(function () {
+                    if (completed) {
+                        return;
+                    }
+                    popup.removeEventListener('animationend', handleAnimationEnd);
+                    completed = true;
+                    removePopup();
+                }, 350);
+            }
+
+            closeButton.addEventListener('click', function () {
+                dismiss();
+            });
+
+            timerId = window.setTimeout(dismiss, typeof item.duration === 'number' ? item.duration : 6500);
+
+            return popup;
+        }
+
+        function displayNext() {
+            if (!queue.length) {
+                if (!container.childElementCount && container.parentNode) {
+                    container.parentNode.removeChild(container);
+                }
+                return;
+            }
+
+            const item = queue.shift();
+            const popup = buildPopup(item, function () {
+                if (queue.length > 0) {
+                    displayNext();
+                    return;
+                }
+
+                if (!container.childElementCount && container.parentNode) {
+                    container.parentNode.removeChild(container);
+                }
+            });
+
+            container.appendChild(popup);
+
+            requestAnimationFrame(function () {
+                popup.classList.add('dashboard-popup--visible');
+            });
+        }
+
+        displayNext();
+    }
+
     function bootstrap() {
         const payload = parsePayload();
 
@@ -454,6 +664,7 @@
         }
 
         setupCalendarMarkers();
+        setupAlertPopups();
     }
 
     if (document.readyState === 'loading') {
