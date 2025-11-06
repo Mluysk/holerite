@@ -148,9 +148,25 @@ if ($advanceAmount > 0.0) {
 }
 
 $grossTotal = $payroll->getBaseSalary() + $payroll->getTotalAllowances();
-$displayTotalDeductions = $payroll->getTotalDeductions() + $advanceAmount;
-$netWithAdvance = $grossTotal - $displayTotalDeductions;
 $netOriginal = $payroll->getNetSalary();
+
+$deductionsTotal = array_reduce(
+    $items,
+    static function (float $carry, array $entry): float {
+        $value = $entry['deduction'] ?? null;
+
+        if (!is_numeric($value)) {
+            return $carry;
+        }
+
+        return $carry + (float) $value;
+    },
+    0.0
+);
+
+$deductionsTotal = round($deductionsTotal, 2);
+$netAfterAdvance = max(0.0, round($grossTotal - $deductionsTotal, 2));
+$totalsRowspan = $advanceAmount > 0.0 ? 3 : 2;
 
 $employeeCode = str_pad((string) ($employee?->getId() ?? 0), 5, '0', STR_PAD_LEFT);
 $employeeDepartment = $employee?->getDepartment() ?? '';
@@ -257,7 +273,7 @@ if ($payroll->getType() === 'thirteenth') {
 
             <table class="holerite-table holerite-totals">
                 <tr>
-                    <td class="holerite-messages" rowspan="2">
+                    <td class="holerite-messages" rowspan="<?= $totalsRowspan; ?>">
                         <strong>Obs.</strong>
                         <?php if ($messages === []): ?>
                             <div>-</div>
@@ -270,12 +286,18 @@ if ($payroll->getType() === 'thirteenth') {
                     <td>Total dos vencimentos</td>
                     <td class="text-right">R$ <?= number_format($grossTotal, 2, ',', '.'); ?></td>
                     <td>Total dos descontos</td>
-                    <td class="text-right">R$ <?= number_format($displayTotalDeductions, 2, ',', '.'); ?></td>
+                    <td class="text-right">R$ <?= number_format($deductionsTotal, 2, ',', '.'); ?></td>
                 </tr>
                 <tr>
-                    <td colspan="2" class="holerite-liquid">Líquido a Receber -&gt;</td>
-                    <td colspan="2" class="holerite-liquid text-right">R$ <?= number_format($netWithAdvance, 2, ',', '.'); ?></td>
+                    <td colspan="2" class="holerite-liquid">Valor desta parcela -&gt;</td>
+                    <td colspan="2" class="holerite-liquid text-right">R$ <?= number_format($netAfterAdvance, 2, ',', '.'); ?></td>
                 </tr>
+                <?php if ($advanceAmount > 0.0): ?>
+                    <tr>
+                        <td colspan="2" class="holerite-liquid-note">Líquido apurado (antes do adiantamento)</td>
+                        <td colspan="2" class="holerite-liquid-note text-right">R$ <?= number_format($netOriginal, 2, ',', '.'); ?></td>
+                    </tr>
+                <?php endif; ?>
             </table>
 
             <table class="holerite-table holerite-bases">
