@@ -70,7 +70,26 @@ final class PayrollController extends Controller
             'has_advance' => isset($_GET['has_advance'])
                 ? in_array(strtolower((string) $_GET['has_advance']), ['1', 'true', 'on', 'yes'], true)
                 : null,
+            'advance_reference_id' => (int) ($_GET['advance_reference_id'] ?? 0),
         ];
+
+        $linkedAdvance = null;
+        if (
+            $defaults['type'] === 'regular'
+            && $defaults['employee_id'] > 0
+            && $defaults['reference_month'] !== ''
+        ) {
+            $linkedAdvance = $this->payrollRepository->findOutstandingAdvance(
+                $defaults['employee_id'],
+                $defaults['reference_month']
+            );
+
+            if ($linkedAdvance !== null) {
+                $defaults['has_advance'] = true;
+                $defaults['advance_amount'] = $linkedAdvance->getAdvanceAmount();
+                $defaults['advance_reference_id'] = $linkedAdvance->getId();
+            }
+        }
 
         $this->render('payrolls/form', [
             'title' => 'Gerar holerite',
@@ -78,6 +97,7 @@ final class PayrollController extends Controller
             'company' => $this->companyRepository->get(),
             'defaults' => $defaults,
             'allowanceOptions' => $this->contributionRepository->get()->getManualAllowances(),
+            'linkedAdvance' => $linkedAdvance,
         ]);
     }
 
@@ -109,6 +129,11 @@ final class PayrollController extends Controller
             return;
         }
 
+        if ($payroll->getType() === 'advance') {
+            $this->redirect('?action=show_payroll_advance&id=' . $payroll->getId());
+            return;
+        }
+
         $employee = $this->employeeRepository->find($payroll->getEmployeeId());
 
         $this->render('payrolls/show', [
@@ -129,7 +154,14 @@ final class PayrollController extends Controller
             return;
         }
 
-        if ($payroll->getAdvanceAmount() <= 0.0) {
+        if ($payroll->getType() !== 'advance' && $payroll->getAdvanceReferenceId() !== null) {
+            $linked = $this->payrollRepository->find($payroll->getAdvanceReferenceId());
+            if ($linked !== null) {
+                $payroll = $linked;
+            }
+        }
+
+        if ($payroll->getAdvanceAmount() <= 0.0 || $payroll->getType() !== 'advance') {
             $this->flash('error', 'Este holerite não possui adiantamento registrado.');
             $this->redirect('?action=show_payroll&id=' . $payroll->getId());
             return;

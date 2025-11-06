@@ -22,6 +22,21 @@ $defaultAdvanceAmount = number_format((float) ($defaults['advance_amount'] ?? 0)
 $defaultRemainingAmount = number_format((float) ($defaults['remaining_amount'] ?? 0), 2, '.', '');
 $defaultAdvanceRatioRaw = (string) ($defaults['advance_ratio'] ?? '');
 $defaultAdvanceRatioCustomRaw = (string) ($defaults['advance_ratio_custom'] ?? '');
+$defaultAdvanceReferenceId = (int) ($defaults['advance_reference_id'] ?? 0);
+$linkedAdvanceRecord = isset($linkedAdvance) && $linkedAdvance instanceof Holerite\Models\Payroll ? $linkedAdvance : null;
+if ($linkedAdvanceRecord !== null) {
+    $defaultAdvanceReferenceId = $linkedAdvanceRecord->getId();
+}
+$advanceLocked = $defaultAdvanceReferenceId > 0;
+$linkedAdvanceAmountLabel = $linkedAdvanceRecord !== null
+    ? 'R$ ' . number_format($linkedAdvanceRecord->getAdvanceAmount(), 2, ',', '.')
+    : '';
+$linkedAdvanceDateLabel = $linkedAdvanceRecord !== null
+    ? $linkedAdvanceRecord->getPaymentDate()->format('d/m/Y')
+    : '';
+$linkedAdvanceReferenceLabel = $linkedAdvanceRecord !== null
+    ? $linkedAdvanceRecord->getReferenceMonth()
+    : '';
 $defaultAdvanceRatioMode = '0.5';
 $defaultAdvanceCustomPercent = '';
 
@@ -97,7 +112,7 @@ if ($normalizedRatio !== null) {
 
 $defaultHasAdvance = $defaults['has_advance'] ?? null;
 if ($defaultHasAdvance === null) {
-    $defaultHasAdvance = $selectedType === 'regular';
+    $defaultHasAdvance = in_array($selectedType, ['regular', 'advance'], true);
 }
 $defaultHasAdvance = (bool) $defaultHasAdvance;
 $defaultUseTransport = !empty($defaults['use_transport']);
@@ -147,6 +162,14 @@ $pageScripts[] = [
     </div>
 
     <form method="post" action="?action=store_payroll" id="payroll-form" data-default-type="<?= htmlspecialchars($selectedType); ?>" class="payroll-create__form">
+        <input type="hidden" name="advance_reference_id" value="<?= htmlspecialchars((string) $defaultAdvanceReferenceId); ?>">
+        <?php if ($linkedAdvanceRecord !== null): ?>
+            <div class="flash flash-info" style="margin-bottom:1.5rem;">
+                Adiantamento registrado de <strong><?= htmlspecialchars($linkedAdvanceAmountLabel); ?></strong>
+                pago em <?= htmlspecialchars($linkedAdvanceDateLabel); ?> (ref. <?= htmlspecialchars($linkedAdvanceReferenceLabel); ?>)
+                será descontado automaticamente nesta folha mensal.
+            </div>
+        <?php endif; ?>
         <div class="payroll-create__grid">
             <div class="payroll-create__main">
                 <div class="card form-card">
@@ -182,6 +205,7 @@ $pageScripts[] = [
                                 <label for="type">Tipo do holerite</label>
                                 <select name="type" id="type">
                                     <option value="regular" <?= $selectedType === 'regular' ? 'selected' : ''; ?>>Mensal</option>
+                                    <option value="advance" <?= $selectedType === 'advance' ? 'selected' : ''; ?>>Adiantamento</option>
                                     <option value="vacation" <?= $selectedType === 'vacation' ? 'selected' : ''; ?>>Férias</option>
                                     <option value="termination" <?= $selectedType === 'termination' ? 'selected' : ''; ?>>Desligamento</option>
                                     <option value="thirteenth" <?= $selectedType === 'thirteenth' ? 'selected' : ''; ?>>13º salário</option>
@@ -424,7 +448,7 @@ $pageScripts[] = [
                                 </div>
                                 <div class="form-field">
                                     <label for="advance_amount">Adiantamento (1ª parcela)</label>
-                                    <input type="number" min="0" step="0.01" id="advance_amount" name="advance_amount" value="<?= htmlspecialchars($defaultAdvanceAmount); ?>" placeholder="0,00">
+                                    <input type="number" min="0" step="0.01" id="advance_amount" name="advance_amount" value="<?= htmlspecialchars($defaultAdvanceAmount); ?>" placeholder="0,00" data-locked="<?= $advanceLocked ? 'true' : 'false'; ?>" <?= $advanceLocked ? 'readonly' : ''; ?>>
                                 </div>
                                 <div class="form-field">
                                     <label for="remaining_amount">Pagamento restante (2ª parcela)</label>

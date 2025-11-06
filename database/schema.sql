@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS payrolls (
     id INT AUTO_INCREMENT PRIMARY KEY,
     employee_id INT NOT NULL,
     reference_month VARCHAR(7) NOT NULL,
-    type ENUM('regular', 'vacation', 'termination', 'thirteenth') NOT NULL DEFAULT 'regular',
+    type ENUM('regular', 'advance', 'vacation', 'termination', 'thirteenth') NOT NULL DEFAULT 'regular',
     base_salary DECIMAL(12,2) NOT NULL,
     total_allowances DECIMAL(12,2) NOT NULL DEFAULT 0,
     total_deductions DECIMAL(12,2) NOT NULL DEFAULT 0,
@@ -109,6 +109,7 @@ CREATE TABLE IF NOT EXISTS payrolls (
     irrf_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
     fgts_base DECIMAL(12,2) NOT NULL DEFAULT 0,
     fgts_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+    advance_reference_id INT NULL,
     notes TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE

@@ -150,6 +150,9 @@
 
         [advanceInput, remainingInput].forEach((input) => {
             if (input instanceof HTMLInputElement) {
+                if (input.dataset.locked === 'true') {
+                    return;
+                }
                 input.dataset.mode = mode;
             }
         });
@@ -275,6 +278,13 @@
         const wrapper = document.getElementById('advance-fields');
         const advanceInput = document.getElementById('advance_amount');
         const remainingInput = document.getElementById('remaining_amount');
+        const checkbox = document.getElementById('has_advance');
+        const lockedAdvance = advanceInput instanceof HTMLInputElement && advanceInput.dataset.locked === 'true';
+
+        if (lockedAdvance && checkbox instanceof HTMLInputElement && !checkbox.checked) {
+            checkbox.checked = true;
+        }
+
         const enabled = isAdvanceEnabled();
 
         if (wrapper instanceof HTMLElement) {
@@ -288,16 +298,24 @@
                 return;
             }
 
+            const locked = input.dataset.locked === 'true';
+
             if (!('mode' in input.dataset)) {
                 input.dataset.mode = 'auto';
             }
 
-            input.readOnly = !enabled;
+            if (locked) {
+                input.dataset.mode = 'manual';
+            }
+
+            input.readOnly = locked || !enabled;
 
             if (!enabled) {
-                input.value = '0.00';
-                input.dataset.mode = 'auto';
-            } else if (input.value === '') {
+                if (!locked) {
+                    input.value = '0.00';
+                    input.dataset.mode = 'auto';
+                }
+            } else if (!locked && input.value === '') {
                 input.value = '0.00';
             }
         });

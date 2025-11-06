@@ -47,11 +47,93 @@ final class PayrollService
         $transportDays = 0;
         $transportTripCost = 0.0;
 
+        $advanceReferenceIdInput = isset($data['advance_reference_id']) ? (int) $data['advance_reference_id'] : null;
+        if ($advanceReferenceIdInput !== null && $advanceReferenceIdInput <= 0) {
+            $advanceReferenceIdInput = null;
+        }
+
+        if ($type === 'advance') {
+            $advanceAmount = $this->roundMoney(max(0.0, (float) ($data['advance_amount'] ?? 0)));
+
+            if ($advanceAmount <= 0.0) {
+                throw new RuntimeException('Informe o valor do adiantamento salarial.');
+            }
+
+            $notes = $notes !== '' ? $notes : 'Adiantamento salarial emitido pelo sistema.';
+            $items = [
+                new PayrollItem(null, null, 'Adiantamento salarial', $advanceAmount, 'allowance'),
+            ];
+
+            $payroll = new Payroll(
+                null,
+                $employeeId,
+                $referenceMonth,
+                $type,
+                $employee->getBaseSalary(),
+                $advanceAmount,
+                0.0,
+                $advanceAmount,
+                $advanceAmount,
+                0.0,
+                0.0,
+                false,
+                0.0,
+                0,
+                0.0,
+                $paymentDate,
+                false,
+                null,
+                null,
+                null,
+                null,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                null,
+                $notes,
+                $items
+            );
+
+            return $this->payrollRepository->create($payroll);
+        }
+
+        $advanceReferenceId = null;
+        $linkedAdvance = null;
+
         $vacationDays = null;
         $workedDays = null;
         $thirteenthMonths = null;
         $thirteenthInstallment = null;
         $baseSalaryAmount = $employee->getBaseSalary();
+
+        if ($type === 'regular') {
+            if ($advanceReferenceIdInput !== null) {
+                $candidate = $this->payrollRepository->find($advanceReferenceIdInput);
+
+                if (
+                    $candidate !== null
+                    && $candidate->getType() === 'advance'
+                    && $candidate->getEmployeeId() === $employeeId
+                    && $candidate->getReferenceMonth() === $referenceMonth
+                ) {
+                    $linkedAdvance = $candidate;
+                }
+            }
+
+            if ($linkedAdvance === null) {
+                $linkedAdvance = $this->payrollRepository->findOutstandingAdvance($employeeId, $referenceMonth);
+            }
+
+            if ($linkedAdvance !== null) {
+                $advanceReferenceId = $linkedAdvance->getId();
+                $data['has_advance'] = true;
+                $data['advance_amount'] = $linkedAdvance->getAdvanceAmount();
+                $data['advance_ratio'] = 'manual';
+            }
+        }
 
         $automaticAllowances = [];
         $automaticDeductions = [];
@@ -206,6 +288,20 @@ final class PayrollService
 
         [$advanceAmount, $remainingAmount] = $this->resolveInstallments($data, $grossSalary, $netSalary);
 
+        if ($linkedAdvance !== null) {
+            $advanceAmount = $this->roundMoney($linkedAdvance->getAdvanceAmount());
+
+            if ($advanceAmount > 0.0 && $netSalary + 0.01 < $advanceAmount) {
+                throw new RuntimeException(sprintf(
+                    'O líquido calculado (R$ %s) é inferior ao adiantamento registrado (R$ %s). Ajuste os valores antes de gerar o holerite mensal.',
+                    number_format($netSalary, 2, ',', '.'),
+                    number_format($advanceAmount, 2, ',', '.')
+                ));
+            }
+
+            $remainingAmount = $this->roundMoney(max(0.0, $netSalary - $advanceAmount));
+        }
+
         $payroll = new Payroll(
             null,
             $employeeId,
@@ -235,6 +331,7 @@ final class PayrollService
             $irrfAmount,
             $fgtsBase,
             $fgtsAmount,
+            $advanceReferenceId,
             $notes,
             array_merge($allAllowances, $allDeductions)
         );
@@ -280,6 +377,12 @@ final class PayrollService
         }
 
         $type = isset($data['type']) ? $this->normalizeType((string) $data['type']) : 'regular';
+
+        if ($type === 'advance') {
+            $amount = $this->roundMoney(max(0.0, (float) ($data['advance_amount'] ?? 0)));
+
+            return [$amount, 0.0];
+        }
         $hasAdvance = array_key_exists('has_advance', $data)
             ? $this->normalizeBoolean($data['has_advance'])
             : ($type === 'regular');
@@ -363,7 +466,7 @@ final class PayrollService
 
     private function normalizeType(string $type): string
     {
-        $allowed = ['regular', 'vacation', 'termination', 'thirteenth'];
+        $allowed = ['regular', 'advance', 'vacation', 'termination', 'thirteenth'];
         return in_array($type, $allowed, true) ? $type : 'regular';
     }
 

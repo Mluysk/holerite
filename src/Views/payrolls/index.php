@@ -12,6 +12,7 @@ $canDelete = isset($canDelete) && $canDelete;
 
 $typeLabels = [
     'regular' => 'Mensal',
+    'advance' => 'Adiantamento',
     'vacation' => 'Férias',
     'termination' => 'Desligamento',
     'thirteenth' => '13º salário',
@@ -77,8 +78,9 @@ $typeLabels = [
                                     <a href="?action=show_payroll&id=<?= $payroll->getId(); ?>" class="button button-secondary button-sm">
                                         Visualizar
                                     </a>
-                                    <?php if ($payroll->getAdvanceAmount() > 0.0): ?>
-                                        <a href="?action=show_payroll_advance&id=<?= $payroll->getId(); ?>" class="button button-outline button-sm">
+                                    <?php $referenceId = $payroll->getAdvanceReferenceId(); ?>
+                                    <?php if ($referenceId !== null): ?>
+                                        <a href="?action=show_payroll_advance&id=<?= $referenceId; ?>" class="button button-outline button-sm">
                                             Adiantamento
                                         </a>
                                     <?php endif; ?>

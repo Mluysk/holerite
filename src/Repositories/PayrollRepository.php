@@ -59,7 +59,7 @@ final class PayrollRepository
 
     public function create(Payroll $payroll): Payroll
     {
-        $statement = $this->pdo->prepare('INSERT INTO payrolls (employee_id, reference_month, type, base_salary, total_allowances, total_deductions, net_salary, advance_amount, remaining_amount, vale_deduction, uses_transport, transport_deduction, transport_days, transport_trip_cost, payment_date, is_just_cause, vacation_days, worked_days, thirteenth_months, thirteenth_installment, thirteenth_accrual, inss_base, inss_amount, irrf_base, irrf_amount, fgts_base, fgts_amount, notes) VALUES (:employee_id, :reference_month, :type, :base_salary, :total_allowances, :total_deductions, :net_salary, :advance_amount, :remaining_amount, :vale_deduction, :uses_transport, :transport_deduction, :transport_days, :transport_trip_cost, :payment_date, :is_just_cause, :vacation_days, :worked_days, :thirteenth_months, :thirteenth_installment, :thirteenth_accrual, :inss_base, :inss_amount, :irrf_base, :irrf_amount, :fgts_base, :fgts_amount, :notes)');
+        $statement = $this->pdo->prepare('INSERT INTO payrolls (employee_id, reference_month, type, base_salary, total_allowances, total_deductions, net_salary, advance_amount, remaining_amount, vale_deduction, uses_transport, transport_deduction, transport_days, transport_trip_cost, payment_date, is_just_cause, vacation_days, worked_days, thirteenth_months, thirteenth_installment, thirteenth_accrual, inss_base, inss_amount, irrf_base, irrf_amount, fgts_base, fgts_amount, advance_reference_id, notes) VALUES (:employee_id, :reference_month, :type, :base_salary, :total_allowances, :total_deductions, :net_salary, :advance_amount, :remaining_amount, :vale_deduction, :uses_transport, :transport_deduction, :transport_days, :transport_trip_cost, :payment_date, :is_just_cause, :vacation_days, :worked_days, :thirteenth_months, :thirteenth_installment, :thirteenth_accrual, :inss_base, :inss_amount, :irrf_base, :irrf_amount, :fgts_base, :fgts_amount, :advance_reference_id, :notes)');
         $statement->execute([
             'employee_id' => $payroll->getEmployeeId(),
             'reference_month' => $payroll->getReferenceMonth(),
@@ -88,6 +88,7 @@ final class PayrollRepository
             'irrf_amount' => $payroll->getIrrfAmount(),
             'fgts_base' => $payroll->getFgtsBase(),
             'fgts_amount' => $payroll->getFgtsAmount(),
+            'advance_reference_id' => $payroll->getAdvanceReferenceId(),
             'notes' => $payroll->getNotes(),
         ]);
 
@@ -135,6 +136,7 @@ final class PayrollRepository
             (float) ($row['irrf_amount'] ?? 0),
             (float) ($row['fgts_base'] ?? 0),
             (float) ($row['fgts_amount'] ?? 0),
+            isset($row['advance_reference_id']) && $row['advance_reference_id'] !== null ? (int) $row['advance_reference_id'] : null,
             (string) $row['notes'],
             []
         );
@@ -142,6 +144,35 @@ final class PayrollRepository
         $payroll->setItems($this->findItems($payroll->getId()));
 
         return $payroll;
+    }
+
+    public function findOutstandingAdvance(int $employeeId, string $referenceMonth): ?Payroll
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT a.*
+             FROM payrolls a
+             LEFT JOIN payrolls r ON r.advance_reference_id = a.id
+             WHERE a.employee_id = :employee_id
+               AND a.reference_month = :reference_month
+               AND a.type = :type
+               AND r.id IS NULL
+             ORDER BY a.payment_date DESC, a.id DESC
+             LIMIT 1'
+        );
+
+        $statement->execute([
+            'employee_id' => $employeeId,
+            'reference_month' => $referenceMonth,
+            'type' => 'advance',
+        ]);
+
+        $row = $statement->fetch();
+
+        if (!$row) {
+            return null;
+        }
+
+        return $this->hydrate($row);
     }
 
     /**
