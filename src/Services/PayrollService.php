@@ -339,6 +339,16 @@ final class PayrollService
             }
         }
 
+        $advanceReferenceIdValue = null;
+
+        if ($advanceReferenceId !== null) {
+            $normalizedAdvanceReferenceId = (int) $advanceReferenceId;
+
+            if ($normalizedAdvanceReferenceId > 0) {
+                $advanceReferenceIdValue = $normalizedAdvanceReferenceId;
+            }
+        }
+
         $payroll = new Payroll(
             null,
             $employeeId,
@@ -369,7 +379,7 @@ final class PayrollService
             $fgtsBase,
             $fgtsAmount,
             $payrollAdvanceRatio,
-            $advanceReferenceId,
+            $advanceReferenceIdValue,
             $notes,
             array_merge($allAllowances, $allDeductions)
         );
