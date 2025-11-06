@@ -93,7 +93,6 @@ final class PayrollService
                 $advanceAmount,
                 $remainingAmount,
                 0.0,
-                0.0,
                 false,
                 0.0,
                 0,
