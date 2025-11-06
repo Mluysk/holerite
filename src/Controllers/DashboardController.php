@@ -276,7 +276,7 @@ final class DashboardController extends Controller
         $normalizedScope = $scope === 'yearly' ? 'yearly' : 'monthly';
 
         $payrolls = $this->payrollRepository->all();
-        $totals = $this->aggregateTotals($payrolls, $normalizedScope);
+        $totals = $this->aggregateReportTotals($payrolls, $normalizedScope);
         $valeBreakdown = $this->aggregateValeTotals($payrolls, $normalizedScope);
         $totalManualVale = array_reduce($payrolls, fn (float $carry, Payroll $payroll): float => $carry + $payroll->getManualValeDeduction(), 0.0);
         $totalTransportVale = array_reduce($payrolls, fn (float $carry, Payroll $payroll): float => $carry + $payroll->getTransportDeduction(), 0.0);
@@ -306,7 +306,8 @@ final class DashboardController extends Controller
             }
         }
 
-        $averageAmount = $periodCount > 0 ? $totalAmount / $periodCount : 0.0;
+        $totalAmount = $this->roundMoney($totalAmount);
+        $averageAmount = $periodCount > 0 ? $this->roundMoney($totalAmount / $periodCount) : 0.0;
         $latestRow = $periodCount > 0 ? $totals[0] : null;
         $earliestRow = $periodCount > 0 ? $totals[$periodCount - 1] : null;
 
@@ -483,6 +484,49 @@ final class DashboardController extends Controller
     }
 
     /**
+     * @param array<int, Payroll> $payrolls
+     * @return array<int, array{period: string, total: float, count: int}>
+     */
+    private function aggregateReportTotals(array $payrolls, string $scope): array
+    {
+        $normalizedScope = $scope === 'yearly' ? 'yearly' : 'monthly';
+
+        $totals = [];
+
+        foreach ($payrolls as $payroll) {
+            $amount = $this->roundMoney($this->getReportPayoutAmount($payroll));
+
+            $paymentDate = $payroll->getPaymentDate();
+            $key = $normalizedScope === 'yearly' ? $paymentDate->format('Y') : $paymentDate->format('Y-m');
+            $label = $normalizedScope === 'yearly' ? $key : $paymentDate->format('m/Y');
+
+            if (!isset($totals[$key])) {
+                $totals[$key] = [
+                    'period' => $label,
+                    'total' => 0.0,
+                    'count' => 0,
+                ];
+            }
+
+            $totals[$key]['total'] += $amount;
+            $totals[$key]['count']++;
+        }
+
+        if ($totals === []) {
+            return [];
+        }
+
+        foreach ($totals as &$row) {
+            $row['total'] = $this->roundMoney($row['total']);
+        }
+        unset($row);
+
+        uksort($totals, static fn (string $a, string $b): int => strcmp($b, $a));
+
+        return array_values($totals);
+    }
+
+    /**
      * @param array<int, array{period: string, total: float, count: int}> $totals
      * @return array{total: float, count: int}
      */
@@ -637,6 +681,26 @@ final class DashboardController extends Controller
         }
 
         return $comparisons;
+    }
+
+    private function getReportPayoutAmount(Payroll $payroll): float
+    {
+        if ($payroll->getType() === 'advance') {
+            return max(0.0, round($payroll->getAdvanceAmount(), 2));
+        }
+
+        $remaining = $payroll->getRemainingAmount();
+
+        if ($remaining <= 0.0 && $payroll->getAdvanceAmount() <= 0.0) {
+            $remaining = $payroll->getNetSalary();
+        }
+
+        return max(0.0, round($remaining, 2));
+    }
+
+    private function roundMoney(float $value): float
+    {
+        return round($value, 2);
     }
 
     private function getMonthDisplayName(DateTimeImmutable $date): string
