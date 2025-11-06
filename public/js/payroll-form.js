@@ -1,0 +1,937 @@
+(function () {
+    'use strict';
+
+    const formatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+    let manualAllowanceOptions = [];
+
+    function roundMoney(value) {
+        const numeric = Number.parseFloat(String(value));
+        if (!Number.isFinite(numeric)) {
+            return 0;
+        }
+
+        return Math.round(numeric * 100) / 100;
+    }
+
+    function clamp(value, min, max) {
+        const numeric = Number.parseFloat(String(value));
+        if (Number.isNaN(numeric)) {
+            return min;
+        }
+        return Math.min(Math.max(numeric, min), max);
+    }
+
+    function getEmployeeBaseSalary() {
+        const select = document.getElementById('employee_id');
+        if (!(select instanceof HTMLSelectElement)) {
+            return 0;
+        }
+
+        const option = select.options[select.selectedIndex];
+        return option ? Number.parseFloat(option.dataset.salary || '0') || 0 : 0;
+    }
+
+    function getThirteenthInstallment() {
+        const select = document.getElementById('thirteenth_installment');
+        if (!(select instanceof HTMLSelectElement)) {
+            return 'second';
+        }
+
+        return select.value === 'first' ? 'first' : 'second';
+    }
+
+    function getReferenceMonth() {
+        const input = document.getElementById('reference_month');
+        if (!(input instanceof HTMLInputElement)) {
+            return '';
+        }
+
+        return input.value || '';
+    }
+
+    function resolveThirteenthPaymentDate(referenceMonth, installment) {
+        if (typeof referenceMonth !== 'string' || !/^\d{4}-\d{2}$/.test(referenceMonth)) {
+            return '';
+        }
+
+        const day = installment === 'first' ? '05' : '20';
+        return `${referenceMonth}-${day}`;
+    }
+
+    function calculateBaseSalary(type) {
+        const base = getEmployeeBaseSalary();
+
+        if (type === 'vacation') {
+            const vacationDays = document.getElementById('vacation_days');
+            const days = vacationDays ? clamp(vacationDays.value, 1, 30) : 30;
+            return base * (days / 30);
+        }
+
+        if (type === 'termination') {
+            const workedDays = document.getElementById('worked_days');
+            const days = workedDays ? clamp(workedDays.value, 0, 30) : 30;
+            return base * (days / 30);
+        }
+
+        if (type === 'thirteenth') {
+            const thirteenthMonthsInput = document.getElementById('thirteenth_months_input');
+            const months = thirteenthMonthsInput ? clamp(thirteenthMonthsInput.value, 1, 12) : 1;
+            const total = base * (months / 12);
+            return total / 2;
+        }
+
+        return base;
+    }
+
+    function isAdvanceEnabled() {
+        const checkbox = document.getElementById('has_advance');
+        if (!(checkbox instanceof HTMLInputElement)) {
+            return true;
+        }
+
+        return checkbox.checked;
+    }
+
+    function getAdvanceRatio() {
+        const select = document.getElementById('advance_ratio');
+        if (!(select instanceof HTMLSelectElement)) {
+            return 0.5;
+        }
+
+        if (select.value === 'custom') {
+            const customInput = document.getElementById('advance_ratio_custom');
+            if (customInput instanceof HTMLInputElement) {
+                const normalized = customInput.value.replace(',', '.');
+                const parsed = Number.parseFloat(normalized);
+
+                if (Number.isFinite(parsed) && parsed > 0) {
+                    const ratio = parsed > 1 ? parsed / 100 : parsed;
+                    if (ratio > 0 && ratio < 1) {
+                        return ratio;
+                    }
+                }
+            }
+
+            return 0.5;
+        }
+
+        const parsed = Number.parseFloat(select.value);
+        if (!Number.isFinite(parsed) || parsed <= 0 || parsed >= 1) {
+            return 0.5;
+        }
+
+        return parsed;
+    }
+
+    function syncAdvanceRatioFields() {
+        const select = document.getElementById('advance_ratio');
+        const wrapper = document.getElementById('advance_ratio_custom_wrapper');
+        const customInput = document.getElementById('advance_ratio_custom');
+        const enabled = isAdvanceEnabled();
+
+        if (select instanceof HTMLSelectElement) {
+            select.disabled = !enabled;
+        }
+
+        const showCustom = enabled && select instanceof HTMLSelectElement && select.value === 'custom';
+
+        if (wrapper instanceof HTMLElement) {
+            wrapper.style.display = showCustom ? 'block' : 'none';
+        }
+
+        if (customInput instanceof HTMLInputElement) {
+            customInput.disabled = !showCustom;
+        }
+    }
+
+    function setInstallmentMode(mode) {
+        const advanceInput = document.getElementById('advance_amount');
+        const remainingInput = document.getElementById('remaining_amount');
+
+        [advanceInput, remainingInput].forEach((input) => {
+            if (input instanceof HTMLInputElement) {
+                input.dataset.mode = mode;
+            }
+        });
+    }
+
+    function getInstallmentMode() {
+        const advanceInput = document.getElementById('advance_amount');
+        if (!(advanceInput instanceof HTMLInputElement)) {
+            return 'auto';
+        }
+
+        return advanceInput.dataset.mode === 'manual' ? 'manual' : 'auto';
+    }
+
+    function automaticAllowances(type, baseSalary) {
+        const items = [];
+
+        if (type === 'vacation') {
+            const vacationBonus = baseSalary / 3;
+            if (vacationBonus > 0) {
+                items.push({ label: '1/3 Constitucional de Férias', amount: vacationBonus });
+            }
+        }
+
+        if (type === 'termination') {
+            const justCauseCheckbox = document.getElementById('just_cause');
+            const monthsInput = document.getElementById('thirteenth_months');
+            const referenceBase = getEmployeeBaseSalary();
+            const justCause = justCauseCheckbox instanceof HTMLInputElement ? justCauseCheckbox.checked : false;
+            const months = monthsInput ? clamp(monthsInput.value, 0, 12) : 12;
+
+            if (!justCause && months > 0) {
+                const thirteenth = referenceBase * (months / 12);
+                if (thirteenth > 0) {
+                    items.push({ label: '13º salário proporcional', amount: thirteenth });
+                }
+            }
+        }
+
+        return items;
+    }
+
+    function automaticThirteenth(type) {
+        if (type === 'regular') {
+            return getEmployeeBaseSalary() / 12;
+        }
+
+        if (type === 'thirteenth') {
+            const monthsInput = document.getElementById('thirteenth_months_input');
+            const months = monthsInput ? clamp(monthsInput.value, 1, 12) : 1;
+            return getEmployeeBaseSalary() * (months / 12);
+        }
+
+        return 0;
+    }
+
+    function calculateInss(base) {
+        if (base <= 0) {
+            return 0;
+        }
+
+        const ranges = [
+            { limit: 1320.0, rate: 0.075 },
+            { limit: 2571.29, rate: 0.09 },
+            { limit: 3856.94, rate: 0.12 },
+            { limit: 7507.49, rate: 0.14 }
+        ];
+
+        let remaining = base;
+        let contribution = 0;
+        let previousLimit = 0;
+
+        for (const range of ranges) {
+            if (remaining <= 0) {
+                break;
+            }
+
+            const span = Math.min(remaining, range.limit - previousLimit);
+            if (span > 0) {
+                contribution += span * range.rate;
+                remaining -= span;
+            }
+
+            previousLimit = range.limit;
+        }
+
+        if (remaining > 0) {
+            contribution += remaining * 0.14;
+        }
+
+        return contribution;
+    }
+
+    function calculateIrrf(base) {
+        if (base <= 0) {
+            return 0;
+        }
+
+        const bands = [
+            { limit: 1903.98, rate: 0, deduction: 0 },
+            { limit: 2826.65, rate: 0.075, deduction: 142.8 },
+            { limit: 3751.05, rate: 0.15, deduction: 354.8 },
+            { limit: 4664.68, rate: 0.225, deduction: 636.13 }
+        ];
+
+        for (const band of bands) {
+            if (base <= band.limit) {
+                return Math.max(0, base * band.rate - band.deduction);
+            }
+        }
+
+        return Math.max(0, base * 0.275 - 869.36);
+    }
+
+    function sumInputs(nodeList) {
+        return Array.from(nodeList).reduce((total, input) => {
+            const value = Number.parseFloat(input.value || '0');
+            return total + (Number.isFinite(value) ? value : 0);
+        }, 0);
+    }
+
+    function syncAdvanceFields() {
+        const wrapper = document.getElementById('advance-fields');
+        const advanceInput = document.getElementById('advance_amount');
+        const remainingInput = document.getElementById('remaining_amount');
+        const enabled = isAdvanceEnabled();
+
+        if (wrapper instanceof HTMLElement) {
+            wrapper.style.display = enabled ? 'block' : 'none';
+        }
+
+        syncAdvanceRatioFields();
+
+        [advanceInput, remainingInput].forEach((input) => {
+            if (!(input instanceof HTMLInputElement)) {
+                return;
+            }
+
+            if (!('mode' in input.dataset)) {
+                input.dataset.mode = 'auto';
+            }
+
+            input.readOnly = !enabled;
+
+            if (!enabled) {
+                input.value = '0.00';
+                input.dataset.mode = 'auto';
+            } else if (input.value === '') {
+                input.value = '0.00';
+            }
+        });
+
+        updateSummary();
+    }
+
+    function resolveInstallmentsForForm(netSalary, grossSalary) {
+        const advanceInput = document.getElementById('advance_amount');
+        const remainingInput = document.getElementById('remaining_amount');
+        const typeSelect = document.getElementById('type');
+        const advanceEnabled = isAdvanceEnabled();
+
+        if (!(advanceInput instanceof HTMLInputElement) || !(remainingInput instanceof HTMLInputElement)) {
+            return { advance: 0, remaining: 0, enabled: advanceEnabled };
+        }
+
+        const netRounded = roundMoney(netSalary);
+        const grossRounded = roundMoney(grossSalary);
+        const selectedType = typeSelect instanceof HTMLSelectElement ? typeSelect.value : 'regular';
+        const shouldSplit = advanceEnabled && selectedType === 'regular';
+        const ratio = getAdvanceRatio();
+        const mode = getInstallmentMode();
+
+        let advance = roundMoney(Math.max(0, Number.parseFloat(advanceInput.value || '0') || 0));
+        let remaining = roundMoney(Math.max(0, Number.parseFloat(remainingInput.value || '0') || 0));
+
+        const updateInputs = () => {
+            const formattedAdvance = advance.toFixed(2);
+            if (advanceInput.value !== formattedAdvance) {
+                advanceInput.value = formattedAdvance;
+            }
+
+            const formattedRemaining = remaining.toFixed(2);
+            if (remainingInput.value !== formattedRemaining) {
+                remainingInput.value = formattedRemaining;
+            }
+        };
+
+        if (netRounded <= 0 || grossRounded <= 0) {
+            advance = 0;
+            remaining = 0;
+            updateInputs();
+            return { advance, remaining, enabled: advanceEnabled };
+        }
+
+        if (!advanceEnabled) {
+            advance = 0;
+            remaining = netRounded;
+            updateInputs();
+            return { advance, remaining, enabled: false };
+        }
+
+        const resolveFromRatio = () => {
+            const candidate = roundMoney(grossRounded * ratio);
+            const capped = Math.min(candidate, netRounded);
+            return roundMoney(Math.max(0, capped));
+        };
+
+        if (advance === 0 && remaining === 0) {
+            if (shouldSplit) {
+                advance = resolveFromRatio();
+                remaining = roundMoney(Math.max(0, netRounded - advance));
+            } else {
+                advance = 0;
+                remaining = netRounded;
+            }
+
+            setInstallmentMode(shouldSplit ? 'auto' : 'manual');
+            updateInputs();
+            return { advance, remaining, enabled: advanceEnabled };
+        }
+
+        if (shouldSplit && mode === 'auto') {
+            advance = resolveFromRatio();
+            remaining = roundMoney(Math.max(0, netRounded - advance));
+            updateInputs();
+            return { advance, remaining, enabled: advanceEnabled };
+        }
+
+        if (advance > netRounded) {
+            advance = netRounded;
+            remaining = 0;
+        } else {
+            if (remaining > netRounded) {
+                remaining = netRounded;
+            }
+
+            if (advance > 0 && remaining === 0) {
+                remaining = roundMoney(Math.max(0, netRounded - advance));
+            } else if (remaining > 0 && advance === 0) {
+                advance = roundMoney(Math.max(0, netRounded - remaining));
+            }
+
+            const total = roundMoney(advance + remaining);
+            if (Math.abs(total - netRounded) > 0.01) {
+                remaining = roundMoney(Math.max(0, netRounded - advance));
+            }
+        }
+
+        updateInputs();
+
+        return { advance, remaining, enabled: advanceEnabled };
+    }
+
+    function ensurePlaceholder(container) {
+        const label = container.dataset.emptyLabel;
+        if (!label) {
+            return;
+        }
+
+        const existing = container.querySelector('.dynamic-empty');
+        const hasRows = container.querySelector('.dynamic-row');
+
+        if (!hasRows && !existing) {
+            const placeholder = document.createElement('p');
+            placeholder.className = 'muted dynamic-empty';
+            placeholder.textContent = label;
+            container.appendChild(placeholder);
+        } else if (hasRows && existing) {
+            existing.remove();
+        }
+    }
+
+    function addRow(container, type) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'dynamic-row';
+        wrapper.style.marginBottom = '1rem';
+
+        let description;
+        if (type === 'allowance' && manualAllowanceOptions.length > 0) {
+            const select = document.createElement('select');
+            select.name = `${type}_description[]`;
+            select.style.marginBottom = '0.5rem';
+
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = 'Selecione um provento';
+            placeholder.disabled = true;
+            placeholder.selected = true;
+            select.appendChild(placeholder);
+
+            manualAllowanceOptions.forEach((option) => {
+                const item = document.createElement('option');
+                item.value = option;
+                item.textContent = option;
+                select.appendChild(item);
+            });
+
+            description = select;
+        } else {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.name = `${type}_description[]`;
+            input.placeholder = 'Descrição';
+            input.style.marginBottom = '0.5rem';
+            description = input;
+        }
+
+        const amount = document.createElement('input');
+        amount.type = 'number';
+        amount.name = `${type}_amount[]`;
+        amount.placeholder = 'Valor em R$';
+        amount.step = '0.01';
+        amount.min = '0';
+
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.className = 'button button-secondary';
+        removeButton.style.background = '#6b7280';
+        removeButton.style.marginTop = '0.5rem';
+        removeButton.textContent = 'Remover';
+
+        removeButton.addEventListener('click', () => {
+            wrapper.remove();
+            ensurePlaceholder(container);
+            updateSummary();
+        });
+
+        amount.addEventListener('input', updateSummary);
+        if (description instanceof HTMLInputElement) {
+            description.addEventListener('input', updateSummary);
+        } else if (description instanceof HTMLSelectElement) {
+            description.addEventListener('change', updateSummary);
+        }
+
+        wrapper.appendChild(description);
+        wrapper.appendChild(amount);
+        wrapper.appendChild(removeButton);
+
+        const placeholder = container.querySelector('.dynamic-empty');
+        if (placeholder) {
+            placeholder.remove();
+        }
+
+        container.appendChild(wrapper);
+        updateSummary();
+    }
+
+    function syncTransportFields() {
+        const container = document.getElementById('transport-fields');
+        if (!(container instanceof HTMLElement)) {
+            return;
+        }
+
+        const checkbox = document.getElementById('use_transport');
+        const enabled = checkbox instanceof HTMLInputElement && checkbox.checked;
+        container.style.display = enabled ? 'block' : 'none';
+
+        if (!enabled) {
+            return;
+        }
+
+        const daysInput = document.getElementById('transport_days');
+        if (daysInput instanceof HTMLInputElement && daysInput.value === '' && daysInput.dataset.defaultValue) {
+            daysInput.value = daysInput.dataset.defaultValue;
+        }
+
+        const costInput = document.getElementById('transport_trip_cost');
+        if (costInput instanceof HTMLInputElement && costInput.value === '' && costInput.dataset.defaultValue) {
+            costInput.value = costInput.dataset.defaultValue;
+        }
+    }
+
+    function updateSummary() {
+        const typeSelect = document.getElementById('type');
+        if (!(typeSelect instanceof HTMLSelectElement)) {
+            return;
+        }
+
+        const type = typeSelect.value;
+        const baseSalary = calculateBaseSalary(type);
+
+        const thirteenthHidden = document.getElementById('thirteenth_months');
+        const thirteenthInput = document.getElementById('thirteenth_months_input');
+        if (thirteenthHidden instanceof HTMLInputElement && thirteenthInput instanceof HTMLInputElement) {
+            if (type === 'thirteenth') {
+                thirteenthHidden.value = thirteenthInput.value || '1';
+            } else if (type === 'termination') {
+                thirteenthInput.value = thirteenthHidden.value || thirteenthInput.value || '1';
+            }
+        }
+
+        const allowanceInputs = document.querySelectorAll('input[name="allowance_amount[]"]');
+        const deductionInputs = document.querySelectorAll('input[name="deduction_amount[]"]');
+
+        const manualAllowances = roundMoney(sumInputs(allowanceInputs));
+        const manualDeductions = roundMoney(sumInputs(deductionInputs));
+        const valeInput = document.getElementById('vale_deduction');
+        let manualVale = 0;
+        if (valeInput instanceof HTMLInputElement) {
+            const parsedVale = Number.parseFloat(valeInput.value || '0');
+            manualVale = Number.isFinite(parsedVale) ? Math.max(0, parsedVale) : 0;
+        }
+        manualVale = roundMoney(manualVale);
+
+        const transportCheckbox = document.getElementById('use_transport');
+        const transportDaysInput = document.getElementById('transport_days');
+        const transportCostInput = document.getElementById('transport_trip_cost');
+        const transportTripsPerDay = 2;
+        let transportDays = 0;
+        let transportTripCost = 0;
+        let transportTrips = 0;
+        let transportCostTotal = 0;
+        let transportDeduction = 0;
+        let transportLimit = 0;
+
+        if (transportCheckbox instanceof HTMLInputElement && transportCheckbox.checked) {
+            if (transportDaysInput instanceof HTMLInputElement) {
+                const rawDays = transportDaysInput.value || transportDaysInput.dataset.defaultValue || '0';
+                transportDays = Math.round(clamp(rawDays, 0, 31));
+                transportDaysInput.value = String(transportDays);
+            }
+
+            if (transportCostInput instanceof HTMLInputElement) {
+                const rawCost = transportCostInput.value || transportCostInput.dataset.defaultValue || '6';
+                const parsedCost = Number.parseFloat(rawCost);
+                transportTripCost = Number.isFinite(parsedCost) ? parsedCost : 6;
+                transportTripCost = roundMoney(transportTripCost);
+                if (transportTripCost <= 0) {
+                    transportTripCost = 6;
+                }
+                transportCostInput.value = transportTripCost.toFixed(2);
+            }
+
+            transportTrips = transportDays * transportTripsPerDay;
+            transportCostTotal = roundMoney(transportTrips * transportTripCost);
+            transportLimit = roundMoney(baseSalary * 0.06);
+            transportDeduction = roundMoney(Math.min(transportCostTotal, transportLimit));
+        }
+
+        const totalVale = roundMoney(manualVale + transportDeduction);
+
+        const automaticItems = automaticAllowances(type, baseSalary);
+        const automaticTotal = roundMoney(automaticItems.reduce((total, item) => total + item.amount, 0));
+        let contributionBase = baseSalary + automaticTotal;
+        let fgtsBase = contributionBase;
+        let inss = 0;
+        let irrfBase = 0;
+        let irrf = 0;
+        const thirteenthItem = automaticItems.find((item) => item.label.toLowerCase().includes('13'));
+        const thirteenthTotal = automaticThirteenth(type) || (thirteenthItem ? thirteenthItem.amount : 0);
+
+        if (type === 'thirteenth') {
+            const installment = getThirteenthInstallment();
+            if (installment === 'second') {
+                contributionBase = thirteenthTotal;
+                fgtsBase = contributionBase;
+                inss = calculateInss(contributionBase);
+                irrfBase = Math.max(0, contributionBase - inss);
+                irrf = calculateIrrf(irrfBase);
+            } else {
+                contributionBase = baseSalary + automaticTotal;
+                fgtsBase = contributionBase;
+                inss = 0;
+                irrfBase = 0;
+                irrf = 0;
+            }
+        } else {
+            inss = calculateInss(contributionBase);
+            irrfBase = Math.max(0, contributionBase - inss);
+            irrf = calculateIrrf(irrfBase);
+        }
+
+        inss = roundMoney(inss);
+        irrfBase = roundMoney(irrfBase);
+        irrf = roundMoney(irrf);
+        contributionBase = roundMoney(contributionBase);
+        fgtsBase = roundMoney(fgtsBase);
+        let fgts = roundMoney(fgtsBase * 0.08);
+        const thirteenthDisplay = roundMoney(thirteenthTotal);
+
+        const totalAllowances = roundMoney(manualAllowances + automaticTotal);
+        const grossSalary = roundMoney(baseSalary + totalAllowances);
+        const automaticDeductions = roundMoney(inss + irrf);
+        const totalDeductions = roundMoney(manualDeductions + automaticDeductions + manualVale + transportDeduction);
+        const netSalary = roundMoney(baseSalary + totalAllowances - totalDeductions);
+        const installments = resolveInstallmentsForForm(netSalary, grossSalary);
+
+        const paymentInput = document.getElementById('payment_date');
+        if (paymentInput instanceof HTMLInputElement) {
+            if (type === 'thirteenth') {
+                const resolvedDate = resolveThirteenthPaymentDate(getReferenceMonth(), getThirteenthInstallment());
+                if (resolvedDate) {
+                    paymentInput.value = resolvedDate;
+                }
+            }
+        }
+
+        const setText = (id, value) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = formatter.format(value || 0);
+            }
+        };
+
+        const setPlain = (id, value) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+            }
+        };
+
+        setText('base-salary', roundMoney(baseSalary));
+        setText('auto-allowances', automaticTotal);
+        setText('total-allowances', manualAllowances);
+        setText('total-deductions', manualDeductions);
+        setText('transport-cost-display', transportCostTotal);
+        setText('transport-deduction-display', transportDeduction);
+        setText('transport-limit-display', transportLimit);
+        setText('transport-cost-summary', transportCostTotal);
+        setText('transport-deduction-summary', transportDeduction);
+        setText('vale-deduction-total', manualVale);
+        setText('vale-deduction-sum', totalVale);
+        setText('inss-amount', inss);
+        setText('inss-base', contributionBase);
+        setText('irrf-amount', irrf);
+        setText('irrf-base', irrfBase);
+        setText('fgts-amount', fgts);
+        setText('fgts-base', fgtsBase);
+        setText('thirteenth-amount', thirteenthDisplay);
+        setText('net-salary', netSalary);
+        setText('advance-display', installments.advance);
+        setText('remaining-display', installments.remaining);
+
+        setPlain('transport-day-count', String(transportDays));
+        setPlain('transport-trip-count', String(transportTrips));
+
+        const advanceNote = document.getElementById('advance-note');
+        if (advanceNote instanceof HTMLElement) {
+            advanceNote.style.display = installments.enabled ? 'block' : 'none';
+        }
+
+        const automaticDescriptions = document.getElementById('automatic-descriptions');
+        if (automaticDescriptions) {
+            const allowanceList = automaticItems.length > 0
+                ? '<strong>Acréscimos automáticos</strong><ul style="margin:0.5rem 0 0 1.25rem;">' +
+                    automaticItems.map((item) => `<li>${item.label} — <strong>${formatter.format(item.amount)}</strong></li>`).join('') +
+                    '</ul>'
+                : '';
+            const deductionTitle = type === 'thirteenth'
+                ? 'Descontos automáticos estimados (13º)'
+                : 'Descontos automáticos estimados';
+            const deductionLine = `<p style="margin:0.75rem 0 0;">${deductionTitle}: INSS <strong>${formatter.format(inss)}</strong> · IRRF <strong>${formatter.format(irrf)}</strong></p>`;
+            const valeLines = [];
+            if (transportCostTotal > 0) {
+                const detailParts = [];
+                if (transportDays > 0) {
+                    detailParts.push(`${transportDays} dia${transportDays === 1 ? '' : 's'}`);
+                }
+                if (transportTrips > 0) {
+                    detailParts.push(`${transportTrips} passagem${transportTrips === 1 ? '' : 's'}`);
+                }
+                if (transportTripCost > 0) {
+                    detailParts.push(`${formatter.format(transportTripCost)} por passagem`);
+                }
+                const detail = detailParts.length > 0 ? ` (${detailParts.join(' · ')})` : '';
+                const infoParts = [
+                    `custo total <strong>${formatter.format(transportCostTotal)}</strong>`,
+                    `desconto aplicado <strong>${formatter.format(transportDeduction)}</strong>`
+                ];
+                if (transportLimit > 0) {
+                    infoParts.push(`limite legal (6%) <strong>${formatter.format(transportLimit)}</strong>`);
+                }
+                const companyShare = roundMoney(Math.max(0, transportCostTotal - transportDeduction));
+                if (companyShare > 0) {
+                    infoParts.push(`custeado pela empresa <strong>${formatter.format(companyShare)}</strong>`);
+                }
+                valeLines.push(`Vale-transporte${detail}: ${infoParts.join(' · ')}`);
+            }
+            if (manualVale > 0) {
+                valeLines.push(`Vales de produtos informados: <strong>${formatter.format(manualVale)}</strong>`);
+            }
+            const valeLine = valeLines.length > 0
+                ? `<p style="margin:0.5rem 0 0;">${valeLines.join(' · ')}</p>`
+                : '';
+            automaticDescriptions.innerHTML = allowanceList + deductionLine + valeLine;
+        }
+    }
+
+    function toggleTypeSections() {
+        const typeSelect = document.getElementById('type');
+        if (!(typeSelect instanceof HTMLSelectElement)) {
+            return;
+        }
+
+        const type = typeSelect.value;
+        const vacationFields = document.getElementById('vacation-fields');
+        const terminationFields = document.getElementById('termination-fields');
+        const thirteenthFields = document.getElementById('thirteenth-fields');
+
+        if (vacationFields) {
+            vacationFields.style.display = type === 'vacation' ? 'block' : 'none';
+        }
+        if (terminationFields) {
+            terminationFields.style.display = type === 'termination' ? 'block' : 'none';
+        }
+        if (thirteenthFields) {
+            thirteenthFields.style.display = type === 'thirteenth' ? 'block' : 'none';
+        }
+
+        const vacationInput = document.getElementById('vacation_days');
+        const workedInput = document.getElementById('worked_days');
+        const thirteenthHidden = document.getElementById('thirteenth_months');
+        const thirteenthInput = document.getElementById('thirteenth_months_input');
+        const thirteenthInstallment = document.getElementById('thirteenth_installment');
+
+        if (vacationInput instanceof HTMLInputElement) {
+            vacationInput.required = type === 'vacation';
+        }
+        if (workedInput instanceof HTMLInputElement) {
+            workedInput.required = type === 'termination';
+        }
+        if (thirteenthHidden instanceof HTMLInputElement) {
+            thirteenthHidden.required = type === 'termination' || type === 'thirteenth';
+        }
+        if (thirteenthInput instanceof HTMLInputElement) {
+            thirteenthInput.required = type === 'thirteenth';
+        }
+        if (thirteenthInstallment instanceof HTMLSelectElement) {
+            thirteenthInstallment.required = type === 'thirteenth';
+        }
+
+        if (type === 'thirteenth' && thirteenthHidden instanceof HTMLInputElement && thirteenthInput instanceof HTMLInputElement) {
+            thirteenthHidden.value = thirteenthInput.value || '1';
+        }
+
+        updateSummary();
+    }
+
+    function bootstrap() {
+        const form = document.getElementById('payroll-form');
+        if (!(form instanceof HTMLFormElement)) {
+            return;
+        }
+
+        const addButtons = form.querySelectorAll('.dynamic-add');
+        addButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                const targetId = button.getAttribute('data-target');
+                const type = button.getAttribute('data-type');
+                if (!targetId || !type) {
+                    return;
+                }
+
+                const container = document.getElementById(targetId);
+                if (container) {
+                    addRow(container, type);
+                }
+            });
+        });
+
+        const dynamicLists = form.querySelectorAll('.dynamic-list');
+        dynamicLists.forEach((list) => ensurePlaceholder(list));
+
+        const allowanceContainer = document.getElementById('allowances');
+        if (allowanceContainer instanceof HTMLElement) {
+            const dataset = allowanceContainer.getAttribute('data-options');
+            if (dataset) {
+                try {
+                    const parsed = JSON.parse(dataset);
+                    if (Array.isArray(parsed)) {
+                        manualAllowanceOptions = parsed
+                            .map((item) => (typeof item === 'string' ? item.trim() : ''))
+                            .filter((item, index, array) => item !== '' && array.indexOf(item) === index);
+                    }
+                } catch (error) {
+                    manualAllowanceOptions = [];
+                }
+            }
+        }
+
+        const employeeSelect = document.getElementById('employee_id');
+        if (employeeSelect) {
+            employeeSelect.addEventListener('change', updateSummary);
+        }
+
+        form.addEventListener('input', (event) => {
+            if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) {
+                updateSummary();
+            }
+        });
+
+        const typeSelect = document.getElementById('type');
+        if (typeSelect) {
+            typeSelect.addEventListener('change', toggleTypeSections);
+        }
+
+        const justCause = document.getElementById('just_cause');
+        if (justCause) {
+            justCause.addEventListener('change', updateSummary);
+        }
+
+        const thirteenthInput = document.getElementById('thirteenth_months_input');
+        if (thirteenthInput instanceof HTMLInputElement) {
+            thirteenthInput.addEventListener('input', () => {
+                const hidden = document.getElementById('thirteenth_months');
+                if (hidden instanceof HTMLInputElement) {
+                    hidden.value = thirteenthInput.value;
+                }
+                updateSummary();
+            });
+        }
+
+        const thirteenthInstallment = document.getElementById('thirteenth_installment');
+        if (thirteenthInstallment instanceof HTMLSelectElement) {
+            thirteenthInstallment.addEventListener('change', updateSummary);
+        }
+
+        const advanceToggle = document.getElementById('has_advance');
+        if (advanceToggle instanceof HTMLInputElement) {
+            advanceToggle.addEventListener('change', syncAdvanceFields);
+        }
+
+        const advanceRatio = document.getElementById('advance_ratio');
+        if (advanceRatio instanceof HTMLSelectElement) {
+            advanceRatio.addEventListener('change', () => {
+                syncAdvanceRatioFields();
+                setInstallmentMode('auto');
+                updateSummary();
+            });
+        }
+
+        const advanceRatioCustom = document.getElementById('advance_ratio_custom');
+        if (advanceRatioCustom instanceof HTMLInputElement) {
+            advanceRatioCustom.addEventListener('input', () => {
+                setInstallmentMode('auto');
+                updateSummary();
+            });
+        }
+
+        const advanceAmountInput = document.getElementById('advance_amount');
+        if (advanceAmountInput instanceof HTMLInputElement) {
+            advanceAmountInput.addEventListener('input', () => {
+                setInstallmentMode('manual');
+            });
+        }
+
+        const remainingAmountInput = document.getElementById('remaining_amount');
+        if (remainingAmountInput instanceof HTMLInputElement) {
+            remainingAmountInput.addEventListener('input', () => {
+                setInstallmentMode('manual');
+            });
+        }
+
+        const transportToggle = document.getElementById('use_transport');
+        if (transportToggle instanceof HTMLInputElement) {
+            transportToggle.addEventListener('change', () => {
+                syncTransportFields();
+                updateSummary();
+            });
+        }
+
+        // Add an initial row to each container for convenience
+        dynamicLists.forEach((list) => {
+            const type = list.id === 'deductions' ? 'deduction' : 'allowance';
+            addRow(list, type);
+        });
+
+        const defaultType = form.getAttribute('data-default-type');
+        if (defaultType && typeSelect instanceof HTMLSelectElement) {
+            typeSelect.value = defaultType;
+        }
+
+        toggleTypeSections();
+        syncAdvanceFields();
+        syncTransportFields();
+        syncAdvanceRatioFields();
+        updateSummary();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootstrap, { once: true });
+    } else {
+        bootstrap();
+    }
+})();
