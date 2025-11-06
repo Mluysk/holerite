@@ -218,12 +218,16 @@ $pageScripts[] = [
         <?php endif; ?>
         <div class="payroll-create__grid">
             <div class="payroll-create__main">
-                <div class="card form-card" data-hide-when-advance="true" style="display: <?= $isAdvanceType ? 'none' : 'block'; ?>;">
+                <div class="card form-card">
                     <header class="form-card__header">
                         <span class="form-card__icon" aria-hidden="true"><i class="bi bi-clipboard-check"></i></span>
                         <div>
-                            <h3>Dados do holerite</h3>
-                            <p class="muted">Informações principais usadas para calcular e identificar esta folha de pagamento.</p>
+                            <h3><?= $isAdvanceType ? 'Dados do adiantamento' : 'Dados do holerite'; ?></h3>
+                            <p class="muted">
+                                <?= $isAdvanceType
+                                    ? 'Selecione o colaborador, informe a data e confirme o percentual do adiantamento sobre o salário base.'
+                                    : 'Informações principais usadas para calcular e identificar esta folha de pagamento.'; ?>
+                            </p>
                         </div>
                     </header>
                     <div class="form-card__body">
@@ -445,17 +449,17 @@ $pageScripts[] = [
                     </header>
                     <ul class="payroll-summary__list">
                         <li><span>Salário base calculado</span><strong id="base-salary">R$ 0,00</strong></li>
-                        <li><span>Proventos automáticos</span><strong id="auto-allowances">R$ 0,00</strong></li>
-                        <li><span>Proventos manuais</span><strong id="total-allowances">R$ 0,00</strong></li>
-                        <li><span>Descontos manuais</span><strong id="total-deductions">R$ 0,00</strong></li>
-                        <li><span>Vale-transporte — custo estimado</span><strong id="transport-cost-summary">R$ 0,00</strong></li>
-                        <li><span>Vale-transporte — desconto aplicado</span><strong id="transport-deduction-summary">R$ 0,00</strong></li>
-                        <li><span>Vales de produtos</span><strong id="vale-deduction-total">R$ 0,00</strong></li>
-                        <li><span>Total de vales (produtos + transporte)</span><strong id="vale-deduction-sum">R$ 0,00</strong></li>
-                        <li><span>INSS estimado</span><strong id="inss-amount">R$ 0,00</strong><small id="inss-base">Base: R$ 0,00</small></li>
-                        <li><span>IRRF estimado</span><strong id="irrf-amount">R$ 0,00</strong><small id="irrf-base">Base: R$ 0,00</small></li>
-                        <li><span>FGTS do mês</span><strong id="fgts-amount">R$ 0,00</strong><small id="fgts-base">Base: R$ 0,00</small></li>
-                        <li><span>13º acumulado</span><strong id="thirteenth-amount">R$ 0,00</strong></li>
+                        <li data-hide-when-advance="true"><span>Proventos automáticos</span><strong id="auto-allowances">R$ 0,00</strong></li>
+                        <li data-hide-when-advance="true"><span>Proventos manuais</span><strong id="total-allowances">R$ 0,00</strong></li>
+                        <li data-hide-when-advance="true"><span>Descontos manuais</span><strong id="total-deductions">R$ 0,00</strong></li>
+                        <li data-hide-when-advance="true"><span>Vale-transporte — custo estimado</span><strong id="transport-cost-summary">R$ 0,00</strong></li>
+                        <li data-hide-when-advance="true"><span>Vale-transporte — desconto aplicado</span><strong id="transport-deduction-summary">R$ 0,00</strong></li>
+                        <li data-hide-when-advance="true"><span>Vales de produtos</span><strong id="vale-deduction-total">R$ 0,00</strong></li>
+                        <li data-hide-when-advance="true"><span>Total de vales (produtos + transporte)</span><strong id="vale-deduction-sum">R$ 0,00</strong></li>
+                        <li data-hide-when-advance="true"><span>INSS estimado</span><strong id="inss-amount">R$ 0,00</strong><small id="inss-base">Base: R$ 0,00</small></li>
+                        <li data-hide-when-advance="true"><span>IRRF estimado</span><strong id="irrf-amount">R$ 0,00</strong><small id="irrf-base">Base: R$ 0,00</small></li>
+                        <li data-hide-when-advance="true"><span>FGTS do mês</span><strong id="fgts-amount">R$ 0,00</strong><small id="fgts-base">Base: R$ 0,00</small></li>
+                        <li data-hide-when-advance="true"><span>13º acumulado</span><strong id="thirteenth-amount">R$ 0,00</strong></li>
                         <li class="payroll-summary__highlight"><span>Valor líquido estimado</span><strong id="net-salary">R$ 0,00</strong></li>
                         <li><span>1ª parcela (adiantamento)</span><strong id="advance-display">R$ 0,00</strong></li>
                         <li><span>2ª parcela (restante)</span><strong id="remaining-display">R$ 0,00</strong></li>

@@ -122,52 +122,86 @@ $resolveDeductionReference = static function (string $description, float $amount
     return $formatPercentage(($amount / $base) * 100);
 };
 
-$appendItem($items, $code, 'Salário base', $referenceValue, $payroll->getBaseSalary(), null);
+$showAdvanceRow = $advanceAmount > 0.0 && $payroll->getType() !== 'advance';
 
-foreach ($payroll->getItems() as $item) {
-    if ($item->getType() === 'deduction') {
-        $reference = $resolveDeductionReference($item->getDescription(), $item->getAmount());
-        $appendItem($items, $code, $item->getDescription(), $reference, null, $item->getAmount());
-        continue;
+if ($payroll->getType() === 'advance') {
+    $contractBase = $employee?->getBaseSalary() ?? $payroll->getBaseSalary();
+    $advanceReference = $advanceRatioLabel ?? '';
+    if ($advanceReference === '' && $contractBase > 0.0) {
+        $advanceReference = $formatPercentage(($advanceAmount / $contractBase) * 100);
     }
 
-    $appendItem($items, $code, $item->getDescription(), '', $item->getAmount(), null);
-}
-
-if ($advanceAmount > 0.0) {
-    $description = 'Adiantamento salarial';
-    if ($advanceRatioLabel !== null) {
-        $description .= ' (' . $advanceRatioLabel . ')';
+    $noteParts = [];
+    if ($contractBase > 0.0) {
+        $noteParts[] = 'Salário base considerado: R$ ' . number_format($contractBase, 2, ',', '.');
+    }
+    if ($remainingAmount > 0.0) {
+        $noteParts[] = 'Saldo previsto para o holerite mensal: R$ ' . number_format($remainingAmount, 2, ',', '.');
     }
 
-    $advanceReference = '';
-    if ($installmentTotal > 0.0) {
-        $advanceReference = $formatPercentage(($advanceAmount / $installmentTotal) * 100);
-    }
+    $appendItem(
+        $items,
+        $code,
+        'Adiantamento salarial',
+        $advanceReference,
+        $advanceAmount,
+        null,
+        $noteParts !== [] ? implode(' · ', $noteParts) : null
+    );
 
-    $appendItem($items, $code, $description, $advanceReference, null, $advanceAmount);
-}
+    $grossTotal = $advanceAmount;
+    $netOriginal = $advanceAmount;
+    $deductionsTotal = 0.0;
+    $netAfterAdvance = $advanceAmount;
+    $totalsRowspan = 2;
+} else {
+    $appendItem($items, $code, 'Salário base', $referenceValue, $payroll->getBaseSalary(), null);
 
-$grossTotal = $payroll->getBaseSalary() + $payroll->getTotalAllowances();
-$netOriginal = $payroll->getNetSalary();
-
-$deductionsTotal = array_reduce(
-    $items,
-    static function (float $carry, array $entry): float {
-        $value = $entry['deduction'] ?? null;
-
-        if (!is_numeric($value)) {
-            return $carry;
+    foreach ($payroll->getItems() as $item) {
+        if ($item->getType() === 'deduction') {
+            $reference = $resolveDeductionReference($item->getDescription(), $item->getAmount());
+            $appendItem($items, $code, $item->getDescription(), $reference, null, $item->getAmount());
+            continue;
         }
 
-        return $carry + (float) $value;
-    },
-    0.0
-);
+        $appendItem($items, $code, $item->getDescription(), '', $item->getAmount(), null);
+    }
 
-$deductionsTotal = round($deductionsTotal, 2);
-$netAfterAdvance = max(0.0, round($grossTotal - $deductionsTotal, 2));
-$totalsRowspan = $advanceAmount > 0.0 ? 3 : 2;
+    if ($showAdvanceRow) {
+        $description = 'Adiantamento salarial';
+        if ($advanceRatioLabel !== null) {
+            $description .= ' (' . $advanceRatioLabel . ')';
+        }
+
+        $advanceReference = '';
+        if ($installmentTotal > 0.0) {
+            $advanceReference = $formatPercentage(($advanceAmount / $installmentTotal) * 100);
+        }
+
+        $appendItem($items, $code, $description, $advanceReference, null, $advanceAmount);
+    }
+
+    $grossTotal = $payroll->getBaseSalary() + $payroll->getTotalAllowances();
+    $netOriginal = $payroll->getNetSalary();
+
+    $deductionsTotal = array_reduce(
+        $items,
+        static function (float $carry, array $entry): float {
+            $value = $entry['deduction'] ?? null;
+
+            if (!is_numeric($value)) {
+                return $carry;
+            }
+
+            return $carry + (float) $value;
+        },
+        0.0
+    );
+
+    $deductionsTotal = round($deductionsTotal, 2);
+    $netAfterAdvance = max(0.0, round($grossTotal - $deductionsTotal, 2));
+    $totalsRowspan = $showAdvanceRow ? 3 : 2;
+}
 
 $employeeCode = str_pad((string) ($employee?->getId() ?? 0), 5, '0', STR_PAD_LEFT);
 $employeeDepartment = $employee?->getDepartment() ?? '';
@@ -180,6 +214,16 @@ if ($payroll->getNotes() !== '') {
 }
 if ($typeLabel) {
     $messages[] = 'Tipo de folha: ' . htmlspecialchars($typeLabel);
+}
+
+if ($payroll->getType() === 'advance') {
+    $contractBase = $employee?->getBaseSalary() ?? $payroll->getBaseSalary();
+    if ($contractBase > 0.0) {
+        $messages[] = 'Salário base considerado: R$ ' . number_format($contractBase, 2, ',', '.');
+    }
+    if ($remainingAmount > 0.0) {
+        $messages[] = 'Saldo previsto para o holerite mensal: R$ ' . number_format($remainingAmount, 2, ',', '.');
+    }
 }
 
 if ($employeeDepartment !== '') {
@@ -293,7 +337,7 @@ if ($payroll->getType() === 'thirteenth') {
                     <td colspan="2" class="holerite-liquid">Valor desta parcela -&gt;</td>
                     <td colspan="2" class="holerite-liquid text-right">R$ <?= number_format($netAfterAdvance, 2, ',', '.'); ?></td>
                 </tr>
-                <?php if ($advanceAmount > 0.0): ?>
+                <?php if ($showAdvanceRow): ?>
                     <tr>
                         <td colspan="2" class="holerite-liquid-note">Líquido apurado (antes do adiantamento)</td>
                         <td colspan="2" class="holerite-liquid-note text-right">R$ <?= number_format($netOriginal, 2, ',', '.'); ?></td>
