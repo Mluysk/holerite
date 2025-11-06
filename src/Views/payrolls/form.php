@@ -35,8 +35,10 @@ foreach ($employees as $employeeCandidate) {
     }
 }
 $isAdvanceType = $selectedType === 'advance';
-if ($isAdvanceType) {
+if ($isAdvanceType && $defaultAdvanceRatioRaw === '') {
     $defaultAdvanceRatioRaw = '0.4';
+}
+if ($isAdvanceType && $defaultAdvanceRatioRaw !== 'custom') {
     $defaultAdvanceRatioCustomRaw = '';
 }
 $linkedAdvanceAmountLabel = $linkedAdvanceRecord !== null
@@ -130,8 +132,12 @@ if ($isAdvanceType && $selectedEmployee !== null) {
 }
 
 if ($isAdvanceType) {
-    $defaultAdvanceRatioMode = '0.4';
-    $defaultAdvanceCustomPercent = '';
+    if ($defaultAdvanceRatioMode === '0.5') {
+        $defaultAdvanceRatioMode = '0.4';
+    }
+    if ($defaultAdvanceRatioMode !== 'custom') {
+        $defaultAdvanceCustomPercent = '';
+    }
 }
 
 $defaultHasAdvance = $defaults['has_advance'] ?? null;
@@ -201,13 +207,14 @@ $pageScripts[] = [
         <?php endif; ?>
         <?php if ($isAdvanceType && $linkedAdvanceRecord === null): ?>
             <div class="flash flash-info" style="margin-bottom:1.5rem;">
-                Este holerite gera a via de adiantamento salarial com 40% do salário base. Ao emitir o holerite mensal,
+                Este holerite gera a via de adiantamento salarial — por padrão com 40% do salário base —,
+                mas você pode ajustar para 50% ou definir um percentual personalizado. Ao emitir o holerite mensal,
                 o sistema abaterá automaticamente o valor já adiantado como segunda parcela.
             </div>
         <?php endif; ?>
         <div class="payroll-create__grid">
             <div class="payroll-create__main">
-                <div class="card form-card">
+                <div class="card form-card" data-hide-when-advance="true" style="display: <?= $isAdvanceType ? 'none' : 'block'; ?>;">
                     <header class="form-card__header">
                         <span class="form-card__icon" aria-hidden="true"><i class="bi bi-clipboard-check"></i></span>
                         <div>
@@ -319,7 +326,7 @@ $pageScripts[] = [
                     </div>
                 </div>
 
-                <div class="card form-card">
+                <div class="card form-card" data-hide-when-advance="true" style="display: <?= $isAdvanceType ? 'none' : 'block'; ?>;">
                     <header class="form-card__header">
                         <span class="form-card__icon" aria-hidden="true"><i class="bi bi-cash-stack"></i></span>
                         <div>
@@ -340,7 +347,7 @@ $pageScripts[] = [
                     </div>
                 </div>
 
-                <div class="card form-card">
+                <div class="card form-card" data-hide-when-advance="true" style="display: <?= $isAdvanceType ? 'none' : 'block'; ?>;">
                     <header class="form-card__header">
                         <span class="form-card__icon" aria-hidden="true"><i class="bi bi-bag-check"></i></span>
                         <div>
@@ -451,7 +458,7 @@ $pageScripts[] = [
                     </ul>
                     <p class="muted" id="advance-note" style="display: <?= $defaultHasAdvance || $isAdvanceType ? 'block' : 'none'; ?>;">
                         <?php if ($isAdvanceType): ?>
-                            Este recibo registra automaticamente 40% do salário base como 1ª parcela; o restante será abatido ao gerar o holerite mensal.
+                            Este recibo registra a 1ª parcela do salário com base no percentual escolhido acima; o restante será abatido ao gerar o holerite mensal.
                         <?php else: ?>
                             Com o adiantamento habilitado, escolha antecipar 40%, 50% ou defina um percentual personalizado do bruto; o desconto aparecerá logo abaixo do salário base no holerite impresso.
                         <?php endif; ?>
@@ -477,18 +484,15 @@ $pageScripts[] = [
                             <div class="form-grid form-grid--thirds">
                                 <div class="form-field">
                                     <label for="advance_ratio">Percentual do adiantamento</label>
-                                    <?php if ($isAdvanceType): ?>
-                                        <input type="hidden" name="advance_ratio" value="0.4">
-                                    <?php endif; ?>
-                                    <select name="advance_ratio" id="advance_ratio" <?= $isAdvanceType ? 'disabled' : ''; ?>>
+                                    <select name="advance_ratio" id="advance_ratio" <?= $linkedAdvanceRecord !== null ? 'disabled' : ''; ?> data-locked="<?= $linkedAdvanceRecord !== null ? 'true' : 'false'; ?>">
                                         <option value="0.4" <?= $defaultAdvanceRatioMode === '0.4' ? 'selected' : ''; ?>>40% do bruto</option>
                                         <option value="0.5" <?= $defaultAdvanceRatioMode === '0.5' ? 'selected' : ''; ?>>50% do bruto</option>
                                         <option value="custom" <?= $defaultAdvanceRatioMode === 'custom' ? 'selected' : ''; ?>>Personalizar</option>
                                     </select>
                                 </div>
-                                <div class="form-field" id="advance_ratio_custom_wrapper" style="display: <?= ($defaultAdvanceRatioMode === 'custom' && !$isAdvanceType) ? 'block' : 'none'; ?>;">
+                                <div class="form-field" id="advance_ratio_custom_wrapper" style="display: <?= $defaultAdvanceRatioMode === 'custom' ? 'block' : 'none'; ?>;">
                                     <label for="advance_ratio_custom">Percentual personalizado (%)</label>
-                                    <input type="number" min="1" max="99" step="0.01" id="advance_ratio_custom" name="advance_ratio_custom" value="<?= htmlspecialchars($defaultAdvanceCustomPercent); ?>" placeholder="Ex.: 45,00" <?= $defaultAdvanceRatioMode === 'custom' && !$isAdvanceType ? '' : 'disabled'; ?>>
+                                    <input type="number" min="1" max="99" step="0.01" id="advance_ratio_custom" name="advance_ratio_custom" value="<?= htmlspecialchars($defaultAdvanceCustomPercent); ?>" placeholder="Ex.: 45,00" <?= $defaultAdvanceRatioMode === 'custom' && $linkedAdvanceRecord === null ? '' : 'disabled'; ?> data-locked="<?= $linkedAdvanceRecord !== null ? 'true' : 'false'; ?>" data-initial-value="<?= htmlspecialchars($defaultAdvanceCustomPercent); ?>">
                                 </div>
                                 <div class="form-field">
                                     <label for="advance_amount">Adiantamento (1ª parcela)</label>

@@ -59,7 +59,7 @@ final class PayrollRepository
 
     public function create(Payroll $payroll): Payroll
     {
-        $statement = $this->pdo->prepare('INSERT INTO payrolls (employee_id, reference_month, type, base_salary, total_allowances, total_deductions, net_salary, advance_amount, remaining_amount, vale_deduction, uses_transport, transport_deduction, transport_days, transport_trip_cost, payment_date, is_just_cause, vacation_days, worked_days, thirteenth_months, thirteenth_installment, thirteenth_accrual, inss_base, inss_amount, irrf_base, irrf_amount, fgts_base, fgts_amount, advance_reference_id, notes) VALUES (:employee_id, :reference_month, :type, :base_salary, :total_allowances, :total_deductions, :net_salary, :advance_amount, :remaining_amount, :vale_deduction, :uses_transport, :transport_deduction, :transport_days, :transport_trip_cost, :payment_date, :is_just_cause, :vacation_days, :worked_days, :thirteenth_months, :thirteenth_installment, :thirteenth_accrual, :inss_base, :inss_amount, :irrf_base, :irrf_amount, :fgts_base, :fgts_amount, :advance_reference_id, :notes)');
+        $statement = $this->pdo->prepare('INSERT INTO payrolls (employee_id, reference_month, type, base_salary, total_allowances, total_deductions, net_salary, advance_amount, advance_ratio, remaining_amount, vale_deduction, uses_transport, transport_deduction, transport_days, transport_trip_cost, payment_date, is_just_cause, vacation_days, worked_days, thirteenth_months, thirteenth_installment, thirteenth_accrual, inss_base, inss_amount, irrf_base, irrf_amount, fgts_base, fgts_amount, advance_reference_id, notes) VALUES (:employee_id, :reference_month, :type, :base_salary, :total_allowances, :total_deductions, :net_salary, :advance_amount, :advance_ratio, :remaining_amount, :vale_deduction, :uses_transport, :transport_deduction, :transport_days, :transport_trip_cost, :payment_date, :is_just_cause, :vacation_days, :worked_days, :thirteenth_months, :thirteenth_installment, :thirteenth_accrual, :inss_base, :inss_amount, :irrf_base, :irrf_amount, :fgts_base, :fgts_amount, :advance_reference_id, :notes)');
         $statement->execute([
             'employee_id' => $payroll->getEmployeeId(),
             'reference_month' => $payroll->getReferenceMonth(),
@@ -69,6 +69,7 @@ final class PayrollRepository
             'total_deductions' => $payroll->getTotalDeductions(),
             'net_salary' => $payroll->getNetSalary(),
             'advance_amount' => $payroll->getAdvanceAmount(),
+            'advance_ratio' => $payroll->getAdvanceRatio(),
             'remaining_amount' => $payroll->getRemainingAmount(),
             'vale_deduction' => $payroll->getManualValeDeduction(),
             'uses_transport' => $payroll->usesTransport() ? 1 : 0,
@@ -136,6 +137,7 @@ final class PayrollRepository
             (float) ($row['irrf_amount'] ?? 0),
             (float) ($row['fgts_base'] ?? 0),
             (float) ($row['fgts_amount'] ?? 0),
+            isset($row['advance_ratio']) && $row['advance_ratio'] !== null ? (float) $row['advance_ratio'] : null,
             isset($row['advance_reference_id']) && $row['advance_reference_id'] !== null ? (int) $row['advance_reference_id'] : null,
             (string) $row['notes'],
             []

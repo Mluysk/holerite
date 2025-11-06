@@ -46,6 +46,8 @@ final class PayrollService
         $useTransport = $this->normalizeBoolean($data['use_transport'] ?? false);
         $transportDays = 0;
         $transportTripCost = 0.0;
+        $inputAdvanceRatio = $this->extractAdvanceRatio($data);
+        $payrollAdvanceRatio = null;
 
         $advanceReferenceIdInput = isset($data['advance_reference_id']) ? (int) $data['advance_reference_id'] : null;
         if ($advanceReferenceIdInput !== null && $advanceReferenceIdInput <= 0) {
@@ -54,17 +56,25 @@ final class PayrollService
 
         if ($type === 'advance') {
             $baseSalaryAmount = $employee->getBaseSalary();
-            $advanceAmount = $this->roundMoney($baseSalaryAmount * 0.4);
+            $advanceRatio = $inputAdvanceRatio ?? 0.4;
+
+            if ($advanceRatio <= 0.0 || $advanceRatio >= 1.0) {
+                $advanceRatio = 0.4;
+            }
+
+            $advanceAmount = $this->roundMoney($baseSalaryAmount * $advanceRatio);
 
             if ($advanceAmount <= 0.0) {
                 throw new RuntimeException('O salário base do colaborador não permite calcular o adiantamento.');
             }
 
             $remainingAmount = $this->roundMoney(max(0.0, $baseSalaryAmount - $advanceAmount));
+            $payrollAdvanceRatio = $advanceRatio;
             $notes = $notes !== ''
                 ? $notes
                 : sprintf(
-                    'Adiantamento salarial equivalente a 40%% do salário base (R$ %s).',
+                    'Adiantamento salarial equivalente a %s%% do salário base (R$ %s).',
+                    number_format($advanceRatio * 100, 2, ',', '.'),
                     number_format($baseSalaryAmount, 2, ',', '.')
                 );
             $items = [
@@ -100,6 +110,7 @@ final class PayrollService
                 0.0,
                 0.0,
                 0.0,
+                $payrollAdvanceRatio,
                 null,
                 $notes,
                 $items
@@ -139,7 +150,20 @@ final class PayrollService
                 $advanceReferenceId = $linkedAdvance->getId();
                 $data['has_advance'] = true;
                 $data['advance_amount'] = $linkedAdvance->getAdvanceAmount();
-                $data['advance_ratio'] = 'manual';
+                $linkedRatio = $linkedAdvance->getAdvanceRatio();
+                if ($linkedRatio !== null) {
+                    $payrollAdvanceRatio = $linkedRatio;
+                    if (abs($linkedRatio - 0.4) <= 0.0001) {
+                        $data['advance_ratio'] = '0.4';
+                    } elseif (abs($linkedRatio - 0.5) <= 0.0001) {
+                        $data['advance_ratio'] = '0.5';
+                    } else {
+                        $data['advance_ratio'] = 'custom';
+                        $data['advance_ratio_custom'] = number_format($linkedRatio * 100, 2, '.', '');
+                    }
+                } else {
+                    $data['advance_ratio'] = 'manual';
+                }
             }
         }
 
@@ -310,6 +334,12 @@ final class PayrollService
             $remainingAmount = $this->roundMoney(max(0.0, $netSalary - $advanceAmount));
         }
 
+        if ($payrollAdvanceRatio === null && $type === 'regular' && $inputAdvanceRatio !== null) {
+            if ($inputAdvanceRatio > 0.0 && $inputAdvanceRatio < 1.0) {
+                $payrollAdvanceRatio = $inputAdvanceRatio;
+            }
+        }
+
         $payroll = new Payroll(
             null,
             $employeeId,
@@ -339,6 +369,7 @@ final class PayrollService
             $irrfAmount,
             $fgtsBase,
             $fgtsAmount,
+            $payrollAdvanceRatio,
             $advanceReferenceId,
             $notes,
             array_merge($allAllowances, $allDeductions)
@@ -398,36 +429,7 @@ final class PayrollService
 
         $advanceAmount = $this->roundMoney(max(0.0, (float) ($data['advance_amount'] ?? 0)));
         $remainingAmount = $this->roundMoney(max(0.0, (float) ($data['remaining_amount'] ?? 0)));
-        $advanceRatio = null;
-
-        if (isset($data['advance_ratio'])) {
-            $rawRatio = (string) $data['advance_ratio'];
-
-            if ($rawRatio === 'custom') {
-                $customInput = isset($data['advance_ratio_custom'])
-                    ? str_replace(',', '.', (string) $data['advance_ratio_custom'])
-                    : '';
-                $customValue = (float) $customInput;
-
-                if ($customValue > 1.0) {
-                    $customValue /= 100.0;
-                }
-
-                if ($customValue > 0.0 && $customValue < 1.0) {
-                    $advanceRatio = $customValue;
-                }
-            } else {
-                $parsedRatio = (float) $rawRatio;
-
-                if ($parsedRatio > 0.0 && $parsedRatio < 1.0) {
-                    $advanceRatio = $parsedRatio;
-                } elseif ($rawRatio === '40') {
-                    $advanceRatio = 0.4;
-                } elseif ($rawRatio === '50') {
-                    $advanceRatio = 0.5;
-                }
-            }
-        }
+        $advanceRatio = $this->extractAdvanceRatio($data);
 
         if (!$hasAdvance) {
             return [0.0, $netRounded];
@@ -435,7 +437,7 @@ final class PayrollService
 
         if ($advanceAmount === 0.0 && $remainingAmount === 0.0) {
             if ($shouldSplit) {
-                $ratio = $advanceRatio ?? 0.5;
+                $ratio = $advanceRatio ?? 0.4;
                 $calculated = $this->roundMoney($grossRounded * $ratio);
                 $advanceAmount = $this->roundMoney(min($calculated, $netRounded));
                 $remainingAmount = $this->roundMoney(max(0.0, $netRounded - $advanceAmount));
@@ -470,6 +472,50 @@ final class PayrollService
         }
 
         return [$advanceAmount, $remainingAmount];
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function extractAdvanceRatio(array $data): ?float
+    {
+        if (!isset($data['advance_ratio'])) {
+            return null;
+        }
+
+        $raw = trim((string) $data['advance_ratio']);
+
+        if ($raw === '') {
+            return null;
+        }
+
+        if ($raw === 'custom') {
+            $customInput = isset($data['advance_ratio_custom'])
+                ? str_replace(',', '.', (string) $data['advance_ratio_custom'])
+                : '';
+            $value = (float) $customInput;
+        } else {
+            $value = (float) str_replace(',', '.', $raw);
+            if ($value === 0.0) {
+                if ($raw === '40') {
+                    return 0.4;
+                }
+
+                if ($raw === '50') {
+                    return 0.5;
+                }
+            }
+        }
+
+        if ($value > 1.0) {
+            $value /= 100.0;
+        }
+
+        if ($value > 0.0 && $value < 1.0) {
+            return $value;
+        }
+
+        return null;
     }
 
     private function normalizeType(string $type): string

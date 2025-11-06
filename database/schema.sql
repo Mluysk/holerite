@@ -92,6 +92,7 @@ CREATE TABLE IF NOT EXISTS payrolls (
     total_deductions DECIMAL(12,2) NOT NULL DEFAULT 0,
     net_salary DECIMAL(12,2) NOT NULL,
     advance_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+    advance_ratio DECIMAL(6,4) NULL,
     remaining_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
     vale_deduction DECIMAL(12,2) NOT NULL DEFAULT 0,
     uses_transport TINYINT(1) NOT NULL DEFAULT 0,

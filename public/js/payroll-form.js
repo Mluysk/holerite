@@ -95,7 +95,7 @@
     function getAdvanceRatio() {
         const select = document.getElementById('advance_ratio');
         if (!(select instanceof HTMLSelectElement)) {
-            return 0.5;
+            return 0.4;
         }
 
         if (select.value === 'custom') {
@@ -112,12 +112,12 @@
                 }
             }
 
-            return 0.5;
+            return 0.4;
         }
 
         const parsed = Number.parseFloat(select.value);
         if (!Number.isFinite(parsed) || parsed <= 0 || parsed >= 1) {
-            return 0.5;
+            return 0.4;
         }
 
         return parsed;
@@ -130,7 +130,8 @@
         const enabled = isAdvanceEnabled();
 
         if (select instanceof HTMLSelectElement) {
-            select.disabled = !enabled;
+            const locked = select.dataset.locked === 'true';
+            select.disabled = locked || !enabled;
         }
 
         const showCustom = enabled && select instanceof HTMLSelectElement && select.value === 'custom';
@@ -140,7 +141,11 @@
         }
 
         if (customInput instanceof HTMLInputElement) {
-            customInput.disabled = !showCustom;
+            const locked = customInput.dataset.locked === 'true';
+            customInput.disabled = locked || !showCustom;
+            if ((!showCustom || locked) && customInput.dataset.initialValue) {
+                customInput.value = customInput.dataset.initialValue;
+            }
         }
     }
 
@@ -332,18 +337,18 @@
 
         const advanceRatio = document.getElementById('advance_ratio');
         if (advanceRatio instanceof HTMLSelectElement) {
-            if (isAdvanceType) {
-                advanceRatio.value = '0.4';
-                advanceRatio.disabled = true;
-            } else {
-                advanceRatio.disabled = false;
-            }
+            const locked = advanceRatio.dataset.locked === 'true';
+            advanceRatio.disabled = locked || !enabled;
         }
 
         const customRatio = document.getElementById('advance_ratio_custom');
-        if (customRatio instanceof HTMLInputElement && isAdvanceType) {
-            customRatio.value = '';
-            customRatio.disabled = true;
+        if (customRatio instanceof HTMLInputElement) {
+            const locked = customRatio.dataset.locked === 'true';
+            const canEdit = !locked && enabled && advanceRatio instanceof HTMLSelectElement && advanceRatio.value === 'custom';
+            customRatio.disabled = !canEdit;
+            if (!canEdit && customRatio.dataset.initialValue) {
+                customRatio.value = customRatio.dataset.initialValue;
+            }
         }
 
         if (triggerSummary) {
@@ -373,7 +378,8 @@
 
         if (selectedType === 'advance') {
             const baseSalary = roundMoney(getEmployeeBaseSalary());
-            const computedAdvance = roundMoney(Math.max(0, baseSalary * 0.4));
+            const ratio = getAdvanceRatio();
+            const computedAdvance = roundMoney(Math.max(0, baseSalary * ratio));
             const computedRemaining = roundMoney(Math.max(0, baseSalary - computedAdvance));
 
             if (advanceInput.value !== computedAdvance.toFixed(2)) {
@@ -720,7 +726,7 @@
         let netSalary = roundMoney(baseSalary + totalAllowances - totalDeductions);
 
         if (isAdvance) {
-            const advanceAmount = roundMoney(baseSalary * 0.4);
+            const advanceAmount = roundMoney(baseSalary * getAdvanceRatio());
             totalAllowances = advanceAmount;
             grossSalary = advanceAmount;
             totalDeductions = 0;
@@ -881,6 +887,19 @@
 
         if (type === 'thirteenth' && thirteenthHidden instanceof HTMLInputElement && thirteenthInput instanceof HTMLInputElement) {
             thirteenthHidden.value = thirteenthInput.value || '1';
+        }
+
+        document.querySelectorAll('[data-hide-when-advance="true"]').forEach((element) => {
+            if (element instanceof HTMLElement) {
+                element.style.display = type === 'advance' ? 'none' : '';
+            }
+        });
+
+        if (type === 'advance') {
+            const transportToggle = document.getElementById('use_transport');
+            if (transportToggle instanceof HTMLInputElement) {
+                transportToggle.checked = false;
+            }
         }
 
         syncAdvanceFields();

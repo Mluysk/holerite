@@ -88,6 +88,18 @@ final class PayrollController extends Controller
                 $defaults['has_advance'] = true;
                 $defaults['advance_amount'] = $linkedAdvance->getAdvanceAmount();
                 $defaults['advance_reference_id'] = $linkedAdvance->getId();
+                $defaults['advance_ratio_custom'] = '';
+                $linkedRatio = $linkedAdvance->getAdvanceRatio();
+                if ($linkedRatio !== null) {
+                    if (abs($linkedRatio - 0.4) <= 0.0001) {
+                        $defaults['advance_ratio'] = '0.4';
+                    } elseif (abs($linkedRatio - 0.5) <= 0.0001) {
+                        $defaults['advance_ratio'] = '0.5';
+                    } else {
+                        $defaults['advance_ratio'] = 'custom';
+                        $defaults['advance_ratio_custom'] = number_format($linkedRatio * 100, 2, '.', '');
+                    }
+                }
             }
         }
 

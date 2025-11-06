@@ -38,6 +38,7 @@ final class Payroll
         private float $irrfAmount,
         private float $fgtsBase,
         private float $fgtsAmount,
+        private ?float $advanceRatio,
         private ?int $advanceReferenceId,
         private string $notes,
         private array $items = [],
@@ -207,6 +208,11 @@ final class Payroll
     public function getFgtsAmount(): float
     {
         return $this->fgtsAmount;
+    }
+
+    public function getAdvanceRatio(): ?float
+    {
+        return $this->advanceRatio;
     }
 
     public function getAdvanceReferenceId(): ?int
