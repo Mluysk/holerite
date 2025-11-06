@@ -21,6 +21,88 @@ final class BackupService
         $this->pdo = Connection::getInstance();
     }
 
+    public function runAutomaticBackups(string $directory): void
+    {
+        $directory = rtrim($directory, DIRECTORY_SEPARATOR);
+
+        if ($directory === '') {
+            return;
+        }
+
+        if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
+            return;
+        }
+
+        $metaFile = $directory . DIRECTORY_SEPARATOR . 'automatic_backups.json';
+        $meta = [];
+
+        if (is_file($metaFile)) {
+            try {
+                $decoded = json_decode((string) file_get_contents($metaFile), true, 512, JSON_THROW_ON_ERROR);
+                if (is_array($decoded)) {
+                    $meta = $decoded;
+                }
+            } catch (Throwable $exception) {
+                $meta = [];
+            }
+        }
+
+        $now = new DateTimeImmutable('now', new DateTimeZone('America/Sao_Paulo'));
+        $timestamp = $now->getTimestamp();
+        $updated = false;
+
+        $backups = [
+            'database' => ['method' => 'generateDatabaseBackup', 'title' => 'database'],
+            'configuration' => ['method' => 'generateConfigurationBackup', 'title' => 'configuration'],
+            'users' => ['method' => 'generateUsersBackup', 'title' => 'users'],
+        ];
+
+        foreach ($backups as $key => $spec) {
+            $lastRun = isset($meta[$key]['last_run']) ? (int) $meta[$key]['last_run'] : 0;
+
+            if ($timestamp - $lastRun < 86400) {
+                continue;
+            }
+
+            $method = $spec['method'];
+
+            try {
+                $payload = $this->{$method}();
+            } catch (Throwable $exception) {
+                continue;
+            }
+
+            $filename = sprintf(
+                'backup_%s_%s_%s.json',
+                $now->format('Y-m-d'),
+                $now->format('H-i-s'),
+                $spec['title']
+            );
+
+            $path = $directory . DIRECTORY_SEPARATOR . $filename;
+
+            if (@file_put_contents($path, $payload) === false) {
+                continue;
+            }
+
+            $meta[$key] = [
+                'last_run' => $timestamp,
+                'file' => $filename,
+            ];
+            $updated = true;
+        }
+
+        if ($updated) {
+            try {
+                file_put_contents(
+                    $metaFile,
+                    json_encode($meta, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+                );
+            } catch (Throwable $exception) {
+            }
+        }
+    }
+
     public function generateDatabaseBackup(): string
     {
         $tables = [

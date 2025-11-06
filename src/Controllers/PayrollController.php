@@ -119,6 +119,32 @@ final class PayrollController extends Controller
         ]);
     }
 
+    public function showAdvance(int $id): void
+    {
+        $payroll = $this->payrollRepository->find($id);
+
+        if ($payroll === null) {
+            $this->flash('error', 'Holerite não encontrado.');
+            $this->redirect('?action=list_payrolls');
+            return;
+        }
+
+        if ($payroll->getAdvanceAmount() <= 0.0) {
+            $this->flash('error', 'Este holerite não possui adiantamento registrado.');
+            $this->redirect('?action=show_payroll&id=' . $payroll->getId());
+            return;
+        }
+
+        $employee = $this->employeeRepository->find($payroll->getEmployeeId());
+
+        $this->render('payrolls/advance', [
+            'title' => 'Adiantamento salarial - ' . ($employee?->getName() ?? 'Colaborador'),
+            'payroll' => $payroll,
+            'employee' => $employee,
+            'company' => $this->companyRepository->get(),
+        ]);
+    }
+
     /**
      * @param array<string, mixed> $data
      */

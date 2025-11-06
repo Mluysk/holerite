@@ -77,6 +77,11 @@ $typeLabels = [
                                     <a href="?action=show_payroll&id=<?= $payroll->getId(); ?>" class="button button-secondary button-sm">
                                         Visualizar
                                     </a>
+                                    <?php if ($payroll->getAdvanceAmount() > 0.0): ?>
+                                        <a href="?action=show_payroll_advance&id=<?= $payroll->getId(); ?>" class="button button-outline button-sm">
+                                            Adiantamento
+                                        </a>
+                                    <?php endif; ?>
                                     <?php if ($canDelete): ?>
                                         <form method="post" action="?action=delete_payroll&id=<?= $payroll->getId(); ?>" class="payroll-delete-form">
                                             <?php $inputId = 'delete-password-' . $payroll->getId(); ?>

@@ -334,6 +334,11 @@ if ($payroll->getType() === 'thirteenth') {
 
     <div class="actions">
         <a href="javascript:window.print();" class="button"><i class="bi bi-printer"></i> Imprimir</a>
+        <?php if ($advanceAmount > 0.0): ?>
+            <a href="?action=show_payroll_advance&id=<?= $payroll->getId(); ?>" class="button button-outline">
+                <i class="bi bi-cash-coin"></i> Via de adiantamento
+            </a>
+        <?php endif; ?>
         <a href="?action=list_payrolls" class="button button-secondary"><i class="bi bi-arrow-left"></i> Voltar</a>
     </div>
 </section>

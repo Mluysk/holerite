@@ -43,6 +43,14 @@ $employeeBenefitService = new EmployeeBenefitService();
 $payrollService = new PayrollService($employeeRepository, $payrollRepository, $contributionRepository);
 $backupService = new BackupService();
 
+$backupDirectory = __DIR__ . '/../backup';
+
+try {
+    $backupService->runAutomaticBackups($backupDirectory);
+} catch (\Throwable $exception) {
+    error_log('Falha ao executar backup automático: ' . $exception->getMessage());
+}
+
 $activeCompany = $companyRepository->get();
 $GLOBALS['holerite_company'] = $activeCompany;
 $appearance = [
@@ -330,6 +338,11 @@ switch ($action) {
     case 'show_payroll':
         $id = (int) ($_GET['id'] ?? 0);
         $payrollController->show($id);
+        break;
+
+    case 'show_payroll_advance':
+        $id = (int) ($_GET['id'] ?? 0);
+        $payrollController->showAdvance($id);
         break;
 
     case 'delete_payroll':
