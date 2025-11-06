@@ -236,7 +236,8 @@
                 vacation: 'bi-umbrella-fill',
                 termination: 'bi-exclamation-triangle-fill',
                 advance: 'bi-wallet2',
-                birthday: 'bi-cake2'
+                birthday: 'bi-cake2',
+                vacation_plan: 'bi-umbrella-fill'
             };
 
             const category = typeof info.category === 'string' ? info.category : '';

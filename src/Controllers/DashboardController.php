@@ -9,12 +9,14 @@ use Holerite\Models\Employee;
 use Holerite\Models\Payroll;
 use Holerite\Repositories\EmployeeRepository;
 use Holerite\Repositories\PayrollRepository;
+use Holerite\Services\EmployeeBenefitService;
 
 final class DashboardController extends Controller
 {
     public function __construct(
         private EmployeeRepository $employeeRepository,
         private PayrollRepository $payrollRepository,
+        private EmployeeBenefitService $benefitService,
     ) {
     }
 
@@ -27,10 +29,16 @@ final class DashboardController extends Controller
             static fn (Payroll $payroll): bool => $payroll->getType() !== 'advance',
         ));
 
+        $payrollsByEmployee = [];
+        foreach ($allPayrolls as $record) {
+            $payrollsByEmployee[$record->getEmployeeId()][] = $record;
+        }
+
         $currentMonth = new DateTimeImmutable('first day of this month');
         $currentMonthKey = $currentMonth->format('Y-m');
         $currentYearKey = $currentMonth->format('Y');
         $monthEnd = $currentMonth->modify('last day of this month');
+        $today = new DateTimeImmutable('today');
         $currentMonthNet = 0.0;
 
         $totalNet = array_reduce($payrolls, fn (float $carry, $payroll): float => $carry + $payroll->getNetSalary(), 0.0);
@@ -60,6 +68,8 @@ final class DashboardController extends Controller
         $paidRegularPayrolls = [];
         $thirteenthFirstInstallments = [];
         $thirteenthSecondInstallments = [];
+        $vacationAlerts = [];
+        $birthdayAlerts = [];
 
         foreach ($payrolls as $payroll) {
             $paymentDate = $payroll->getPaymentDate();
@@ -112,6 +122,7 @@ final class DashboardController extends Controller
                 $calendarEvents[$dateKey] = [
                     'payrolls' => [],
                     'birthdays' => [],
+                    'vacations' => [],
                 ];
             }
 
@@ -127,6 +138,52 @@ final class DashboardController extends Controller
 
             if ($employee->getHireDate() > $monthEnd) {
                 continue;
+            }
+
+            $employeeId = $employee->getId();
+            $employeePayrolls = $employeeId !== null ? ($payrollsByEmployee[$employeeId] ?? []) : [];
+            $benefits = $this->benefitService->summarize($employee, $employeePayrolls, $today);
+            $vacations = $benefits['vacations'] ?? [];
+            $nextCycle = $vacations['next_cycle'] ?? null;
+
+            if (is_array($nextCycle) && isset($nextCycle['available_from']) && $nextCycle['available_from'] instanceof DateTimeImmutable) {
+                $availableFrom = $nextCycle['available_from'];
+                $noticeFrom = $nextCycle['notice_from'] ?? null;
+                $concessionEnd = $nextCycle['concession_end'] ?? null;
+                $includeAlert = $availableFrom->format('Y-m') === $currentMonthKey;
+
+                if (!$includeAlert && $noticeFrom instanceof DateTimeImmutable) {
+                    $includeAlert = $noticeFrom <= $monthEnd && $availableFrom >= $currentMonth;
+                }
+
+                if ($includeAlert) {
+                    $vacationAlerts[] = [
+                        'employee' => $employee,
+                        'available_from' => $availableFrom,
+                        'concession_end' => $concessionEnd instanceof DateTimeImmutable ? $concessionEnd : null,
+                        'status' => (string) ($nextCycle['status'] ?? ''),
+                        'eligible' => (bool) ($nextCycle['eligible'] ?? false),
+                    ];
+                }
+
+                if ($availableFrom->format('Y-m') === $currentMonthKey) {
+                    $vacationDateKey = $availableFrom->format('Y-m-d');
+
+                    if (!isset($calendarEvents[$vacationDateKey])) {
+                        $calendarEvents[$vacationDateKey] = [
+                            'payrolls' => [],
+                            'birthdays' => [],
+                            'vacations' => [],
+                        ];
+                    }
+
+                    $calendarEvents[$vacationDateKey]['vacations'][] = [
+                        'employee' => $employee,
+                        'available_from' => $availableFrom,
+                        'concession_end' => $concessionEnd instanceof DateTimeImmutable ? $concessionEnd : null,
+                        'status' => (string) ($nextCycle['status'] ?? ''),
+                    ];
+                }
             }
 
             $birthDate = $employee->getBirthDate();
@@ -145,11 +202,44 @@ final class DashboardController extends Controller
                 $calendarEvents[$dateKey] = [
                     'payrolls' => [],
                     'birthdays' => [],
+                    'vacations' => [],
                 ];
             }
 
             $calendarEvents[$dateKey]['birthdays'][] = $employee;
+            $birthdayAlerts[] = [
+                'employee' => $employee,
+                'date' => $birthdayDate,
+            ];
         }
+
+        usort($vacationAlerts, static function (array $a, array $b): int {
+            $dateA = $a['available_from'] ?? null;
+            $dateB = $b['available_from'] ?? null;
+
+            if ($dateA instanceof DateTimeImmutable && $dateB instanceof DateTimeImmutable) {
+                $comparison = $dateA <=> $dateB;
+                if ($comparison !== 0) {
+                    return $comparison;
+                }
+            }
+
+            return strcasecmp($a['employee']->getName(), $b['employee']->getName());
+        });
+
+        usort($birthdayAlerts, static function (array $a, array $b): int {
+            $dateA = $a['date'] ?? null;
+            $dateB = $b['date'] ?? null;
+
+            if ($dateA instanceof DateTimeImmutable && $dateB instanceof DateTimeImmutable) {
+                $comparison = $dateA <=> $dateB;
+                if ($comparison !== 0) {
+                    return $comparison;
+                }
+            }
+
+            return strcasecmp($a['employee']->getName(), $b['employee']->getName());
+        });
 
         $totalTransportCost = round($totalTransportCost, 2);
         $currentMonthTransportCost = round($currentMonthTransportCost, 2);
@@ -246,6 +336,8 @@ final class DashboardController extends Controller
             'calendarWeeks' => $calendarWeeks,
             'paidMonthlyPayrolls' => $paidMonthlyPayrolls,
             'pendingMonthlyEmployees' => $pendingMonthlyEmployees,
+            'vacationAlerts' => $vacationAlerts,
+            'birthdayAlerts' => $birthdayAlerts,
             'valeTotals' => [
                 'manual' => [
                     'overall' => $totalManualValeDeductions,
@@ -406,7 +498,7 @@ final class DashboardController extends Controller
 
         $firstWeekday = (int) $month->format('N');
         for ($i = 1; $i < $firstWeekday; $i++) {
-            $week[] = ['date' => null, 'payrolls' => [], 'birthdays' => []];
+            $week[] = ['date' => null, 'payrolls' => [], 'birthdays' => [], 'vacations' => []];
         }
 
         $daysInMonth = (int) $month->format('t');
@@ -417,12 +509,13 @@ final class DashboardController extends Controller
             $date = $month->setDate($year, $monthNumber, $day);
             $dateKey = $date->format('Y-m-d');
 
-            $dayEvents = $events[$dateKey] ?? ['payrolls' => [], 'birthdays' => []];
+            $dayEvents = $events[$dateKey] ?? ['payrolls' => [], 'birthdays' => [], 'vacations' => []];
 
             $week[] = [
                 'date' => $date,
                 'payrolls' => $dayEvents['payrolls'] ?? [],
                 'birthdays' => $dayEvents['birthdays'] ?? [],
+                'vacations' => $dayEvents['vacations'] ?? [],
             ];
 
             if (count($week) === 7) {
@@ -433,7 +526,7 @@ final class DashboardController extends Controller
 
         if ($week !== []) {
             while (count($week) < 7) {
-                $week[] = ['date' => null, 'payrolls' => [], 'birthdays' => []];
+                $week[] = ['date' => null, 'payrolls' => [], 'birthdays' => [], 'vacations' => []];
             }
             $weeks[] = $week;
         }

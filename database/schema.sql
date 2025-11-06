@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS employees (
     department VARCHAR(150) NOT NULL,
     position VARCHAR(150) NOT NULL,
     hire_date DATE NOT NULL,
+    vacation_base_date DATE NULL,
     termination_date DATE NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP

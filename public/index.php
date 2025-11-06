@@ -95,7 +95,7 @@ if (isset($_SESSION['user']) && is_array($_SESSION['user'])) {
 
 $GLOBALS['holerite_appearance'] = $appearance;
 
-$dashboardController = new DashboardController($employeeRepository, $payrollRepository);
+$dashboardController = new DashboardController($employeeRepository, $payrollRepository, $employeeBenefitService);
 $contributionSyncService = new ContributionSyncService($contributionRepository, $contributionsApiConfig);
 $companyController = new CompanyController(
     $companyRepository,
@@ -288,6 +288,19 @@ switch ($action) {
 
     case 'employee_report':
         $employeeController->report();
+        break;
+
+    case 'vacation_overview':
+        $employeeController->vacations();
+        break;
+
+    case 'update_vacation_base':
+        $id = (int) ($_GET['id'] ?? 0);
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $employeeController->updateVacationBase($id, $_POST);
+        } else {
+            $employeeController->vacations();
+        }
         break;
 
     case 'create_employee':

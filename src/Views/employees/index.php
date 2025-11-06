@@ -9,6 +9,7 @@
             <p class="muted">Mantenha o cadastro de colaboradores sempre atualizado.</p>
         </div>
         <div class="section-header__actions">
+            <a href="?action=vacation_overview" class="button button-secondary">Planejar férias</a>
             <a href="?action=employee_report" class="button button-secondary" target="_blank" rel="noreferrer noopener">Imprimir relatório</a>
             <a href="?action=create_employee" class="button">Novo colaborador</a>
         </div>

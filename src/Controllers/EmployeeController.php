@@ -118,6 +118,7 @@ final class EmployeeController extends Controller
     public function store(array $data): void
     {
         try {
+            $hireDate = new DateTimeImmutable((string) ($data['hire_date'] ?? date('Y-m-d')));
             $employee = new Employee(
                 null,
                 trim((string) ($data['name'] ?? '')),
@@ -126,7 +127,8 @@ final class EmployeeController extends Controller
                 (float) ($data['base_salary'] ?? 0),
                 trim((string) ($data['department'] ?? '')),
                 trim((string) ($data['position'] ?? '')),
-                new DateTimeImmutable((string) ($data['hire_date'] ?? date('Y-m-d'))),
+                $hireDate,
+                $this->buildVacationBaseDate($data['vacation_base_date'] ?? null, $hireDate),
                 $this->buildTerminationDate($data['termination_date'] ?? null)
             );
 
@@ -173,7 +175,9 @@ final class EmployeeController extends Controller
             $employee->setBaseSalary((float) ($data['base_salary'] ?? 0));
             $employee->setDepartment(trim((string) ($data['department'] ?? '')));
             $employee->setPosition(trim((string) ($data['position'] ?? '')));
-            $employee->setHireDate(new DateTimeImmutable((string) ($data['hire_date'] ?? date('Y-m-d'))));
+            $hireDate = new DateTimeImmutable((string) ($data['hire_date'] ?? date('Y-m-d')));
+            $employee->setHireDate($hireDate);
+            $employee->setVacationBaseDate($this->buildVacationBaseDate($data['vacation_base_date'] ?? null, $hireDate));
             $employee->setTerminationDate($this->buildTerminationDate($data['termination_date'] ?? null));
 
             $this->repository->update($employee);
@@ -216,6 +220,103 @@ final class EmployeeController extends Controller
             'payrolls' => $payrolls,
             'benefits' => $benefits,
         ]);
+    }
+
+    public function vacations(): void
+    {
+        $today = new DateTimeImmutable('today');
+        $employees = $this->repository->all();
+        $entries = [];
+
+        foreach ($employees as $employee) {
+            $payrolls = $employee->getId() !== null
+                ? $this->payrollRepository->findByEmployee($employee->getId())
+                : [];
+
+            $summary = $this->benefitService->summarize($employee, $payrolls, $today);
+            $vacations = $summary['vacations'] ?? [];
+            $nextCycle = $vacations['next_cycle'] ?? null;
+
+            $entries[] = [
+                'employee' => $employee,
+                'next_cycle' => $nextCycle,
+                'vacations' => $vacations,
+            ];
+        }
+
+        usort($entries, static function (array $a, array $b): int {
+            $aDate = $a['next_cycle']['available_from'] ?? null;
+            $bDate = $b['next_cycle']['available_from'] ?? null;
+
+            if ($aDate === null && $bDate === null) {
+                return strcasecmp($a['employee']->getName(), $b['employee']->getName());
+            }
+
+            if ($aDate === null) {
+                return 1;
+            }
+
+            if ($bDate === null) {
+                return -1;
+            }
+
+            $comparison = $aDate <=> $bDate;
+            if ($comparison === 0) {
+                return strcasecmp($a['employee']->getName(), $b['employee']->getName());
+            }
+
+            return $comparison;
+        });
+
+        $this->render('employees/vacations', [
+            'title' => 'Planejamento de férias',
+            'entries' => $entries,
+            'today' => $today,
+        ]);
+    }
+
+    public function updateVacationBase(int $id, array $data): void
+    {
+        $employee = $this->repository->find($id);
+
+        if ($employee === null) {
+            $this->flash('error', 'Colaborador não encontrado.');
+            $this->redirect('?action=vacation_overview');
+            return;
+        }
+
+        try {
+            $hireDate = $employee->getHireDate();
+            $vacationBase = $this->buildVacationBaseDate($data['vacation_base_date'] ?? null, $hireDate);
+            $employee->setVacationBaseDate($vacationBase);
+            $this->repository->update($employee);
+            $this->flash('success', 'Base de férias atualizada.');
+        } catch (Throwable $exception) {
+            $this->flash('error', 'Não foi possível atualizar a base de férias: ' . $exception->getMessage());
+        }
+
+        $this->redirect('?action=vacation_overview');
+    }
+
+    private function buildVacationBaseDate(mixed $value, DateTimeImmutable $hireDate): ?DateTimeImmutable
+    {
+        $date = trim((string) ($value ?? ''));
+
+        if ($date === '') {
+            return null;
+        }
+
+        try {
+            $baseDate = new DateTimeImmutable($date);
+        } catch (Throwable) {
+            throw new InvalidArgumentException('Data base de férias inválida.');
+        }
+
+        if ($baseDate < $hireDate) {
+            return $hireDate;
+        }
+
+        return $baseDate;
     }
 
     private function buildTerminationDate(mixed $value): ?DateTimeImmutable

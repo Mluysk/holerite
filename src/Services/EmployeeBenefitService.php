@@ -130,7 +130,9 @@ final class EmployeeBenefitService
         $cycles = [];
         $upcomingNotices = [];
         $termination = $employee->getTerminationDate();
-        $cycleStart = $employee->getHireDate();
+        $baseStart = $employee->getVacationBaseDate() ?? $employee->getHireDate();
+        $cycleStart = $baseStart;
+        $nextCycleCandidate = null;
 
         for ($index = 1; $index <= 4; $index++) {
             if ($termination !== null && $cycleStart > $termination) {
@@ -159,6 +161,16 @@ final class EmployeeBenefitService
             } elseif ($workedMonths >= 12) {
                 $eligible = true;
                 $status = $asOf > $concessionEnd ? 'Período de gozo vencido' : 'Período disponível para gozo';
+                if ($nextCycleCandidate === null) {
+                    $nextCycleCandidate = [
+                        'index' => $index,
+                        'acquisition_start' => $cycleStart,
+                        'acquisition_end' => $acquisitionEnd,
+                        'concession_end' => $concessionEnd,
+                        'status' => $status,
+                        'eligible' => true,
+                    ];
+                }
             } elseif ($asOf < $cycleStart) {
                 $status = 'Período futuro';
             }
@@ -172,6 +184,16 @@ final class EmployeeBenefitService
                         'index' => $index,
                         'available_on' => $acquisitionEnd,
                     ];
+                    if ($nextCycleCandidate === null) {
+                        $nextCycleCandidate = [
+                            'index' => $index,
+                            'acquisition_start' => $cycleStart,
+                            'acquisition_end' => $acquisitionEnd,
+                            'concession_end' => $concessionEnd,
+                            'status' => 'Disponível em breve',
+                            'eligible' => false,
+                        ];
+                    }
                 }
             }
 
@@ -191,9 +213,30 @@ final class EmployeeBenefitService
             $cycleStart = $cycleStart->add(new DateInterval('P1Y'));
         }
 
+        if ($nextCycleCandidate === null && $cycles !== []) {
+            $nextCycleCandidate = $cycles[count($cycles) - 1];
+        }
+
+        $nextCycle = null;
+        if ($nextCycleCandidate !== null) {
+            $availableFrom = $nextCycleCandidate['acquisition_end']->modify('+1 day');
+            $nextCycle = [
+                'index' => $nextCycleCandidate['index'],
+                'acquisition_start' => $nextCycleCandidate['acquisition_start'],
+                'acquisition_end' => $nextCycleCandidate['acquisition_end'],
+                'concession_end' => $nextCycleCandidate['concession_end'],
+                'available_from' => $availableFrom,
+                'notice_from' => $nextCycleCandidate['acquisition_end']->modify('-30 days'),
+                'status' => $nextCycleCandidate['status'],
+                'eligible' => (bool) $nextCycleCandidate['eligible'],
+            ];
+        }
+
         return [
             'cycles' => $cycles,
             'upcoming_notices' => $upcomingNotices,
+            'next_cycle' => $nextCycle,
+            'base_start' => $baseStart,
         ];
     }
 

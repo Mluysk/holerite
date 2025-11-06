@@ -44,7 +44,7 @@ final class EmployeeRepository
 
     public function create(Employee $employee): Employee
     {
-        $statement = $this->pdo->prepare('INSERT INTO employees (name, cpf, birth_date, base_salary, department, position, hire_date, termination_date) VALUES (:name, :cpf, :birth_date, :base_salary, :department, :position, :hire_date, :termination_date)');
+        $statement = $this->pdo->prepare('INSERT INTO employees (name, cpf, birth_date, base_salary, department, position, hire_date, vacation_base_date, termination_date) VALUES (:name, :cpf, :birth_date, :base_salary, :department, :position, :hire_date, :vacation_base_date, :termination_date)');
         $statement->execute([
             'name' => $employee->getName(),
             'cpf' => $employee->getCpf(),
@@ -53,6 +53,7 @@ final class EmployeeRepository
             'department' => $employee->getDepartment(),
             'position' => $employee->getPosition(),
             'hire_date' => $employee->getHireDate()->format('Y-m-d'),
+            'vacation_base_date' => $employee->getVacationBaseDate()?->format('Y-m-d'),
             'termination_date' => $employee->getTerminationDate()?->format('Y-m-d'),
         ]);
 
@@ -63,7 +64,7 @@ final class EmployeeRepository
 
     public function update(Employee $employee): void
     {
-        $statement = $this->pdo->prepare('UPDATE employees SET name = :name, cpf = :cpf, birth_date = :birth_date, base_salary = :base_salary, department = :department, position = :position, hire_date = :hire_date, termination_date = :termination_date WHERE id = :id');
+        $statement = $this->pdo->prepare('UPDATE employees SET name = :name, cpf = :cpf, birth_date = :birth_date, base_salary = :base_salary, department = :department, position = :position, hire_date = :hire_date, vacation_base_date = :vacation_base_date, termination_date = :termination_date WHERE id = :id');
         $statement->execute([
             'id' => $employee->getId(),
             'name' => $employee->getName(),
@@ -73,6 +74,7 @@ final class EmployeeRepository
             'department' => $employee->getDepartment(),
             'position' => $employee->getPosition(),
             'hire_date' => $employee->getHireDate()->format('Y-m-d'),
+            'vacation_base_date' => $employee->getVacationBaseDate()?->format('Y-m-d'),
             'termination_date' => $employee->getTerminationDate()?->format('Y-m-d'),
         ]);
     }
@@ -99,6 +101,9 @@ final class EmployeeRepository
             (string) $row['department'],
             (string) $row['position'],
             new DateTimeImmutable((string) $row['hire_date']),
+            isset($row['vacation_base_date']) && $row['vacation_base_date'] !== null && $row['vacation_base_date'] !== ''
+                ? new DateTimeImmutable((string) $row['vacation_base_date'])
+                : null,
             isset($row['termination_date']) && $row['termination_date'] !== null && $row['termination_date'] !== ''
                 ? new DateTimeImmutable((string) $row['termination_date'])
                 : null

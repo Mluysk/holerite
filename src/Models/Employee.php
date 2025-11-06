@@ -17,6 +17,7 @@ final class Employee
         private string $department,
         private string $position,
         private DateTimeImmutable $hireDate,
+        private ?DateTimeImmutable $vacationBaseDate = null,
         private ?DateTimeImmutable $terminationDate = null,
     ) {
     }
@@ -123,6 +124,16 @@ final class Employee
     public function setHireDate(DateTimeImmutable $hireDate): void
     {
         $this->hireDate = $hireDate;
+    }
+
+    public function getVacationBaseDate(): ?DateTimeImmutable
+    {
+        return $this->vacationBaseDate;
+    }
+
+    public function setVacationBaseDate(?DateTimeImmutable $vacationBaseDate): void
+    {
+        $this->vacationBaseDate = $vacationBaseDate;
     }
 
     public function getTerminationDate(): ?DateTimeImmutable

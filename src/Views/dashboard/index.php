@@ -27,9 +27,11 @@
 /** @var array{labels: array<int, string>, values: array<int, float>, percentages: array<int, float>, total: float} $yearlyValeManualChart */
 /** @var array{labels: array<int, string>, values: array<int, float>, percentages: array<int, float>, total: float} $yearlyValeTransportChart */
 /** @var DateTimeImmutable $calendarMonth */
-/** @var array<int, array<int, array{date: DateTimeImmutable|null, payrolls: Holerite\Models\Payroll[], birthdays: Holerite\Models\Employee[]}>> $calendarWeeks */
+/** @var array<int, array<int, array{date: DateTimeImmutable|null, payrolls: Holerite\Models\Payroll[], birthdays: Holerite\Models\Employee[], vacations: array<int, array{employee: Holerite\Models\Employee, available_from: DateTimeImmutable|null, concession_end: DateTimeImmutable|null, status: string}>}>> $calendarWeeks */
 /** @var Holerite\Models\Payroll[] $paidMonthlyPayrolls */
 /** @var Holerite\Models\Employee[] $pendingMonthlyEmployees */
+/** @var array<int, array{employee: Holerite\Models\Employee, available_from: DateTimeImmutable|null, concession_end: DateTimeImmutable|null, status: string, eligible: bool}> $vacationAlerts */
+/** @var array<int, array{employee: Holerite\Models\Employee, date: DateTimeImmutable}> $birthdayAlerts */
 /**
  * @var array{
  *     manual: array{overall: float, currentMonth: float, currentYear: float},
@@ -63,6 +65,7 @@ $typeLabels = [
     'thirteenth' => '13º Salário',
     'advance' => 'Adiantamento salarial',
     'birthday' => 'Aniversários',
+    'vacation_plan' => 'Férias programadas',
 ];
 
 $calendarMarkerClasses = [
@@ -72,6 +75,7 @@ $calendarMarkerClasses = [
     'termination' => 'calendar-day__marker--termination',
     'advance' => 'calendar-day__marker--advance',
     'birthday' => 'calendar-day__marker--birthday',
+    'vacation_plan' => 'calendar-day__marker--vacation-plan',
 ];
 
 $markerLabelText = [
@@ -81,6 +85,7 @@ $markerLabelText = [
     'termination' => 'Pago',
     'advance' => 'Adiant.',
     'birthday' => 'Aniversário',
+    'vacation_plan' => 'Férias',
 ];
 
 $weekDays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
@@ -238,6 +243,72 @@ $pageScripts[] = [
                 <i class="bi bi-calendar-week button__icon" aria-hidden="true"></i>
                 <span>Relatório anual</span>
             </a>
+        </div>
+    </div>
+
+    <div class="dashboard-alerts">
+        <div class="card dashboard-alerts__card">
+            <header class="section-heading section-heading--compact">
+                <span class="icon-circle icon-circle--warning" aria-hidden="true">
+                    <i class="bi bi-umbrella-fill"></i>
+                </span>
+                <div>
+                    <h3>Férias previstas</h3>
+                    <p class="muted">Acompanhe colaboradores com períodos liberados neste mês.</p>
+                </div>
+            </header>
+            <?php $vacationPreview = array_slice($vacationAlerts, 0, 6); ?>
+            <?php if ($vacationPreview === []): ?>
+                <p class="muted">Nenhuma férias programada para o período atual.</p>
+            <?php else: ?>
+                <ul class="alert-list">
+                    <?php foreach ($vacationPreview as $alert): ?>
+                        <?php $available = $alert['available_from']; ?>
+                        <?php $concessionEnd = $alert['concession_end'] ?? null; ?>
+                        <li>
+                            <div class="alert-list__content">
+                                <strong><?= htmlspecialchars($alert['employee']->getName()); ?></strong>
+                                <small class="muted">
+                                    Disponível em <?= $available instanceof DateTimeImmutable ? htmlspecialchars($available->format('d/m')) : '—'; ?>
+                                    <?php if ($concessionEnd instanceof DateTimeImmutable): ?>
+                                        • Concessão até <?= htmlspecialchars($concessionEnd->format('d/m')); ?>
+                                    <?php endif; ?>
+                                </small>
+                            </div>
+                            <span class="status-pill <?= $alert['eligible'] ? 'status-pill--success' : 'status-pill--warning'; ?>">
+                                <?= htmlspecialchars($alert['status'] ?: 'Em aquisição'); ?>
+                            </span>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+        </div>
+
+        <div class="card dashboard-alerts__card">
+            <header class="section-heading section-heading--compact">
+                <span class="icon-circle icon-circle--info" aria-hidden="true">
+                    <i class="bi bi-cake2"></i>
+                </span>
+                <div>
+                    <h3>Aniversariantes do mês</h3>
+                    <p class="muted">Celebre os colaboradores que fazem aniversário neste período.</p>
+                </div>
+            </header>
+            <?php $birthdayPreview = array_slice($birthdayAlerts, 0, 6); ?>
+            <?php if ($birthdayPreview === []): ?>
+                <p class="muted">Nenhum aniversário registrado para este mês.</p>
+            <?php else: ?>
+                <ul class="alert-list">
+                    <?php foreach ($birthdayPreview as $alert): ?>
+                        <li>
+                            <div class="alert-list__content">
+                                <strong><?= htmlspecialchars($alert['employee']->getName()); ?></strong>
+                                <small class="muted">Dia <?= htmlspecialchars($alert['date']->format('d/m')); ?></small>
+                            </div>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -401,7 +472,8 @@ $pageScripts[] = [
                                     <?php $cellDate = $cell['date']; ?>
                                     <?php $cellPayrolls = $cell['payrolls']; ?>
                                     <?php $cellBirthdays = $cell['birthdays']; ?>
-                                    <?php $hasEvents = $cellPayrolls !== [] || $cellBirthdays !== []; ?>
+                                    <?php $cellVacations = $cell['vacations']; ?>
+                                    <?php $hasEvents = $cellPayrolls !== [] || $cellBirthdays !== [] || $cellVacations !== []; ?>
                                     <td class="calendar-day<?= $hasEvents ? ' calendar-day--has-events' : ''; ?>">
                                         <div class="calendar-day__date"><?= htmlspecialchars($cellDate->format('d')); ?></div>
                                         <?php if ($hasEvents): ?>
@@ -419,6 +491,13 @@ $pageScripts[] = [
                                                 $markerGroups['birthday'] = [
                                                     'type' => 'birthday',
                                                     'employees' => $cellBirthdays,
+                                                ];
+                                            }
+
+                                            if ($cellVacations !== []) {
+                                                $markerGroups['vacation_plan'] = [
+                                                    'type' => 'vacation_plan',
+                                                    'vacations' => $cellVacations,
                                                 ];
                                             }
                                             ?>
@@ -461,6 +540,51 @@ $pageScripts[] = [
                                                             >
                                                                 <i class="bi bi-cake2" aria-hidden="true"></i>
                                                                 <span class="visually-hidden">Aniversários</span>
+                                                            </button>
+                                                            <span class="calendar-day__marker-label <?= htmlspecialchars($labelClass); ?>"><?= htmlspecialchars($labelText); ?></span>
+                                                        </span>
+                                                    <?php elseif ($groupType === 'vacation_plan'): ?>
+                                                        <?php
+                                                        $markerClass = $calendarMarkerClasses['vacation_plan'] ?? 'calendar-day__marker--vacation';
+                                                        $labelClass = 'calendar-day__marker-label--vacation';
+                                                        $markerTitle = $typeLabels['vacation_plan'] ?? 'Férias programadas';
+                                                        $labelText = $markerLabelText['vacation_plan'] ?? 'Férias';
+                                                        $infoItems = [];
+                                                        $summaryParts = [];
+                                                        foreach ($group['vacations'] as $vacationInfo) {
+                                                            /** @var Holerite\Models\Employee $vacationEmployee */
+                                                            $vacationEmployee = $vacationInfo['employee'];
+                                                            $employeeName = $vacationEmployee->getName();
+                                                            $concessionEnd = $vacationInfo['concession_end'] ?? null;
+                                                            $details = $concessionEnd instanceof DateTimeImmutable
+                                                                ? 'Concessão até ' . $concessionEnd->format('d/m')
+                                                                : 'Período liberado';
+                                                            $infoItems[] = [
+                                                                'name' => $employeeName,
+                                                                'details' => $details,
+                                                            ];
+                                                            $summaryParts[] = $employeeName . ' — ' . $details;
+                                                        }
+                                                        $infoPayload = [
+                                                            'title' => $markerTitle,
+                                                            'date' => $cellDate->format('d/m/Y'),
+                                                            'items' => $infoItems,
+                                                            'category' => 'vacation_plan',
+                                                            'status' => 'Planejado',
+                                                        ];
+                                                        $infoJson = htmlspecialchars(json_encode($infoPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
+                                                        $ariaLabel = $markerTitle . ' em ' . $cellDate->format('d/m/Y') . ': ' . implode('; ', $summaryParts);
+                                                        ?>
+                                                        <span class="calendar-day__marker-group">
+                                                            <button
+                                                                type="button"
+                                                                class="calendar-day__marker <?= $markerClass; ?>"
+                                                                data-marker-info="<?= $infoJson; ?>"
+                                                                aria-expanded="false"
+                                                                aria-label="<?= htmlspecialchars($ariaLabel); ?>"
+                                                            >
+                                                                <i class="bi bi-umbrella-fill" aria-hidden="true"></i>
+                                                                <span class="visually-hidden">Férias programadas</span>
                                                             </button>
                                                             <span class="calendar-day__marker-label <?= htmlspecialchars($labelClass); ?>"><?= htmlspecialchars($labelText); ?></span>
                                                         </span>

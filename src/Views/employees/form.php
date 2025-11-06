@@ -50,6 +50,11 @@ $pageScripts[] = [
                 <input type="date" id="hire_date" name="hire_date" value="<?= htmlspecialchars($employee?->getHireDate()->format('Y-m-d') ?? date('Y-m-d')); ?>" required>
             </div>
             <div>
+                <label for="vacation_base_date">Base para contagem de férias</label>
+                <input type="date" id="vacation_base_date" name="vacation_base_date" value="<?= htmlspecialchars($employee?->getVacationBaseDate()?->format('Y-m-d') ?? ''); ?>">
+                <small class="muted">Informe a data que marca o início do ciclo atual de férias. Deixe em branco para usar a admissão.</small>
+            </div>
+            <div>
                 <label for="termination_date">Data de desligamento</label>
                 <input type="date" id="termination_date" name="termination_date" value="<?= htmlspecialchars($employee?->getTerminationDate()?->format('Y-m-d') ?? ''); ?>">
                 <small class="muted">Preencha apenas se o vínculo já tiver sido encerrado.</small>
