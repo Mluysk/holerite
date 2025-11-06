@@ -214,7 +214,7 @@ $pageScripts[] = [
         <?php endif; ?>
         <div class="payroll-create__grid">
             <div class="payroll-create__main">
-                <div class="card form-card" data-hide-when-advance="true" style="display: <?= $isAdvanceType ? 'none' : 'block'; ?>;">
+                <div class="card form-card">
                     <header class="form-card__header">
                         <span class="form-card__icon" aria-hidden="true"><i class="bi bi-clipboard-check"></i></span>
                         <div>
