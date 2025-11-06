@@ -18,6 +18,9 @@ $defaultVacationDays = max(1, min(30, (int) ($defaults['vacation_days'] ?? 30)))
 $defaultWorkedDays = max(0, min(30, (int) ($defaults['worked_days'] ?? 30)));
 $defaultJustCause = !empty($defaults['just_cause']);
 $defaultValeDeduction = number_format((float) ($defaults['vale_deduction'] ?? 0), 2, '.', '');
+$defaultUseTransport = !empty($defaults['use_transport']);
+$defaultTransportDays = max(0, min(31, (int) ($defaults['transport_days'] ?? 22)));
+$defaultTransportTripCost = number_format((float) ($defaults['transport_trip_cost'] ?? 6.0), 2, '.', '');
 $defaultAdvanceAmount = number_format((float) ($defaults['advance_amount'] ?? 0), 2, '.', '');
 $defaultRemainingAmount = number_format((float) ($defaults['remaining_amount'] ?? 0), 2, '.', '');
 $defaultAdvanceRatioRaw = (string) ($defaults['advance_ratio'] ?? '');
@@ -40,6 +43,11 @@ if ($isAdvanceType && $defaultAdvanceRatioRaw === '') {
 }
 if ($isAdvanceType && $defaultAdvanceRatioRaw !== 'custom') {
     $defaultAdvanceRatioCustomRaw = '';
+}
+if ($isAdvanceType) {
+    $defaultUseTransport = false;
+    $defaultTransportDays = 0;
+    $defaultTransportTripCost = number_format(6.0, 2, '.', '');
 }
 $linkedAdvanceAmountLabel = $linkedAdvanceRecord !== null
     ? 'R$ ' . number_format($linkedAdvanceRecord->getAdvanceAmount(), 2, ',', '.')
@@ -150,10 +158,6 @@ if ($isAdvanceType) {
 }
 $advanceLocked = $defaultAdvanceReferenceId > 0 || $isAdvanceType;
 $remainingLocked = $isAdvanceType;
-$defaultUseTransport = !empty($defaults['use_transport']);
-$defaultTransportDays = max(0, min(31, (int) ($defaults['transport_days'] ?? 22)));
-$defaultTransportTripCost = number_format((float) ($defaults['transport_trip_cost'] ?? 6.0), 2, '.', '');
-
 if (!isset($pageScripts) || !is_array($pageScripts)) {
     $pageScripts = [];
 }
@@ -214,7 +218,7 @@ $pageScripts[] = [
         <?php endif; ?>
         <div class="payroll-create__grid">
             <div class="payroll-create__main">
-                <div class="card form-card">
+                <div class="card form-card" data-hide-when-advance="true" style="display: <?= $isAdvanceType ? 'none' : 'block'; ?>;">
                     <header class="form-card__header">
                         <span class="form-card__icon" aria-hidden="true"><i class="bi bi-clipboard-check"></i></span>
                         <div>
@@ -388,10 +392,10 @@ $pageScripts[] = [
                     <div class="form-card__body">
                         <input type="hidden" name="use_transport" value="0">
                         <label class="muted form-card__checkbox" for="use_transport">
-                            <input type="checkbox" id="use_transport" name="use_transport" value="1" <?= $defaultUseTransport ? 'checked' : ''; ?>>
+                            <input type="checkbox" id="use_transport" name="use_transport" value="1" <?= $defaultUseTransport ? 'checked' : ''; ?> <?= $isAdvanceType ? 'disabled' : ''; ?>>
                             Utilizar vale-transporte (ida e volta)
                         </label>
-                        <div id="transport-fields" class="form-card__toggle" style="display: <?= $defaultUseTransport ? 'block' : 'none'; ?>;">
+                        <div id="transport-fields" class="form-card__toggle" style="display: <?= $defaultUseTransport && !$isAdvanceType ? 'block' : 'none'; ?>;">
                             <div class="form-grid form-grid--two">
                                 <div class="form-field">
                                     <label for="transport_days">Dias com ida e volta</label>

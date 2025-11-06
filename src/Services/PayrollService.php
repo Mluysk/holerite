@@ -48,13 +48,13 @@ final class PayrollService
         $transportTripCost = 0.0;
         $inputAdvanceRatio = $this->extractAdvanceRatio($data);
         $payrollAdvanceRatio = null;
-
-        $advanceReferenceIdInput = isset($data['advance_reference_id']) ? (int) $data['advance_reference_id'] : null;
-        if ($advanceReferenceIdInput !== null && $advanceReferenceIdInput <= 0) {
-            $advanceReferenceIdInput = null;
-        }
+        $advanceReferenceIdInput = $this->normalizeNullableInt($data['advance_reference_id'] ?? null);
 
         if ($type === 'advance') {
+            $useTransport = false;
+            $transportDays = 0;
+            $transportTripCost = 0.0;
+
             $baseSalaryAmount = $employee->getBaseSalary();
             $advanceRatio = $inputAdvanceRatio ?? 0.4;
 
@@ -339,15 +339,7 @@ final class PayrollService
             }
         }
 
-        $advanceReferenceIdValue = null;
-
-        if ($advanceReferenceId !== null) {
-            $normalizedAdvanceReferenceId = (int) $advanceReferenceId;
-
-            if ($normalizedAdvanceReferenceId > 0) {
-                $advanceReferenceIdValue = $normalizedAdvanceReferenceId;
-            }
-        }
+        $advanceReferenceIdValue = $this->normalizeNullableInt($advanceReferenceId ?? $advanceReferenceIdInput);
 
         $payroll = new Payroll(
             null,
@@ -525,6 +517,25 @@ final class PayrollService
         }
 
         return null;
+    }
+
+    private function normalizeNullableInt(mixed $value): ?int
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if (is_string($value)) {
+            $value = trim($value);
+
+            if ($value === '') {
+                return null;
+            }
+        }
+
+        $intValue = (int) $value;
+
+        return $intValue > 0 ? $intValue : null;
     }
 
     private function normalizeType(string $type): string
