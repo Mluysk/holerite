@@ -12,6 +12,7 @@ final class Employee
         private ?int $id,
         private string $name,
         private string $cpf,
+        private DateTimeImmutable $birthDate,
         private float $baseSalary,
         private string $department,
         private string $position,
@@ -77,6 +78,16 @@ final class Employee
     public function getBaseSalary(): float
     {
         return $this->baseSalary;
+    }
+
+    public function getBirthDate(): DateTimeImmutable
+    {
+        return $this->birthDate;
+    }
+
+    public function setBirthDate(DateTimeImmutable $birthDate): void
+    {
+        $this->birthDate = $birthDate;
     }
 
     public function setBaseSalary(float $baseSalary): void

@@ -2182,7 +2182,7 @@ tr:nth-child(even) td {
     background: var(--color-surface-alt);
 }
 
-.calendar-day--has-payments {
+.calendar-day--has-events {
     box-shadow: inset 0 0 0 2px rgba(var(--color-primary-rgb), 0.35);
 }
 
@@ -2196,7 +2196,7 @@ tr:nth-child(even) td {
     color: var(--color-text);
 }
 
-.calendar-day--has-payments .calendar-day__date {
+.calendar-day--has-events .calendar-day__date {
     background: rgba(var(--color-primary-rgb), 0.18);
     color: var(--color-text);
 }
@@ -2269,6 +2269,30 @@ tr:nth-child(even) td {
     box-shadow: 0 0 0 2px rgba(100, 116, 139, 0.24);
 }
 
+.calendar-day__marker--advance {
+    background: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.24);
+}
+
+.calendar-day__marker--birthday {
+    background: linear-gradient(135deg, #ec4899, #f472b6);
+    color: #ffffff;
+    width: 18px;
+    height: 18px;
+    box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.26);
+    font-size: 0.7rem;
+}
+
+.calendar-day__marker--birthday i {
+    font-size: 0.65rem;
+    line-height: 1;
+}
+
+.theme-dark .calendar-day__marker--birthday {
+    color: #ffffff;
+    box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.42);
+}
+
 .calendar-day__marker-label {
     font-size: 0.7rem;
     font-weight: 600;
@@ -2286,6 +2310,14 @@ tr:nth-child(even) td {
 
 .calendar-day__marker-label--vacation {
     color: #f59e0b;
+}
+
+.calendar-day__marker-label--advance {
+    color: #3b82f6;
+}
+
+.calendar-day__marker-label--birthday {
+    color: #ec4899;
 }
 
 .calendar-day__marker-label--termination {
@@ -2334,6 +2366,14 @@ tr:nth-child(even) td {
 
 .calendar-tooltip[data-category="termination"] {
     --tooltip-accent-rgb: 100, 116, 139;
+}
+
+.calendar-tooltip[data-category="advance"] {
+    --tooltip-accent-rgb: 59, 130, 246;
+}
+
+.calendar-tooltip[data-category="birthday"] {
+    --tooltip-accent-rgb: 236, 72, 153;
 }
 
 .theme-dark .calendar-tooltip {
@@ -2633,6 +2673,26 @@ tr:nth-child(even) td {
     height: 14px;
     border-radius: 999px;
     cursor: default;
+}
+
+.calendar-legend__marker--birthday {
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #ec4899, #f472b6);
+    color: #ffffff;
+    box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.25);
+}
+
+.calendar-legend__marker--birthday i {
+    font-size: 0.75rem;
+    line-height: 1;
+}
+
+.theme-dark .calendar-legend__marker--birthday {
+    box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.42);
 }
 
 .dashboard-status {

@@ -131,6 +131,7 @@ $totalEmployees = count($entries);
                             <tr>
                                 <th>Colaborador</th>
                                 <th>CPF</th>
+                                <th>Nascimento</th>
                                 <th>Departamento</th>
                                 <th>Cargo</th>
                                 <th>Salário base</th>
@@ -151,6 +152,7 @@ $totalEmployees = count($entries);
                             <tr>
                                 <td><?= htmlspecialchars($employee->getName()); ?></td>
                                 <td><?= htmlspecialchars($employee->getCpfFormatted()); ?></td>
+                                <td><?= htmlspecialchars($employee->getBirthDate()->format('d/m/Y')); ?></td>
                                 <td><?= htmlspecialchars($employee->getDepartment()); ?></td>
                                 <td><?= htmlspecialchars($employee->getPosition()); ?></td>
                                 <td>R$ <?= number_format($employee->getBaseSalary(), 2, ',', '.'); ?></td>

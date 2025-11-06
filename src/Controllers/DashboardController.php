@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Holerite\Controllers;
 
 use DateTimeImmutable;
+use Holerite\Models\Employee;
 use Holerite\Models\Payroll;
 use Holerite\Repositories\EmployeeRepository;
 use Holerite\Repositories\PayrollRepository;
@@ -71,12 +72,6 @@ final class DashboardController extends Controller
                 $currentMonthManualVale += $payroll->getManualValeDeduction();
                 $currentMonthTransportVale += $payroll->getTransportDeduction();
                 $currentMonthTransportCost += $payroll->getTransportTotalCost();
-                $dateKey = $paymentDate->format('Y-m-d');
-                if (!isset($calendarEvents[$dateKey])) {
-                    $calendarEvents[$dateKey] = [];
-                }
-                $calendarEvents[$dateKey][] = $payroll;
-
                 if ($payroll->getType() === 'regular') {
                     $paidRegularPayrolls[$payroll->getEmployeeId()] = $payroll;
                 }
@@ -97,6 +92,63 @@ final class DashboardController extends Controller
                 $currentYearTransportVale += $payroll->getTransportDeduction();
                 $currentYearTransportCost += $payroll->getTransportTotalCost();
             }
+        }
+
+        $calendarEvents = [];
+        $calendarYearNumber = (int) $currentMonth->format('Y');
+        $calendarMonthNumber = (int) $currentMonth->format('m');
+        $daysInCalendarMonth = (int) $currentMonth->format('t');
+
+        foreach ($allPayrolls as $calendarPayroll) {
+            $paymentDate = $calendarPayroll->getPaymentDate();
+
+            if ($paymentDate->format('Y-m') !== $currentMonthKey) {
+                continue;
+            }
+
+            $dateKey = $paymentDate->format('Y-m-d');
+
+            if (!isset($calendarEvents[$dateKey])) {
+                $calendarEvents[$dateKey] = [
+                    'payrolls' => [],
+                    'birthdays' => [],
+                ];
+            }
+
+            $calendarEvents[$dateKey]['payrolls'][] = $calendarPayroll;
+        }
+
+        foreach ($employees as $employee) {
+            $terminationDate = $employee->getTerminationDate();
+
+            if ($terminationDate !== null && $terminationDate < $currentMonth) {
+                continue;
+            }
+
+            if ($employee->getHireDate() > $monthEnd) {
+                continue;
+            }
+
+            $birthDate = $employee->getBirthDate();
+            $birthMonth = (int) $birthDate->format('m');
+
+            if ($birthMonth !== $calendarMonthNumber) {
+                continue;
+            }
+
+            $birthDay = (int) $birthDate->format('d');
+            $targetDay = min($birthDay, $daysInCalendarMonth);
+            $birthdayDate = $currentMonth->setDate($calendarYearNumber, $calendarMonthNumber, $targetDay);
+            $dateKey = $birthdayDate->format('Y-m-d');
+
+            if (!isset($calendarEvents[$dateKey])) {
+                $calendarEvents[$dateKey] = [
+                    'payrolls' => [],
+                    'birthdays' => [],
+                ];
+            }
+
+            $calendarEvents[$dateKey]['birthdays'][] = $employee;
         }
 
         $totalTransportCost = round($totalTransportCost, 2);
@@ -343,8 +395,8 @@ final class DashboardController extends Controller
 
     /**
      * @param DateTimeImmutable $month
-     * @param array<string, array<int, Payroll>> $events
-     * @return array<int, array<int, array{date: DateTimeImmutable|null, payrolls: array<int, Payroll>}>>
+     * @param array<string, array{payrolls: array<int, Payroll>, birthdays: array<int, Employee>}> $events
+     * @return array<int, array<int, array{date: DateTimeImmutable|null, payrolls: array<int, Payroll>, birthdays: array<int, Employee>}>>
      */
     private function buildCalendarWeeks(DateTimeImmutable $month, array $events): array
     {
@@ -353,7 +405,7 @@ final class DashboardController extends Controller
 
         $firstWeekday = (int) $month->format('N');
         for ($i = 1; $i < $firstWeekday; $i++) {
-            $week[] = ['date' => null, 'payrolls' => []];
+            $week[] = ['date' => null, 'payrolls' => [], 'birthdays' => []];
         }
 
         $daysInMonth = (int) $month->format('t');
@@ -364,9 +416,12 @@ final class DashboardController extends Controller
             $date = $month->setDate($year, $monthNumber, $day);
             $dateKey = $date->format('Y-m-d');
 
+            $dayEvents = $events[$dateKey] ?? ['payrolls' => [], 'birthdays' => []];
+
             $week[] = [
                 'date' => $date,
-                'payrolls' => $events[$dateKey] ?? [],
+                'payrolls' => $dayEvents['payrolls'] ?? [],
+                'birthdays' => $dayEvents['birthdays'] ?? [],
             ];
 
             if (count($week) === 7) {
@@ -377,7 +432,7 @@ final class DashboardController extends Controller
 
         if ($week !== []) {
             while (count($week) < 7) {
-                $week[] = ['date' => null, 'payrolls' => []];
+                $week[] = ['date' => null, 'payrolls' => [], 'birthdays' => []];
             }
             $weeks[] = $week;
         }

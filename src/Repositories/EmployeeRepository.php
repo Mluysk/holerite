@@ -44,10 +44,11 @@ final class EmployeeRepository
 
     public function create(Employee $employee): Employee
     {
-        $statement = $this->pdo->prepare('INSERT INTO employees (name, cpf, base_salary, department, position, hire_date, termination_date) VALUES (:name, :cpf, :base_salary, :department, :position, :hire_date, :termination_date)');
+        $statement = $this->pdo->prepare('INSERT INTO employees (name, cpf, birth_date, base_salary, department, position, hire_date, termination_date) VALUES (:name, :cpf, :birth_date, :base_salary, :department, :position, :hire_date, :termination_date)');
         $statement->execute([
             'name' => $employee->getName(),
             'cpf' => $employee->getCpf(),
+            'birth_date' => $employee->getBirthDate()->format('Y-m-d'),
             'base_salary' => $employee->getBaseSalary(),
             'department' => $employee->getDepartment(),
             'position' => $employee->getPosition(),
@@ -62,11 +63,12 @@ final class EmployeeRepository
 
     public function update(Employee $employee): void
     {
-        $statement = $this->pdo->prepare('UPDATE employees SET name = :name, cpf = :cpf, base_salary = :base_salary, department = :department, position = :position, hire_date = :hire_date, termination_date = :termination_date WHERE id = :id');
+        $statement = $this->pdo->prepare('UPDATE employees SET name = :name, cpf = :cpf, birth_date = :birth_date, base_salary = :base_salary, department = :department, position = :position, hire_date = :hire_date, termination_date = :termination_date WHERE id = :id');
         $statement->execute([
             'id' => $employee->getId(),
             'name' => $employee->getName(),
             'cpf' => $employee->getCpf(),
+            'birth_date' => $employee->getBirthDate()->format('Y-m-d'),
             'base_salary' => $employee->getBaseSalary(),
             'department' => $employee->getDepartment(),
             'position' => $employee->getPosition(),
@@ -90,6 +92,9 @@ final class EmployeeRepository
             (int) $row['id'],
             (string) $row['name'],
             (string) $row['cpf'],
+            isset($row['birth_date']) && $row['birth_date'] !== null && $row['birth_date'] !== ''
+                ? new DateTimeImmutable((string) $row['birth_date'])
+                : new DateTimeImmutable('1900-01-01'),
             (float) $row['base_salary'],
             (string) $row['department'],
             (string) $row['position'],

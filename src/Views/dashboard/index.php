@@ -27,7 +27,7 @@
 /** @var array{labels: array<int, string>, values: array<int, float>, percentages: array<int, float>, total: float} $yearlyValeManualChart */
 /** @var array{labels: array<int, string>, values: array<int, float>, percentages: array<int, float>, total: float} $yearlyValeTransportChart */
 /** @var DateTimeImmutable $calendarMonth */
-/** @var array<int, array<int, array{date: DateTimeImmutable|null, payrolls: Holerite\Models\Payroll[]}>> $calendarWeeks */
+/** @var array<int, array<int, array{date: DateTimeImmutable|null, payrolls: Holerite\Models\Payroll[], birthdays: Holerite\Models\Employee[]}>> $calendarWeeks */
 /** @var Holerite\Models\Payroll[] $paidMonthlyPayrolls */
 /** @var Holerite\Models\Employee[] $pendingMonthlyEmployees */
 /**
@@ -61,6 +61,8 @@ $typeLabels = [
     'vacation' => 'Férias',
     'termination' => 'Rescisão',
     'thirteenth' => '13º Salário',
+    'advance' => 'Adiantamento salarial',
+    'birthday' => 'Aniversários',
 ];
 
 $calendarMarkerClasses = [
@@ -68,6 +70,17 @@ $calendarMarkerClasses = [
     'thirteenth' => 'calendar-day__marker--thirteenth',
     'vacation' => 'calendar-day__marker--vacation',
     'termination' => 'calendar-day__marker--termination',
+    'advance' => 'calendar-day__marker--advance',
+    'birthday' => 'calendar-day__marker--birthday',
+];
+
+$markerLabelText = [
+    'regular' => 'Pago',
+    'thirteenth' => 'Pago',
+    'vacation' => 'Pago',
+    'termination' => 'Pago',
+    'advance' => 'Adiant.',
+    'birthday' => 'Aniversário',
 ];
 
 $weekDays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
@@ -387,74 +400,129 @@ $pageScripts[] = [
                                 <?php else: ?>
                                     <?php $cellDate = $cell['date']; ?>
                                     <?php $cellPayrolls = $cell['payrolls']; ?>
-                                    <?php $hasPayments = $cellPayrolls !== []; ?>
-                                    <td class="calendar-day<?= $hasPayments ? ' calendar-day--has-payments' : ''; ?>">
+                                    <?php $cellBirthdays = $cell['birthdays']; ?>
+                                    <?php $hasEvents = $cellPayrolls !== [] || $cellBirthdays !== []; ?>
+                                    <td class="calendar-day<?= $hasEvents ? ' calendar-day--has-events' : ''; ?>">
                                         <div class="calendar-day__date"><?= htmlspecialchars($cellDate->format('d')); ?></div>
-                                        <?php if ($hasPayments): ?>
+                                        <?php if ($hasEvents): ?>
                                             <?php
                                             $markerGroups = [];
-                                            foreach ($cellPayrolls as $cellPayroll) {
-                                                $groupType = $cellPayroll->getType();
-                                                $markerGroups[$groupType]['type'] = $groupType;
-                                                $markerGroups[$groupType]['payrolls'][] = $cellPayroll;
+                                            if ($cellPayrolls !== []) {
+                                                foreach ($cellPayrolls as $cellPayroll) {
+                                                    $groupType = $cellPayroll->getType();
+                                                    $markerGroups[$groupType]['type'] = $groupType;
+                                                    $markerGroups[$groupType]['payrolls'][] = $cellPayroll;
+                                                }
+                                            }
+
+                                            if ($cellBirthdays !== []) {
+                                                $markerGroups['birthday'] = [
+                                                    'type' => 'birthday',
+                                                    'employees' => $cellBirthdays,
+                                                ];
                                             }
                                             ?>
-                                            <div class="calendar-day__markers" role="group" aria-label="Pagamentos do dia <?= htmlspecialchars($cellDate->format('d/m')); ?>">
+                                            <div class="calendar-day__markers" role="group" aria-label="Eventos do dia <?= htmlspecialchars($cellDate->format('d/m')); ?>">
                                                 <?php foreach ($markerGroups as $group): ?>
-                                                    <?php
-                                                    $groupType = $group['type'];
-                                                    $markerClass = $calendarMarkerClasses[$groupType] ?? 'calendar-day__marker--default';
-                                                    $labelClass = 'calendar-day__marker-label--' . ($groupType ?? 'default');
-                                                    $markerTitle = $typeLabels[$groupType] ?? 'Pagamento';
-                                                    $infoItems = [];
-                                                    $summaryParts = [];
-                                                    foreach ($group['payrolls'] as $groupPayroll) {
-                                                        $employeeName = $employeeNames[$groupPayroll->getEmployeeId()] ?? 'Colaborador';
-                                                        $amount = 'R$ ' . number_format($groupPayroll->getNetSalary(), 2, ',', '.');
-                                                        $details = '';
-                                                        if ($groupType === 'thirteenth') {
-                                                            $installment = $groupPayroll->getThirteenthInstallment();
-                                                            if ($installment === 'first') {
-                                                                $details = '1ª parcela';
-                                                            } elseif ($installment === 'second') {
-                                                                $details = '2ª parcela';
-                                                            }
+                                                    <?php $groupType = $group['type']; ?>
+                                                    <?php if ($groupType === 'birthday'): ?>
+                                                        <?php
+                                                        $markerClass = $calendarMarkerClasses['birthday'] ?? 'calendar-day__marker--default';
+                                                        $labelClass = 'calendar-day__marker-label--birthday';
+                                                        $markerTitle = $typeLabels['birthday'] ?? 'Aniversários';
+                                                        $labelText = $markerLabelText['birthday'] ?? 'Aniversário';
+                                                        $infoItems = [];
+                                                        $summaryParts = [];
+                                                        foreach ($group['employees'] as $birthdayEmployee) {
+                                                            $employeeName = $birthdayEmployee->getName();
+                                                            $infoItems[] = [
+                                                                'name' => $employeeName,
+                                                                'details' => 'Celebra hoje',
+                                                            ];
+                                                            $summaryParts[] = $employeeName;
                                                         }
-                                                        $infoItems[] = [
-                                                            'name' => $employeeName,
-                                                            'amount' => $amount,
-                                                            'details' => $details,
+                                                        $infoPayload = [
+                                                            'title' => $markerTitle,
+                                                            'date' => $cellDate->format('d/m/Y'),
+                                                            'items' => $infoItems,
+                                                            'category' => 'birthday',
+                                                            'status' => 'Aniversário',
                                                         ];
-                                                        $summary = $employeeName . ' — ' . $amount;
-                                                        if ($details !== '') {
-                                                            $summary .= ' (' . $details . ')';
+                                                        $infoJson = htmlspecialchars(json_encode($infoPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
+                                                        $ariaLabel = $markerTitle . ' em ' . $cellDate->format('d/m/Y') . ': ' . implode('; ', $summaryParts);
+                                                        ?>
+                                                        <span class="calendar-day__marker-group">
+                                                            <button
+                                                                type="button"
+                                                                class="calendar-day__marker <?= $markerClass; ?>"
+                                                                data-marker-info="<?= $infoJson; ?>"
+                                                                aria-expanded="false"
+                                                                aria-label="<?= htmlspecialchars($ariaLabel); ?>"
+                                                            >
+                                                                <i class="bi bi-cake2" aria-hidden="true"></i>
+                                                                <span class="visually-hidden">Aniversários</span>
+                                                            </button>
+                                                            <span class="calendar-day__marker-label <?= htmlspecialchars($labelClass); ?>"><?= htmlspecialchars($labelText); ?></span>
+                                                        </span>
+                                                    <?php else: ?>
+                                                        <?php
+                                                        $markerClass = $calendarMarkerClasses[$groupType] ?? 'calendar-day__marker--default';
+                                                        $labelClass = 'calendar-day__marker-label--' . ($groupType ?? 'default');
+                                                        $markerTitle = $typeLabels[$groupType] ?? 'Pagamento';
+                                                        $labelText = $markerLabelText[$groupType] ?? 'Evento';
+                                                        $infoItems = [];
+                                                        $summaryParts = [];
+                                                        foreach ($group['payrolls'] as $groupPayroll) {
+                                                            $employeeName = $employeeNames[$groupPayroll->getEmployeeId()] ?? 'Colaborador';
+                                                            $amount = 'R$ ' . number_format($groupPayroll->getNetSalary(), 2, ',', '.');
+                                                            $details = '';
+                                                            if ($groupType === 'thirteenth') {
+                                                                $installment = $groupPayroll->getThirteenthInstallment();
+                                                                if ($installment === 'first') {
+                                                                    $details = '1ª parcela';
+                                                                } elseif ($installment === 'second') {
+                                                                    $details = '2ª parcela';
+                                                                }
+                                                            } elseif ($groupType === 'advance') {
+                                                                $details = 'Adiantamento';
+                                                            }
+                                                            $infoItems[] = [
+                                                                'name' => $employeeName,
+                                                                'amount' => $amount,
+                                                                'details' => $details,
+                                                            ];
+                                                            $summary = $employeeName . ' — ' . $amount;
+                                                            if ($details !== '') {
+                                                                $summary .= ' (' . $details . ')';
+                                                            }
+                                                            $summaryParts[] = $summary;
                                                         }
-                                                        $summaryParts[] = $summary;
-                                                    }
-                                            $infoPayload = [
-                                                'title' => $markerTitle,
-                                                'date' => $cellDate->format('d/m/Y'),
-                                                'items' => $infoItems,
-                                                'category' => $groupType,
-                                                'status' => 'Pago',
-                                            ];
-                                                    $infoJson = htmlspecialchars(json_encode($infoPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
-                                                    $ariaLabel = $markerTitle . ' em ' . $cellDate->format('d/m/Y') . ': ' . implode('; ', $summaryParts);
-                                                    ?>
-                                                    <span class="calendar-day__marker-group">
-                                                        <button
-                                                            type="button"
-                                                            class="calendar-day__marker <?= $markerClass; ?>"
-                                                            data-marker-info="<?= $infoJson; ?>"
-                                                            aria-expanded="false"
-                                                            aria-label="<?= htmlspecialchars($ariaLabel); ?>"
-                                                        ></button>
-                                                        <span class="calendar-day__marker-label <?= htmlspecialchars($labelClass); ?>">Pago</span>
-                                                    </span>
+                                                        $statusText = $groupType === 'advance' ? 'Adiantamento' : 'Pago';
+                                                        $infoPayload = [
+                                                            'title' => $markerTitle,
+                                                            'date' => $cellDate->format('d/m/Y'),
+                                                            'items' => $infoItems,
+                                                            'category' => $groupType,
+                                                            'status' => $statusText,
+                                                        ];
+                                                        $infoJson = htmlspecialchars(json_encode($infoPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
+                                                        $ariaLabel = $markerTitle . ' em ' . $cellDate->format('d/m/Y') . ': ' . implode('; ', $summaryParts);
+                                                        ?>
+                                                        <span class="calendar-day__marker-group">
+                                                            <button
+                                                                type="button"
+                                                                class="calendar-day__marker <?= $markerClass; ?>"
+                                                                data-marker-info="<?= $infoJson; ?>"
+                                                                aria-expanded="false"
+                                                                aria-label="<?= htmlspecialchars($ariaLabel); ?>"
+                                                            ></button>
+                                                            <span class="calendar-day__marker-label <?= htmlspecialchars($labelClass); ?>"><?= htmlspecialchars($labelText); ?></span>
+                                                        </span>
+                                                    <?php endif; ?>
                                                 <?php endforeach; ?>
                                             </div>
                                         <?php else: ?>
-                                            <div class="calendar-day__placeholder muted">Sem pagamentos</div>
+                                            <div class="calendar-day__placeholder muted">Sem eventos</div>
                                         <?php endif; ?>
                                     </td>
                                 <?php endif; ?>
@@ -476,6 +544,16 @@ $pageScripts[] = [
                 <span class="calendar-legend__item">
                     <span class="calendar-legend__marker calendar-day__marker calendar-day__marker--vacation" aria-hidden="true"></span>
                     <small>Férias</small>
+                </span>
+                <span class="calendar-legend__item">
+                    <span class="calendar-legend__marker calendar-day__marker calendar-day__marker--advance" aria-hidden="true"></span>
+                    <small>Adiantamento salarial</small>
+                </span>
+                <span class="calendar-legend__item">
+                    <span class="calendar-legend__marker calendar-legend__marker--birthday" aria-hidden="true">
+                        <i class="bi bi-cake2"></i>
+                    </span>
+                    <small>Aniversários</small>
                 </span>
             </div>
         </div>

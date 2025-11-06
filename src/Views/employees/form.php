@@ -30,6 +30,10 @@ $pageScripts[] = [
                 <small class="muted">Informe apenas números ou utilize o formato 000.000.000-00.</small>
             </div>
             <div>
+                <label for="birth_date">Data de nascimento</label>
+                <input type="date" id="birth_date" name="birth_date" value="<?= htmlspecialchars($employee?->getBirthDate()?->format('Y-m-d') ?? ''); ?>" required>
+            </div>
+            <div>
                 <label for="department">Departamento</label>
                 <input type="text" id="department" name="department" value="<?= htmlspecialchars($employee?->getDepartment() ?? ''); ?>" required>
             </div>

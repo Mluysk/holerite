@@ -122,6 +122,7 @@ final class EmployeeController extends Controller
                 null,
                 trim((string) ($data['name'] ?? '')),
                 $this->sanitizeCpf($data['cpf'] ?? ''),
+                $this->buildBirthDate($data['birth_date'] ?? null),
                 (float) ($data['base_salary'] ?? 0),
                 trim((string) ($data['department'] ?? '')),
                 trim((string) ($data['position'] ?? '')),
@@ -168,6 +169,7 @@ final class EmployeeController extends Controller
         try {
             $employee->setName(trim((string) ($data['name'] ?? '')));
             $employee->setCpf($this->sanitizeCpf($data['cpf'] ?? ''));
+            $employee->setBirthDate($this->buildBirthDate($data['birth_date'] ?? null));
             $employee->setBaseSalary((float) ($data['base_salary'] ?? 0));
             $employee->setDepartment(trim((string) ($data['department'] ?? '')));
             $employee->setPosition(trim((string) ($data['position'] ?? '')));
@@ -229,6 +231,29 @@ final class EmployeeController extends Controller
         } catch (Throwable) {
             return null;
         }
+    }
+
+    private function buildBirthDate(mixed $value): DateTimeImmutable
+    {
+        $date = trim((string) ($value ?? ''));
+
+        if ($date === '') {
+            throw new InvalidArgumentException('Informe a data de nascimento.');
+        }
+
+        $birthDate = DateTimeImmutable::createFromFormat('Y-m-d', $date);
+
+        if (!$birthDate) {
+            throw new InvalidArgumentException('Data de nascimento inválida.');
+        }
+
+        $today = new DateTimeImmutable('today');
+
+        if ($birthDate > $today) {
+            throw new InvalidArgumentException('A data de nascimento não pode estar no futuro.');
+        }
+
+        return $birthDate;
     }
 
     private function sanitizeCpf(mixed $value): string

@@ -234,7 +234,9 @@
                 regular: 'bi-cash-coin',
                 thirteenth: 'bi-gift-fill',
                 vacation: 'bi-umbrella-fill',
-                termination: 'bi-exclamation-triangle-fill'
+                termination: 'bi-exclamation-triangle-fill',
+                advance: 'bi-wallet2',
+                birthday: 'bi-cake2'
             };
 
             const category = typeof info.category === 'string' ? info.category : '';
