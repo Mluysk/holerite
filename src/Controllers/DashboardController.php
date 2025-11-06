@@ -20,7 +20,11 @@ final class DashboardController extends Controller
     public function index(): void
     {
         $employees = $this->employeeRepository->all();
-        $payrolls = $this->payrollRepository->all();
+        $allPayrolls = $this->payrollRepository->all();
+        $payrolls = array_values(array_filter(
+            $allPayrolls,
+            static fn (Payroll $payroll): bool => $payroll->getType() !== 'advance',
+        ));
 
         $currentMonth = new DateTimeImmutable('first day of this month');
         $currentMonthKey = $currentMonth->format('Y-m');
