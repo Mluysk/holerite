@@ -98,6 +98,10 @@ $markerLabelText = [
     'holiday' => 'Feriado',
 ];
 
+$holidayCity = $holidaySettings->getCity();
+$holidayState = $holidaySettings->getState();
+$hasMunicipalHolidayNote = $holidaySettings->includeMunicipal() && ($holidayCity !== '' || $holidayState !== '');
+
 $weekDays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 
 $calendarNavCurrent = $calendarNavigation['current'] ?? [
@@ -250,15 +254,6 @@ $pageScripts[] = [
                 <h2 class="dashboard-hero__title">Visão geral da folha</h2>
                 <p class="muted">Acompanhe pagamentos, distribuição mensal e desempenho anual em um só lugar.</p>
             </div>
-            <?php
-            $holidayCity = $holidaySettings->getCity();
-            $holidayState = $holidaySettings->getState();
-            if ($holidaySettings->includeMunicipal() && ($holidayCity !== '' || $holidayState !== '')):
-            ?>
-                <p class="calendar-legend__note muted">
-                    Feriados municipais considerando <?= htmlspecialchars($holidayCity !== '' ? $holidayCity : 'sua cidade'); ?><?= $holidayState !== '' ? ' / ' . htmlspecialchars($holidayState) : ''; ?>.
-                </p>
-            <?php endif; ?>
         </div>
         <div class="dashboard-hero__highlight">
             <span class="icon-circle icon-circle--success" aria-hidden="true">
@@ -726,6 +721,11 @@ $pageScripts[] = [
                     <small>Feriados</small>
                 </span>
                 </div>
+                <?php if ($hasMunicipalHolidayNote): ?>
+                    <p class="calendar-legend__note muted">
+                        Feriados municipais considerando <?= htmlspecialchars($holidayCity !== '' ? $holidayCity : 'sua cidade'); ?><?= $holidayState !== '' ? ' / ' . htmlspecialchars($holidayState) : ''; ?>.
+                    </p>
+                <?php endif; ?>
             </div>
             <?php
             $vacationCount = count($vacationAlerts);
