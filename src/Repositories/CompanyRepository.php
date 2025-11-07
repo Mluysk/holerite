@@ -1,0 +1,207 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Holerite\Repositories;
+
+use Holerite\Database\Connection;
+use Holerite\Models\Company;
+use PDO;
+
+final class CompanyRepository
+{
+    private const ALLOWED_COLOR_PALETTES = [
+        'blue',
+        'emerald',
+        'violet',
+        'amber',
+        'rose',
+        'black',
+        'gray',
+        'red',
+        'dark-red',
+        'pink',
+        'yellow',
+        'gold',
+        'rgb',
+        'light-blue',
+        'dark-blue',
+        'wine',
+    ];
+
+    private PDO $pdo;
+
+    /**
+     * @var array<string, string>
+     */
+    private array $defaults;
+
+    public function __construct()
+    {
+        $this->pdo = Connection::getInstance();
+        $this->defaults = $this->loadDefaults();
+    }
+
+    public function get(): Company
+    {
+        $statement = $this->pdo->query('SELECT * FROM companies ORDER BY id ASC LIMIT 1');
+        $row = $statement->fetch();
+
+        if ($row === false) {
+            $company = $this->createFromDefaults();
+            $this->save($company);
+            return $company;
+        }
+
+        $company = $this->hydrate($row);
+        $palette = strtolower($company->getColorPalette());
+        $defaultPalette = strtolower($this->defaults['color_palette']);
+        $shouldPersist = false;
+
+        if (!in_array($palette, self::ALLOWED_COLOR_PALETTES, true)) {
+            $company->setColorPalette($defaultPalette);
+            $shouldPersist = true;
+        }
+
+        if ($palette === 'blue' && $defaultPalette === 'dark-red') {
+            $company->setColorPalette('dark-red');
+            $shouldPersist = true;
+        }
+
+        if ($shouldPersist) {
+            $this->save($company);
+        }
+
+        return $company;
+    }
+
+    public function save(Company $company): Company
+    {
+        if ($company->getId() === null) {
+            $statement = $this->pdo->prepare('INSERT INTO companies (name, brand_name, document, address, city, state, zip_code, phone, email, header_logo_path, theme_mode, color_palette, auto_backup_enabled, auto_backup_interval_minutes) VALUES (:name, :brand_name, :document, :address, :city, :state, :zip_code, :phone, :email, :header_logo_path, :theme_mode, :color_palette, :auto_backup_enabled, :auto_backup_interval_minutes)');
+            $statement->execute([
+                'name' => $company->getName(),
+                'brand_name' => $company->getBrandName(),
+                'document' => $company->getDocument(),
+                'address' => $company->getAddress(),
+                'city' => $company->getCity(),
+                'state' => $company->getState(),
+                'zip_code' => $company->getZipCode(),
+                'phone' => $company->getPhone(),
+                'email' => $company->getEmail(),
+                'header_logo_path' => $company->getHeaderLogoPath(),
+                'theme_mode' => $company->getThemeMode(),
+                'color_palette' => $company->getColorPalette(),
+                'auto_backup_enabled' => $company->isAutoBackupEnabled() ? 1 : 0,
+                'auto_backup_interval_minutes' => $company->getAutoBackupIntervalMinutes(),
+            ]);
+
+            $company->setId((int) $this->pdo->lastInsertId());
+            return $company;
+        }
+
+        $statement = $this->pdo->prepare('UPDATE companies SET name = :name, brand_name = :brand_name, document = :document, address = :address, city = :city, state = :state, zip_code = :zip_code, phone = :phone, email = :email, header_logo_path = :header_logo_path, theme_mode = :theme_mode, color_palette = :color_palette, auto_backup_enabled = :auto_backup_enabled, auto_backup_interval_minutes = :auto_backup_interval_minutes WHERE id = :id');
+        $statement->execute([
+            'id' => $company->getId(),
+            'name' => $company->getName(),
+            'brand_name' => $company->getBrandName(),
+            'document' => $company->getDocument(),
+            'address' => $company->getAddress(),
+            'city' => $company->getCity(),
+            'state' => $company->getState(),
+            'zip_code' => $company->getZipCode(),
+            'phone' => $company->getPhone(),
+            'email' => $company->getEmail(),
+            'header_logo_path' => $company->getHeaderLogoPath(),
+            'theme_mode' => $company->getThemeMode(),
+            'color_palette' => $company->getColorPalette(),
+            'auto_backup_enabled' => $company->isAutoBackupEnabled() ? 1 : 0,
+            'auto_backup_interval_minutes' => $company->getAutoBackupIntervalMinutes(),
+        ]);
+
+        return $company;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private function hydrate(array $row): Company
+    {
+        return new Company(
+            isset($row['id']) ? (int) $row['id'] : null,
+            (string) ($row['name'] ?? $this->defaults['name']),
+            (string) ($row['brand_name'] ?? $this->defaults['brand_name']),
+            (string) ($row['document'] ?? $this->defaults['document']),
+            (string) ($row['address'] ?? $this->defaults['address']),
+            (string) ($row['city'] ?? $this->defaults['city']),
+            (string) ($row['state'] ?? $this->defaults['state']),
+            (string) ($row['zip_code'] ?? $this->defaults['zip_code']),
+            (string) ($row['phone'] ?? $this->defaults['phone']),
+            (string) ($row['email'] ?? $this->defaults['email']),
+            (string) ($row['header_logo_path'] ?? $this->defaults['header_logo_path']),
+            (string) ($row['theme_mode'] ?? $this->defaults['theme_mode']),
+            (string) ($row['color_palette'] ?? $this->defaults['color_palette']),
+            isset($row['auto_backup_enabled']) ? (bool) $row['auto_backup_enabled'] : (bool) ($this->defaults['auto_backup_enabled'] ?? true),
+            isset($row['auto_backup_interval_minutes']) ? (int) $row['auto_backup_interval_minutes'] : (int) ($this->defaults['auto_backup_interval_minutes'] ?? 1440),
+        );
+    }
+
+    private function createFromDefaults(): Company
+    {
+        return new Company(
+            null,
+            $this->defaults['name'],
+            $this->defaults['brand_name'],
+            $this->defaults['document'],
+            $this->defaults['address'],
+            $this->defaults['city'],
+            $this->defaults['state'],
+            $this->defaults['zip_code'],
+            $this->defaults['phone'],
+            $this->defaults['email'],
+            $this->defaults['header_logo_path'],
+            $this->defaults['theme_mode'],
+            $this->defaults['color_palette'],
+            (bool) ($this->defaults['auto_backup_enabled'] ?? true),
+            (int) ($this->defaults['auto_backup_interval_minutes'] ?? 1440),
+        );
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function loadDefaults(): array
+    {
+        $configPath = __DIR__ . '/../../config/config.php';
+        $defaults = [
+            'name' => 'Empresa não configurada',
+            'brand_name' => 'JP Fábrica de Salgados',
+            'document' => '00.000.000/0000-00',
+            'address' => 'Rua não informada, 0',
+            'city' => 'Cidade',
+            'state' => 'UF',
+            'zip_code' => '00000-000',
+            'phone' => '(00) 0000-0000',
+            'email' => 'contato@empresa.com',
+            'header_logo_path' => 'img/logo.png',
+            'theme_mode' => 'light',
+            'color_palette' => 'dark-red',
+            'auto_backup_enabled' => true,
+            'auto_backup_interval_minutes' => 1440,
+        ];
+
+        if (!file_exists($configPath)) {
+            return $defaults;
+        }
+
+        /**
+         * @var array{company?: array<string, string>} $config
+         */
+        $config = require $configPath;
+        if (!isset($config['company']) || !is_array($config['company'])) {
+            return $defaults;
+        }
+
+        return array_merge($defaults, $config['company']);
+    }
+}
