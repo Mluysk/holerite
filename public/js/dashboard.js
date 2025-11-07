@@ -242,7 +242,6 @@
                 termination: 'bi-exclamation-triangle-fill',
                 advance: 'bi-wallet2',
                 birthday: 'bi-cake2',
-                service: 'bi-buildings-fill',
                 vacation_plan: 'bi-umbrella-fill'
             };
 
@@ -484,6 +483,22 @@
             });
         }
 
+        const resolveServiceMessage = function (years) {
+            const milestones = {
+                1: '1 ano de casa! Seu primeiro ciclo conosco — obrigado por todo o empenho. 🎉',
+                2: '2 anos de dedicação e crescimento lado a lado. Seguimos juntos! 🎊',
+                3: '3 anos de parceria e resultados brilhantes. Parabéns pelo esforço! 🎆',
+                4: '4 anos de compromisso constante mantendo nossa equipe forte. ✨',
+                5: '5 anos construindo uma história de sucesso com a gente. Obrigado! 🏆'
+            };
+
+            if (Object.prototype.hasOwnProperty.call(milestones, years)) {
+                return milestones[years];
+            }
+
+            return years + ' anos de empresa celebrados com muito orgulho e dedicação! 🎉';
+        };
+
         if (Array.isArray(payload.service)) {
             payload.service.forEach(function (entry) {
                 if (!entry || typeof entry.name !== 'string') {
@@ -520,7 +535,7 @@
                     icon: 'bi-buildings-fill',
                     title: 'Anos de empresa',
                     subtitle: entry.name,
-                    message: 'Parabéns pelos ' + yearsLabel + ' com a gente! 🎆',
+                    message: resolveServiceMessage(years),
                     meta: metaParts.join(' • '),
                     duration: 8000,
                 });
