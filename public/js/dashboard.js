@@ -242,6 +242,7 @@
                 termination: 'bi-exclamation-triangle-fill',
                 advance: 'bi-wallet2',
                 birthday: 'bi-cake2',
+                service: 'bi-buildings-fill',
                 vacation_plan: 'bi-umbrella-fill'
             };
 
@@ -461,17 +462,6 @@
                     return;
                 }
 
-                const rawYears = typeof entry.years === 'number'
-                    ? entry.years
-                    : parseInt(entry.years, 10);
-                const years = Number.isFinite(rawYears) ? rawYears : null;
-                const yearsLabel = typeof entry.years_label === 'string' && entry.years_label.trim() !== ''
-                    ? entry.years_label.trim()
-                    : null;
-                const hireLabel = typeof entry.hire_label === 'string' && entry.hire_label.trim() !== ''
-                    ? entry.hire_label.trim()
-                    : '';
-
                 const metaParts = [];
                 const dayLabel = typeof entry.label === 'string' && entry.label.trim() !== ''
                     ? entry.label.trim()
@@ -482,28 +472,57 @@
                     metaParts.push('Hoje');
                 }
 
-                let message;
-                if (years !== null && years > 0) {
-                    const displayYears = yearsLabel || (years === 1 ? '1 ano' : years + ' anos');
-                    message = 'Parabéns pelos ' + displayYears + ' de empresa! 🎉';
-                    metaParts.push('Tempo de casa: ' + displayYears);
-                } else {
-                    message = 'Parabéns pelo primeiro ano na empresa! 🎉';
-                    metaParts.push('Primeiro ano na empresa');
-                }
-
-                if (hireLabel) {
-                    metaParts.push('Desde ' + hireLabel);
-                }
-
                 queue.push({
                     type: 'birthday',
                     icon: 'bi-cake2',
                     title: 'Feliz aniversário!',
                     subtitle: entry.name,
-                    message: message,
+                    message: 'Muitas felicidades e conquistas! 🎂',
                     meta: metaParts.join(' • '),
                     duration: 7000,
+                });
+            });
+        }
+
+        if (Array.isArray(payload.service)) {
+            payload.service.forEach(function (entry) {
+                if (!entry || typeof entry.name !== 'string') {
+                    return;
+                }
+
+                const rawYears = typeof entry.years === 'number'
+                    ? entry.years
+                    : parseInt(entry.years, 10);
+                const years = Number.isFinite(rawYears) ? Math.max(1, rawYears) : 1;
+                const yearsLabel = typeof entry.years_label === 'string' && entry.years_label.trim() !== ''
+                    ? entry.years_label.trim()
+                    : (years === 1 ? '1 ano' : years + ' anos');
+                const hireLabel = typeof entry.hire_label === 'string' && entry.hire_label.trim() !== ''
+                    ? entry.hire_label.trim()
+                    : '';
+                const dayLabel = typeof entry.label === 'string' && entry.label.trim() !== ''
+                    ? entry.label.trim()
+                    : '';
+
+                const metaParts = [];
+                if (dayLabel) {
+                    metaParts.push('Hoje • ' + dayLabel);
+                } else {
+                    metaParts.push('Hoje');
+                }
+                metaParts.push('Tempo de casa: ' + yearsLabel);
+                if (hireLabel) {
+                    metaParts.push('Desde ' + hireLabel);
+                }
+
+                queue.push({
+                    type: 'service',
+                    icon: 'bi-buildings-fill',
+                    title: 'Anos de empresa',
+                    subtitle: entry.name,
+                    message: 'Parabéns pelos ' + yearsLabel + ' com a gente! 🎆',
+                    meta: metaParts.join(' • '),
+                    duration: 8000,
                 });
             });
         }

@@ -2354,6 +2354,25 @@ tr:nth-child(even) td {
     box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.42);
 }
 
+.calendar-day__marker--service {
+    background: linear-gradient(135deg, #6366f1, #4338ca);
+    color: #ffffff;
+    width: 18px;
+    height: 18px;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.26);
+    font-size: 0.7rem;
+}
+
+.calendar-day__marker--service i {
+    font-size: 0.65rem;
+    line-height: 1;
+}
+
+.theme-dark .calendar-day__marker--service {
+    color: #ffffff;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.42);
+}
+
 .calendar-day__marker-label {
     font-size: 0.7rem;
     font-weight: 600;
@@ -2379,6 +2398,14 @@ tr:nth-child(even) td {
 
 .calendar-day__marker-label--birthday {
     color: #ec4899;
+}
+
+.calendar-day__marker-label--service {
+    color: #4338ca;
+}
+
+.theme-dark .calendar-day__marker-label--service {
+    color: #a5b4fc;
 }
 
 .calendar-day__marker-label--termination {
@@ -2435,6 +2462,10 @@ tr:nth-child(even) td {
 
 .calendar-tooltip[data-category="birthday"] {
     --tooltip-accent-rgb: 236, 72, 153;
+}
+
+.calendar-tooltip[data-category="service"] {
+    --tooltip-accent-rgb: 99, 102, 241;
 }
 
 .calendar-tooltip[data-category="holiday"] {
@@ -5081,6 +5112,10 @@ body.theme-dark .badge--soon {
     --popup-accent: #f472b6;
 }
 
+.dashboard-popup--service {
+    --popup-accent: #6366f1;
+}
+
 .dashboard-popup--vacation {
     --popup-accent: #fbbf24;
 }
@@ -5089,8 +5124,23 @@ body.theme-dark .badge--soon {
     animation: dashboardPopupBounce 1.35s ease-in-out infinite alternate;
 }
 
+.dashboard-popup--service .dashboard-popup__icon {
+    animation: dashboardPopupGlow 1.6s ease-in-out infinite alternate;
+}
+
 .dashboard-popup--vacation .dashboard-popup__icon {
     animation: dashboardPopupFloat 2s ease-in-out infinite alternate;
+}
+
+@keyframes dashboardPopupGlow {
+    0% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 0 rgba(99, 102, 241, 0.4));
+    }
+    100% {
+        transform: scale(1.08);
+        filter: drop-shadow(0 0 12px rgba(99, 102, 241, 0.55));
+    }
 }
 
 @keyframes dashboardPopupIn {

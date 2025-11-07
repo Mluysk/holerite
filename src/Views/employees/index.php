@@ -81,12 +81,6 @@ $todayValue = (new DateTimeImmutable('today'))->format('Y-m-d');
                                             <span>Desligar</span>
                                         </button>
                                     </form>
-                                    <form method="post" action="?action=delete_employee&id=<?= $employee->getId(); ?>" onsubmit="return confirm('Deseja realmente remover este colaborador?');">
-                                        <button type="submit" class="button button-danger button-pill button-compact">
-                                            <i class="button__icon bi bi-trash3" aria-hidden="true"></i>
-                                            <span>Excluir</span>
-                                        </button>
-                                    </form>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -131,6 +125,12 @@ $todayValue = (new DateTimeImmutable('today'))->format('Y-m-d');
                                         <i class="button__icon bi bi-pencil-square" aria-hidden="true"></i>
                                         <span>Editar</span>
                                     </a>
+                                    <form method="post" action="?action=delete_employee&id=<?= $employee->getId(); ?>" onsubmit="return confirm('Deseja realmente remover este colaborador?');">
+                                        <button type="submit" class="button button-danger button-pill button-compact">
+                                            <i class="button__icon bi bi-trash3" aria-hidden="true"></i>
+                                            <span>Excluir</span>
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

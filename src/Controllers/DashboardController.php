@@ -73,6 +73,8 @@ final class DashboardController extends Controller
         $vacationAlerts = [];
         $birthdayAlerts = [];
         $birthdayPopupAlerts = [];
+        $serviceAnniversaryAlerts = [];
+        $serviceAnniversaryPopupAlerts = [];
         $vacationPopupAlerts = [];
         $holidaySettings = $this->holidayService->getSettings();
         $monthHolidays = $this->holidayService->getHolidaysForMonth($currentMonth);
@@ -128,6 +130,7 @@ final class DashboardController extends Controller
                 $calendarEvents[$dateKey] = [
                     'payrolls' => [],
                     'birthdays' => [],
+                    'service_anniversaries' => [],
                     'vacations' => [],
                     'holidays' => [],
                 ];
@@ -206,6 +209,7 @@ final class DashboardController extends Controller
                         $calendarEvents[$vacationDateKey] = [
                             'payrolls' => [],
                             'birthdays' => [],
+                            'service_anniversaries' => [],
                             'vacations' => [],
                             'holidays' => [],
                         ];
@@ -237,28 +241,74 @@ final class DashboardController extends Controller
                 $calendarEvents[$dateKey] = [
                     'payrolls' => [],
                     'birthdays' => [],
+                    'service_anniversaries' => [],
                     'vacations' => [],
                     'holidays' => [],
                 ];
             }
 
             $calendarEvents[$dateKey]['birthdays'][] = $employee;
-            $hireDate = $employee->getHireDate();
-            $serviceYears = $hireDate instanceof DateTimeImmutable ? $hireDate->diff($birthdayDate)->y : null;
             $birthdayAlerts[] = [
                 'employee' => $employee,
                 'date' => $birthdayDate,
-                'years' => $serviceYears,
-                'hire_date' => $hireDate,
             ];
 
             if ($birthdayDate->format('Y-m-d') === $todayKey) {
                 $birthdayPopupAlerts[] = [
                     'employee' => $employee,
                     'date' => $birthdayDate,
-                    'years' => $serviceYears,
-                    'hire_date' => $hireDate,
                 ];
+            }
+
+            $hireDate = $employee->getHireDate();
+            if ($hireDate instanceof DateTimeImmutable) {
+                $hireMonth = (int) $hireDate->format('m');
+                if ($hireMonth === $calendarMonthNumber) {
+                    $hireDay = (int) $hireDate->format('d');
+                    $anniversaryDay = min($hireDay, $daysInCalendarMonth);
+                    $anniversaryDate = $currentMonth->setDate($calendarYearNumber, $calendarMonthNumber, $anniversaryDay);
+
+                    if ($anniversaryDate >= $hireDate) {
+                        $serviceYears = $hireDate->diff($anniversaryDate)->y;
+
+                        if ($serviceYears >= 1) {
+                            $anniversaryKey = $anniversaryDate->format('Y-m-d');
+
+                            if (!isset($calendarEvents[$anniversaryKey])) {
+                                $calendarEvents[$anniversaryKey] = [
+                                    'payrolls' => [],
+                                    'birthdays' => [],
+                                    'service_anniversaries' => [],
+                                    'vacations' => [],
+                                    'holidays' => [],
+                                ];
+                            }
+
+                            $calendarEvents[$anniversaryKey]['service_anniversaries'][] = [
+                                'employee' => $employee,
+                                'years' => $serviceYears,
+                                'hire_date' => $hireDate,
+                                'date' => $anniversaryDate,
+                            ];
+
+                            $serviceAnniversaryAlerts[] = [
+                                'employee' => $employee,
+                                'date' => $anniversaryDate,
+                                'years' => $serviceYears,
+                                'hire_date' => $hireDate,
+                            ];
+
+                            if ($anniversaryKey === $todayKey) {
+                                $serviceAnniversaryPopupAlerts[] = [
+                                    'employee' => $employee,
+                                    'date' => $anniversaryDate,
+                                    'years' => $serviceYears,
+                                    'hire_date' => $hireDate,
+                                ];
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -269,6 +319,7 @@ final class DashboardController extends Controller
                 $calendarEvents[$dateKey] = [
                     'payrolls' => [],
                     'birthdays' => [],
+                    'service_anniversaries' => [],
                     'vacations' => [],
                     'holidays' => [],
                 ];
@@ -305,6 +356,20 @@ final class DashboardController extends Controller
             return strcasecmp($a['employee']->getName(), $b['employee']->getName());
         });
 
+        usort($serviceAnniversaryAlerts, static function (array $a, array $b): int {
+            $dateA = $a['date'] ?? null;
+            $dateB = $b['date'] ?? null;
+
+            if ($dateA instanceof DateTimeImmutable && $dateB instanceof DateTimeImmutable) {
+                $comparison = $dateA <=> $dateB;
+                if ($comparison !== 0) {
+                    return $comparison;
+                }
+            }
+
+            return strcasecmp($a['employee']->getName(), $b['employee']->getName());
+        });
+
         usort($vacationPopupAlerts, static function (array $a, array $b): int {
             $noticeA = $a['notice_from'] ?? null;
             $noticeB = $b['notice_from'] ?? null;
@@ -320,6 +385,20 @@ final class DashboardController extends Controller
         });
 
         usort($birthdayPopupAlerts, static function (array $a, array $b): int {
+            $dateA = $a['date'] ?? null;
+            $dateB = $b['date'] ?? null;
+
+            if ($dateA instanceof DateTimeImmutable && $dateB instanceof DateTimeImmutable) {
+                $comparison = $dateA <=> $dateB;
+                if ($comparison !== 0) {
+                    return $comparison;
+                }
+            }
+
+            return strcasecmp($a['employee']->getName(), $b['employee']->getName());
+        });
+
+        usort($serviceAnniversaryPopupAlerts, static function (array $a, array $b): int {
             $dateA = $a['date'] ?? null;
             $dateB = $b['date'] ?? null;
 
@@ -432,6 +511,8 @@ final class DashboardController extends Controller
             'birthdayAlerts' => $birthdayAlerts,
             'vacationPopupAlerts' => $vacationPopupAlerts,
             'birthdayPopupAlerts' => $birthdayPopupAlerts,
+            'serviceAnniversaryAlerts' => $serviceAnniversaryAlerts,
+            'serviceAnniversaryPopupAlerts' => $serviceAnniversaryPopupAlerts,
             'today' => $today,
             'holidaySettings' => $holidaySettings,
             'valeTotals' => [
@@ -589,8 +670,21 @@ final class DashboardController extends Controller
 
     /**
      * @param DateTimeImmutable $month
-     * @param array<string, array{payrolls: array<int, Payroll>, birthdays: array<int, Employee>}> $events
-     * @return array<int, array<int, array{date: DateTimeImmutable|null, payrolls: array<int, Payroll>, birthdays: array<int, Employee>}>>
+     * @param array<string, array{
+     *     payrolls: array<int, Payroll>,
+     *     birthdays: array<int, Employee>,
+     *     service_anniversaries: array<int, array{employee: Employee, years: int, hire_date: DateTimeImmutable, date: DateTimeImmutable}>,
+     *     vacations: array<int, array>,
+     *     holidays: array<int, array>
+     * }> $events
+     * @return array<int, array<int, array{
+     *     date: DateTimeImmutable|null,
+     *     payrolls: array<int, Payroll>,
+     *     birthdays: array<int, Employee>,
+     *     service_anniversaries: array<int, array{employee: Employee, years: int, hire_date: DateTimeImmutable, date: DateTimeImmutable}>,
+     *     vacations: array<int, array>,
+     *     holidays: array<int, array>
+     * }>>
      */
     private function buildCalendarWeeks(DateTimeImmutable $month, array $events): array
     {
@@ -599,7 +693,7 @@ final class DashboardController extends Controller
 
         $firstWeekday = (int) $month->format('N');
         for ($i = 1; $i < $firstWeekday; $i++) {
-            $week[] = ['date' => null, 'payrolls' => [], 'birthdays' => [], 'vacations' => [], 'holidays' => []];
+            $week[] = ['date' => null, 'payrolls' => [], 'birthdays' => [], 'service_anniversaries' => [], 'vacations' => [], 'holidays' => []];
         }
 
         $daysInMonth = (int) $month->format('t');
@@ -610,12 +704,13 @@ final class DashboardController extends Controller
             $date = $month->setDate($year, $monthNumber, $day);
             $dateKey = $date->format('Y-m-d');
 
-            $dayEvents = $events[$dateKey] ?? ['payrolls' => [], 'birthdays' => [], 'vacations' => [], 'holidays' => []];
+            $dayEvents = $events[$dateKey] ?? ['payrolls' => [], 'birthdays' => [], 'service_anniversaries' => [], 'vacations' => [], 'holidays' => []];
 
             $week[] = [
                 'date' => $date,
                 'payrolls' => $dayEvents['payrolls'] ?? [],
                 'birthdays' => $dayEvents['birthdays'] ?? [],
+                'service_anniversaries' => $dayEvents['service_anniversaries'] ?? [],
                 'vacations' => $dayEvents['vacations'] ?? [],
                 'holidays' => $dayEvents['holidays'] ?? [],
             ];
@@ -628,7 +723,7 @@ final class DashboardController extends Controller
 
         if ($week !== []) {
             while (count($week) < 7) {
-                $week[] = ['date' => null, 'payrolls' => [], 'birthdays' => [], 'vacations' => [], 'holidays' => []];
+                $week[] = ['date' => null, 'payrolls' => [], 'birthdays' => [], 'service_anniversaries' => [], 'vacations' => [], 'holidays' => []];
             }
             $weeks[] = $week;
         }

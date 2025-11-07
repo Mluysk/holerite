@@ -27,13 +27,15 @@
 /** @var array{labels: array<int, string>, values: array<int, float>, percentages: array<int, float>, total: float} $yearlyValeManualChart */
 /** @var array{labels: array<int, string>, values: array<int, float>, percentages: array<int, float>, total: float} $yearlyValeTransportChart */
 /** @var DateTimeImmutable $calendarMonth */
-/** @var array<int, array<int, array{date: DateTimeImmutable|null, payrolls: Holerite\Models\Payroll[], birthdays: Holerite\Models\Employee[], vacations: array<int, array{employee: Holerite\Models\Employee, available_from: DateTimeImmutable|null, concession_end: DateTimeImmutable|null, status: string}>, holidays: array<int, array{name: string, type: string, scope: string, date: DateTimeImmutable}>}>> $calendarWeeks */
+/** @var array<int, array<int, array{date: DateTimeImmutable|null, payrolls: Holerite\Models\Payroll[], birthdays: Holerite\Models\Employee[], service_anniversaries: array<int, array{employee: Holerite\Models\Employee, years: int, hire_date: DateTimeImmutable, date: DateTimeImmutable}>, vacations: array<int, array{employee: Holerite\Models\Employee, available_from: DateTimeImmutable|null, concession_end: DateTimeImmutable|null, status: string}>, holidays: array<int, array{name: string, type: string, scope: string, date: DateTimeImmutable}>}>> $calendarWeeks */
 /** @var Holerite\Models\Payroll[] $paidMonthlyPayrolls */
 /** @var Holerite\Models\Employee[] $pendingMonthlyEmployees */
 /** @var array<int, array{employee: Holerite\Models\Employee, available_from: DateTimeImmutable|null, concession_end: DateTimeImmutable|null, status: string, eligible: bool, notice_from: DateTimeImmutable|null}> $vacationAlerts */
 /** @var array<int, array{employee: Holerite\Models\Employee, date: DateTimeImmutable}> $birthdayAlerts */
+/** @var array<int, array{employee: Holerite\Models\Employee, date: DateTimeImmutable, years: int, hire_date: DateTimeImmutable}> $serviceAnniversaryAlerts */
 /** @var array<int, array{employee: Holerite\Models\Employee, available_from: DateTimeImmutable, notice_from: DateTimeImmutable, status: string, base_origin: string, base_origin_label: string, base_start: DateTimeImmutable|null}> $vacationPopupAlerts */
-/** @var array<int, array{employee: Holerite\Models\Employee, date: DateTimeImmutable, years: int|null, hire_date: DateTimeImmutable|null}> $birthdayPopupAlerts */
+/** @var array<int, array{employee: Holerite\Models\Employee, date: DateTimeImmutable}> $birthdayPopupAlerts */
+/** @var array<int, array{employee: Holerite\Models\Employee, date: DateTimeImmutable, years: int, hire_date: DateTimeImmutable}> $serviceAnniversaryPopupAlerts */
 /** @var DateTimeImmutable $today */
 /**
  * @var array{
@@ -68,6 +70,7 @@ $typeLabels = [
     'thirteenth' => '13º Salário',
     'advance' => 'Adiantamento salarial',
     'birthday' => 'Aniversários',
+    'service' => 'Anos de empresa',
     'vacation_plan' => 'Férias programadas',
     'holiday' => 'Feriados',
 ];
@@ -79,6 +82,7 @@ $calendarMarkerClasses = [
     'termination' => 'calendar-day__marker--termination',
     'advance' => 'calendar-day__marker--advance',
     'birthday' => 'calendar-day__marker--birthday',
+    'service' => 'calendar-day__marker--service',
     'vacation_plan' => 'calendar-day__marker--vacation-plan',
     'holiday' => 'calendar-day__marker--holiday',
 ];
@@ -90,6 +94,7 @@ $markerLabelText = [
     'termination' => 'Pago',
     'advance' => 'Adiant.',
     'birthday' => 'Aniversário',
+    'service' => 'Tempo de casa',
     'vacation_plan' => 'Férias',
     'holiday' => 'Feriado',
 ];
@@ -325,6 +330,35 @@ $pageScripts[] = [
                 </ul>
             <?php endif; ?>
         </div>
+        <div class="card dashboard-alerts__card">
+            <header class="section-heading section-heading--compact">
+                <span class="icon-circle icon-circle--accent" aria-hidden="true">
+                    <i class="bi bi-buildings-fill"></i>
+                </span>
+                <div>
+                    <h3>Anos de empresa</h3>
+                    <p class="muted">Reconheça quem completa mais um ciclo com a empresa.</p>
+                </div>
+            </header>
+            <?php $servicePreview = array_slice($serviceAnniversaryAlerts, 0, 6); ?>
+            <?php if ($servicePreview === []): ?>
+                <p class="muted">Nenhum colaborador completa ano de casa neste mês.</p>
+            <?php else: ?>
+                <ul class="alert-list">
+                    <?php foreach ($servicePreview as $alert): ?>
+                        <?php $years = max(1, (int) ($alert['years'] ?? 1)); ?>
+                        <li>
+                            <div class="alert-list__content">
+                                <strong><?= htmlspecialchars($alert['employee']->getName()); ?></strong>
+                                <small class="muted">
+                                    <?= htmlspecialchars($alert['date']->format('d/m')); ?> • <?= $years === 1 ? '1 ano' : htmlspecialchars($years . ' anos'); ?>
+                                </small>
+                            </div>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+        </div>
     </div>
 
     <div class="dashboard-metrics">
@@ -487,9 +521,10 @@ $pageScripts[] = [
                                     <?php $cellDate = $cell['date']; ?>
                                     <?php $cellPayrolls = $cell['payrolls']; ?>
                                     <?php $cellBirthdays = $cell['birthdays']; ?>
+                                    <?php $cellServiceAnniversaries = $cell['service_anniversaries']; ?>
                                     <?php $cellVacations = $cell['vacations']; ?>
                                     <?php $cellHolidays = $cell['holidays'] ?? []; ?>
-                                    <?php $hasEvents = $cellPayrolls !== [] || $cellBirthdays !== [] || $cellVacations !== [] || $cellHolidays !== []; ?>
+                                    <?php $hasEvents = $cellPayrolls !== [] || $cellBirthdays !== [] || $cellServiceAnniversaries !== [] || $cellVacations !== [] || $cellHolidays !== []; ?>
                                     <td class="calendar-day<?= $hasEvents ? ' calendar-day--has-events' : ''; ?>">
                                         <div class="calendar-day__date"><?= htmlspecialchars($cellDate->format('d')); ?></div>
                                         <?php if ($hasEvents): ?>
@@ -507,6 +542,13 @@ $pageScripts[] = [
                                                 $markerGroups['birthday'] = [
                                                     'type' => 'birthday',
                                                     'employees' => $cellBirthdays,
+                                                ];
+                                            }
+
+                                            if ($cellServiceAnniversaries !== []) {
+                                                $markerGroups['service'] = [
+                                                    'type' => 'service',
+                                                    'anniversaries' => $cellServiceAnniversaries,
                                                 ];
                                             }
 
@@ -550,6 +592,48 @@ $pageScripts[] = [
                                                         ];
                                                         $infoJson = htmlspecialchars(json_encode($infoPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
                                                         $ariaLabel = $markerTitle . ' em ' . $cellDate->format('d/m/Y') . ': ' . implode('; ', $summaryParts);
+                                                    ?>
+                                                    <span class="calendar-day__marker-group">
+                                                        <button
+                                                            type="button"
+                                                            class="calendar-day__marker <?= $markerClass; ?>"
+                                                                data-marker-info="<?= $infoJson; ?>"
+                                                                aria-expanded="false"
+                                                                aria-label="<?= htmlspecialchars($ariaLabel); ?>"
+                                                            >
+                                                                <i class="bi bi-cake2" aria-hidden="true"></i>
+                                                                <span class="visually-hidden">Aniversários</span>
+                                                            </button>
+                                                        </span>
+                                                    <?php elseif ($groupType === 'service'): ?>
+                                                        <?php
+                                                        $markerClass = $calendarMarkerClasses['service'] ?? 'calendar-day__marker--default';
+                                                        $labelClass = 'calendar-day__marker-label--service';
+                                                        $markerTitle = $typeLabels['service'] ?? 'Anos de empresa';
+                                                        $labelText = $markerLabelText['service'] ?? 'Tempo de casa';
+                                                        $infoItems = [];
+                                                        $summaryParts = [];
+                                                        foreach ($group['anniversaries'] as $anniversaryInfo) {
+                                                            /** @var Holerite\Models\Employee $anniversaryEmployee */
+                                                            $anniversaryEmployee = $anniversaryInfo['employee'];
+                                                            $employeeName = $anniversaryEmployee->getName();
+                                                            $years = (int) ($anniversaryInfo['years'] ?? 0);
+                                                            $yearsLabel = $years === 1 ? '1 ano' : sprintf('%d anos', $years);
+                                                            $infoItems[] = [
+                                                                'name' => $employeeName,
+                                                                'details' => 'Completa ' . $yearsLabel,
+                                                            ];
+                                                            $summaryParts[] = $employeeName . ' — ' . $yearsLabel;
+                                                        }
+                                                        $infoPayload = [
+                                                            'title' => $markerTitle,
+                                                            'date' => $cellDate->format('d/m/Y'),
+                                                            'items' => $infoItems,
+                                                            'category' => 'service',
+                                                            'status' => 'Tempo de casa',
+                                                        ];
+                                                        $infoJson = htmlspecialchars(json_encode($infoPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
+                                                        $ariaLabel = $markerTitle . ' em ' . $cellDate->format('d/m/Y') . ': ' . implode('; ', $summaryParts);
                                                         ?>
                                                         <span class="calendar-day__marker-group">
                                                             <button
@@ -559,9 +643,10 @@ $pageScripts[] = [
                                                                 aria-expanded="false"
                                                                 aria-label="<?= htmlspecialchars($ariaLabel); ?>"
                                                             >
-                                                                <i class="bi bi-cake2" aria-hidden="true"></i>
-                                                                <span class="visually-hidden">Aniversários</span>
+                                                                <i class="bi bi-buildings-fill" aria-hidden="true"></i>
+                                                                <span class="visually-hidden">Anos de empresa</span>
                                                             </button>
+                                                            <span class="calendar-day__marker-label <?= htmlspecialchars($labelClass); ?>"><?= htmlspecialchars($labelText); ?></span>
                                                         </span>
                                                     <?php elseif ($groupType === 'holiday'): ?>
                                                         <?php
@@ -740,6 +825,12 @@ $pageScripts[] = [
                         <i class="bi bi-cake2"></i>
                     </span>
                     <small>Aniversários</small>
+                </span>
+                <span class="calendar-legend__item">
+                    <span class="calendar-legend__marker calendar-day__marker calendar-day__marker--service" aria-hidden="true">
+                        <i class="bi bi-buildings-fill"></i>
+                    </span>
+                    <small>Anos de empresa</small>
                 </span>
                 <span class="calendar-legend__item">
                     <span class="calendar-legend__marker calendar-day__marker calendar-day__marker--holiday" aria-hidden="true">
@@ -1413,11 +1504,22 @@ $pageScripts[] = [
         </script>
     <?php endif; ?>
 
-    <?php if ($birthdayPopupAlerts !== [] || $vacationPopupAlerts !== []): ?>
+    <?php if ($birthdayPopupAlerts !== [] || $vacationPopupAlerts !== [] || $serviceAnniversaryPopupAlerts !== []): ?>
         <?php
         $birthdayPopupData = array_map(
             static function (array $alert): array {
-                $years = isset($alert['years']) && is_int($alert['years']) ? $alert['years'] : null;
+                return [
+                    'name' => $alert['employee']->getName(),
+                    'date' => $alert['date']->format('Y-m-d'),
+                    'label' => $alert['date']->format('d/m'),
+                ];
+            },
+            $birthdayPopupAlerts
+        );
+
+        $servicePopupData = array_map(
+            static function (array $alert): array {
+                $years = isset($alert['years']) && is_int($alert['years']) ? max(1, $alert['years']) : 1;
                 $hireDate = $alert['hire_date'] ?? null;
 
                 return [
@@ -1425,13 +1527,11 @@ $pageScripts[] = [
                     'date' => $alert['date']->format('Y-m-d'),
                     'label' => $alert['date']->format('d/m'),
                     'years' => $years,
-                    'years_label' => $years !== null
-                        ? ($years === 1 ? '1 ano' : sprintf('%d anos', $years))
-                        : null,
+                    'years_label' => $years === 1 ? '1 ano' : sprintf('%d anos', $years),
                     'hire_label' => $hireDate instanceof DateTimeImmutable ? $hireDate->format('d/m/Y') : null,
                 ];
             },
-            $birthdayPopupAlerts
+            $serviceAnniversaryPopupAlerts
         );
 
         $vacationPopupData = array_map(
@@ -1458,6 +1558,7 @@ $pageScripts[] = [
         <script id="dashboard-popups" type="application/json">
             <?= json_encode([
                 'birthdays' => $birthdayPopupData,
+                'service' => $servicePopupData,
                 'vacations' => $vacationPopupData,
             ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
         </script>
