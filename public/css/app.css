@@ -2814,24 +2814,60 @@ tr:nth-child(even) td {
     color: var(--color-text-muted);
 }
 
+
 .calendar-highlights {
     margin: 0;
     display: grid;
-    gap: 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.1rem;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
 .calendar-highlight {
-    background: var(--color-surface-alt);
-    border: 1px solid var(--color-border);
+    background: linear-gradient(135deg, rgba(var(--color-primary-rgb), 0.04), var(--color-surface-alt));
+    border: 1px solid var(--color-card-border);
     border-radius: 1rem;
-    padding: 1.2rem;
+    padding: 1.35rem;
     display: flex;
     flex-direction: column;
-    gap: 0.85rem;
+    gap: 1rem;
+    box-shadow: 0 18px 32px -24px rgba(15, 23, 42, 0.35);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+body.theme-dark .calendar-highlight {
+    background: linear-gradient(135deg, rgba(var(--color-primary-rgb), 0.18), rgba(15, 23, 42, 0.9));
+    border-color: rgba(148, 163, 184, 0.28);
+    box-shadow: 0 18px 32px -20px rgba(2, 6, 23, 0.75);
+}
+
+body.theme-dark .calendar-highlight--vacation {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.22), rgba(15, 23, 42, 0.92));
+    border-color: rgba(251, 191, 36, 0.4);
+}
+
+body.theme-dark .calendar-highlight--birthday {
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.28), rgba(15, 23, 42, 0.92));
+    border-color: rgba(236, 72, 153, 0.4);
+}
+
+body.theme-dark .calendar-highlight--upcoming {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(15, 23, 42, 0.92));
+    border-color: rgba(59, 130, 246, 0.38);
+}
+
+.calendar-highlight:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 36px -20px rgba(15, 23, 42, 0.4);
 }
 
 .calendar-highlight__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.85rem;
+}
+
+.calendar-highlight__summary {
     display: flex;
     align-items: flex-start;
     gap: 0.85rem;
@@ -2841,22 +2877,76 @@ tr:nth-child(even) td {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 2.75rem;
+    height: 2.75rem;
     border-radius: 0.9rem;
     background: rgba(var(--color-primary-rgb), 0.16);
     color: var(--color-primary);
     font-size: 1.35rem;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
 }
 
 .calendar-highlight__icon--vacation {
-    background: rgba(255, 191, 0, 0.16);
+    background: rgba(255, 191, 0, 0.18);
     color: #d97706;
 }
 
 .calendar-highlight__icon--birthday {
-    background: rgba(236, 72, 153, 0.18);
+    background: rgba(236, 72, 153, 0.22);
     color: #db2777;
+}
+
+.calendar-highlight__icon--upcoming {
+    background: rgba(59, 130, 246, 0.2);
+    color: #1d4ed8;
+}
+
+.calendar-highlight__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.9rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-primary-dark);
+    background: rgba(var(--color-primary-rgb), 0.14);
+    border: 1px solid rgba(var(--color-primary-rgb), 0.25);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.calendar-highlight--vacation {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.22), var(--color-surface-alt));
+    border-color: rgba(251, 191, 36, 0.35);
+}
+
+.calendar-highlight--vacation .calendar-highlight__badge {
+    color: #b45309;
+    background: rgba(251, 191, 36, 0.18);
+    border-color: rgba(251, 191, 36, 0.35);
+}
+
+.calendar-highlight--birthday {
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.24), var(--color-surface-alt));
+    border-color: rgba(236, 72, 153, 0.35);
+}
+
+.calendar-highlight--birthday .calendar-highlight__badge {
+    color: #be185d;
+    background: rgba(236, 72, 153, 0.22);
+    border-color: rgba(236, 72, 153, 0.35);
+}
+
+.calendar-highlight--upcoming {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), var(--color-surface-alt));
+    border-color: rgba(59, 130, 246, 0.32);
+}
+
+.calendar-highlight--upcoming .calendar-highlight__badge {
+    color: #1d4ed8;
+    background: rgba(59, 130, 246, 0.18);
+    border-color: rgba(59, 130, 246, 0.32);
 }
 
 .calendar-highlight__list {
@@ -2865,15 +2955,30 @@ tr:nth-child(even) td {
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.55rem;
+    gap: 0.65rem;
 }
 
 .calendar-highlight__item {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    align-items: flex-start;
+    justify-content: flex-start;
     gap: 0.75rem;
     font-size: 0.9rem;
+    padding: 0.55rem 0.65rem;
+    border-radius: 0.75rem;
+    background: rgba(255, 255, 255, 0.45);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+body.theme-dark .calendar-highlight__item {
+    background: rgba(15, 23, 42, 0.45);
+    border-color: rgba(148, 163, 184, 0.3);
+}
+
+.calendar-highlight__info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
 }
 
 .calendar-highlight__item strong {
@@ -2881,39 +2986,13 @@ tr:nth-child(even) td {
     color: var(--color-text);
 }
 
-.calendar-highlight__columns {
-    display: grid;
-    gap: 0.85rem;
-}
-
-.calendar-highlight__column h5 {
-    margin: 0 0 0.45rem;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--color-text);
+.calendar-highlight__meta {
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
 }
 
 .calendar-highlight__empty {
     font-size: 0.85rem;
-}
-
-.calendar-highlight__columns .calendar-highlight__list {
-    max-height: 220px;
-    overflow-y: auto;
-    padding-right: 0.25rem;
-}
-
-.calendar-highlight__columns .calendar-highlight__list::-webkit-scrollbar {
-    width: 6px;
-}
-
-.calendar-highlight__columns .calendar-highlight__list::-webkit-scrollbar-thumb {
-    background: rgba(var(--color-primary-rgb), 0.35);
-    border-radius: 999px;
-}
-
-.calendar-highlight__columns .calendar-highlight__list::-webkit-scrollbar-track {
-    background: transparent;
 }
 
 .calendar-legend__marker {
@@ -4226,10 +4305,6 @@ body.theme-dark .badge--soon {
     }
 
     .calendar-highlights {
-        grid-template-columns: 1fr;
-    }
-
-    .calendar-highlight__columns {
         grid-template-columns: 1fr;
     }
 

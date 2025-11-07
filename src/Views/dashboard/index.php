@@ -727,16 +727,26 @@ $pageScripts[] = [
                 </span>
                 </div>
             </div>
+            <?php
+            $vacationCount = count($vacationAlerts);
+            $birthdayCount = count($birthdayAlerts);
+            $upcomingBirthdayCount = count($nextMonthBirthdayAlerts);
+            ?>
             <div class="calendar-highlights">
-                <section class="calendar-highlight">
+                <section class="calendar-highlight calendar-highlight--vacation">
                     <header class="calendar-highlight__header">
-                        <span class="calendar-highlight__icon calendar-highlight__icon--vacation" aria-hidden="true">
-                            <i class="bi bi-umbrella-fill"></i>
-                        </span>
-                        <div>
-                            <h4>Férias previstas</h4>
-                            <p class="muted">Acompanhe colaboradores com períodos liberados neste mês.</p>
+                        <div class="calendar-highlight__summary">
+                            <span class="calendar-highlight__icon calendar-highlight__icon--vacation" aria-hidden="true">
+                                <i class="bi bi-umbrella-fill"></i>
+                            </span>
+                            <div>
+                                <h4>Férias previstas</h4>
+                                <p class="muted">Acompanhe colaboradores com períodos liberados neste mês.</p>
+                            </div>
                         </div>
+                        <span class="calendar-highlight__badge">
+                            <?= $vacationCount; ?> <?= $vacationCount === 1 ? 'colaborador' : 'colaboradores'; ?>
+                        </span>
                     </header>
                     <?php if ($vacationAlerts === []): ?>
                         <p class="calendar-highlight__empty muted">Nenhuma férias prevista para o mês selecionado.</p>
@@ -768,65 +778,86 @@ $pageScripts[] = [
                                 }
                                 ?>
                                 <li class="calendar-highlight__item">
-                                    <strong><?= htmlspecialchars($vacationEmployee->getName()); ?></strong>
-                                    <span class="muted"><?= htmlspecialchars(implode(' • ', $details)); ?></span>
+                                    <div class="calendar-highlight__info">
+                                        <strong><?= htmlspecialchars($vacationEmployee->getName()); ?></strong>
+                                        <?php if ($details !== []): ?>
+                                            <span class="calendar-highlight__meta"><?= htmlspecialchars(implode(' • ', $details)); ?></span>
+                                        <?php endif; ?>
+                                    </div>
                                 </li>
                             <?php endforeach; ?>
                         </ul>
                     <?php endif; ?>
                 </section>
-                <section class="calendar-highlight">
+                <section class="calendar-highlight calendar-highlight--birthday">
                     <header class="calendar-highlight__header">
-                        <span class="calendar-highlight__icon calendar-highlight__icon--birthday" aria-hidden="true">
-                            <i class="bi bi-cake2"></i>
+                        <div class="calendar-highlight__summary">
+                            <span class="calendar-highlight__icon calendar-highlight__icon--birthday" aria-hidden="true">
+                                <i class="bi bi-cake2"></i>
+                            </span>
+                            <div>
+                                <h4>Aniversariantes de <?= htmlspecialchars($currentMonthLabel); ?></h4>
+                                <p class="muted">Celebre a equipe que comemora neste período.</p>
+                            </div>
+                        </div>
+                        <span class="calendar-highlight__badge">
+                            <?= $birthdayCount; ?> <?= $birthdayCount === 1 ? 'aniversário' : 'aniversários'; ?>
                         </span>
-                        <div>
-                            <h4>Aniversariantes de <?= htmlspecialchars($currentMonthLabel); ?></h4>
-                            <p class="muted">Celebre o mês atual e antecipe os próximos aniversários.</p>
-                        </div>
                     </header>
-                    <div class="calendar-highlight__columns">
-                        <div class="calendar-highlight__column">
-                            <h5>Este mês</h5>
-                            <?php if ($birthdayAlerts === []): ?>
-                                <p class="calendar-highlight__empty muted">Nenhum aniversário registrado neste mês.</p>
-                            <?php else: ?>
-                                <ul class="calendar-highlight__list">
-                                    <?php foreach ($birthdayAlerts as $birthdayAlert): ?>
-                                        <?php
-                                        /** @var Holerite\Models\Employee $birthdayEmployee */
-                                        $birthdayEmployee = $birthdayAlert['employee'];
-                                        $birthdayDate = $birthdayAlert['date'];
-                                        ?>
-                                        <li class="calendar-highlight__item">
-                                            <strong><?= htmlspecialchars($birthdayEmployee->getName()); ?></strong>
-                                            <span class="muted"><?= htmlspecialchars($birthdayDate->format('d/m')); ?></span>
-                                        </li>
-                                    <?php endforeach; ?>
-                                </ul>
-                            <?php endif; ?>
+                    <?php if ($birthdayAlerts === []): ?>
+                        <p class="calendar-highlight__empty muted">Nenhum aniversário registrado neste mês.</p>
+                    <?php else: ?>
+                        <ul class="calendar-highlight__list">
+                            <?php foreach ($birthdayAlerts as $birthdayAlert): ?>
+                                <?php
+                                /** @var Holerite\Models\Employee $birthdayEmployee */
+                                $birthdayEmployee = $birthdayAlert['employee'];
+                                $birthdayDate = $birthdayAlert['date'];
+                                ?>
+                                <li class="calendar-highlight__item">
+                                    <div class="calendar-highlight__info">
+                                        <strong><?= htmlspecialchars($birthdayEmployee->getName()); ?></strong>
+                                        <span class="calendar-highlight__meta">Comemora em <?= htmlspecialchars($birthdayDate->format('d/m')); ?></span>
+                                    </div>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+                </section>
+                <section class="calendar-highlight calendar-highlight--upcoming">
+                    <header class="calendar-highlight__header">
+                        <div class="calendar-highlight__summary">
+                            <span class="calendar-highlight__icon calendar-highlight__icon--upcoming" aria-hidden="true">
+                                <i class="bi bi-calendar-heart"></i>
+                            </span>
+                            <div>
+                                <h4>Próximos aniversariantes</h4>
+                                <p class="muted">Prepare homenagens para <?= htmlspecialchars($nextMonthLabel); ?>.</p>
+                            </div>
                         </div>
-                        <div class="calendar-highlight__column">
-                            <h5>Próximos — <?= htmlspecialchars($nextMonthLabel); ?></h5>
-                            <?php if ($nextMonthBirthdayAlerts === []): ?>
-                                <p class="calendar-highlight__empty muted">Nenhum aniversário previsto para o próximo mês.</p>
-                            <?php else: ?>
-                                <ul class="calendar-highlight__list">
-                                    <?php foreach ($nextMonthBirthdayAlerts as $upcomingBirthday): ?>
-                                        <?php
-                                        /** @var Holerite\Models\Employee $upcomingEmployee */
-                                        $upcomingEmployee = $upcomingBirthday['employee'];
-                                        $upcomingDate = $upcomingBirthday['date'];
-                                        ?>
-                                        <li class="calendar-highlight__item">
-                                            <strong><?= htmlspecialchars($upcomingEmployee->getName()); ?></strong>
-                                            <span class="muted"><?= htmlspecialchars($upcomingDate->format('d/m')); ?></span>
-                                        </li>
-                                    <?php endforeach; ?>
-                                </ul>
-                            <?php endif; ?>
-                        </div>
-                    </div>
+                        <span class="calendar-highlight__badge">
+                            <?= $upcomingBirthdayCount; ?> <?= $upcomingBirthdayCount === 1 ? 'previsto' : 'previstos'; ?>
+                        </span>
+                    </header>
+                    <?php if ($nextMonthBirthdayAlerts === []): ?>
+                        <p class="calendar-highlight__empty muted">Nenhum aniversário previsto para o próximo mês.</p>
+                    <?php else: ?>
+                        <ul class="calendar-highlight__list">
+                            <?php foreach ($nextMonthBirthdayAlerts as $upcomingBirthday): ?>
+                                <?php
+                                /** @var Holerite\Models\Employee $upcomingEmployee */
+                                $upcomingEmployee = $upcomingBirthday['employee'];
+                                $upcomingDate = $upcomingBirthday['date'];
+                                ?>
+                                <li class="calendar-highlight__item">
+                                    <div class="calendar-highlight__info">
+                                        <strong><?= htmlspecialchars($upcomingEmployee->getName()); ?></strong>
+                                        <span class="calendar-highlight__meta">Faz aniversário em <?= htmlspecialchars($upcomingDate->format('d/m')); ?></span>
+                                    </div>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
                 </section>
             </div>
         </div>
