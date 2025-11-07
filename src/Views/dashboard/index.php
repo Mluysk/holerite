@@ -32,6 +32,7 @@
 /** @var Holerite\Models\Employee[] $pendingMonthlyEmployees */
 /** @var array<int, array{employee: Holerite\Models\Employee, available_from: DateTimeImmutable|null, concession_end: DateTimeImmutable|null, status: string, eligible: bool, notice_from: DateTimeImmutable|null}> $vacationAlerts */
 /** @var array<int, array{employee: Holerite\Models\Employee, date: DateTimeImmutable}> $birthdayAlerts */
+/** @var array<int, array{employee: Holerite\Models\Employee, date: DateTimeImmutable}> $nextMonthBirthdayAlerts */
 /** @var array<int, array{employee: Holerite\Models\Employee, available_from: DateTimeImmutable, notice_from: DateTimeImmutable, status: string, base_origin: string, base_origin_label: string, base_start: DateTimeImmutable|null}> $vacationPopupAlerts */
 /** @var array<int, array{employee: Holerite\Models\Employee, date: DateTimeImmutable}> $birthdayPopupAlerts */
 /** @var array<int, array{employee: Holerite\Models\Employee, date: DateTimeImmutable, years: int, hire_date: DateTimeImmutable}> $serviceAnniversaryPopupAlerts */
@@ -56,6 +57,8 @@
 /** @var array{manual: float, transport: float, total: float, transport_days: int, transport_trips: int} $yearlyValeSummary */
 /** @var Holerite\Models\Payroll[] $thirteenthFirstInstallments */
 /** @var Holerite\Models\Payroll[] $thirteenthSecondInstallments */
+/** @var string $nextMonthLabel */
+/** @var array{current: array{label: string, month: string}, previous: array{label: string, month: string}, next: array{label: string, month: string}} $calendarNavigation */
 
 $employeeNames = [];
 foreach ($employees as $employee) {
@@ -96,6 +99,26 @@ $markerLabelText = [
 ];
 
 $weekDays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+
+$calendarNavCurrent = $calendarNavigation['current'] ?? [
+    'label' => $calendarMonth->format('m/Y'),
+    'month' => $calendarMonth->format('Y-m'),
+];
+$calendarNavPrevious = $calendarNavigation['previous'] ?? [
+    'label' => '',
+    'month' => $calendarMonth->modify('-1 month')->format('Y-m'),
+];
+$calendarNavNext = $calendarNavigation['next'] ?? [
+    'label' => '',
+    'month' => $calendarMonth->modify('+1 month')->format('Y-m'),
+];
+
+$calendarNavPreviousLabel = $calendarNavPrevious['label'] !== ''
+    ? $calendarNavPrevious['label']
+    : 'Mês anterior';
+$calendarNavNextLabel = $calendarNavNext['label'] !== ''
+    ? $calendarNavNext['label']
+    : 'Próximo mês';
 
 $hasCharts = $monthlyChart['labels'] !== []
     || $yearlyChart['labels'] !== []
@@ -466,8 +489,27 @@ $pageScripts[] = [
                 </span>
                 <div>
                     <h3>Calendário de pagamentos</h3>
-                    <p class="muted">Pagamentos registrados em <?= htmlspecialchars($calendarMonth->format('m/Y')); ?>.</p>
+                    <p class="muted">Navegue pelos meses e acompanhe pagamentos, férias e aniversários registrados.</p>
                 </div>
+                <nav class="calendar-nav" aria-label="Navegar entre meses">
+                    <a
+                        class="calendar-nav__button"
+                        href="?action=dashboard&amp;month=<?= htmlspecialchars($calendarNavPrevious['month']); ?>"
+                        aria-label="Ver <?= htmlspecialchars($calendarNavPreviousLabel); ?>"
+                    >
+                        <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                        <span class="visually-hidden"><?= htmlspecialchars($calendarNavPreviousLabel); ?></span>
+                    </a>
+                    <span class="calendar-nav__label"><?= htmlspecialchars($calendarNavCurrent['label']); ?></span>
+                    <a
+                        class="calendar-nav__button"
+                        href="?action=dashboard&amp;month=<?= htmlspecialchars($calendarNavNext['month']); ?>"
+                        aria-label="Ver <?= htmlspecialchars($calendarNavNextLabel); ?>"
+                    >
+                        <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                        <span class="visually-hidden"><?= htmlspecialchars($calendarNavNextLabel); ?></span>
+                    </a>
+                </nav>
             </header>
             <div class="calendar-wrapper">
                 <table class="calendar-grid">
@@ -748,6 +790,108 @@ $pageScripts[] = [
                     </span>
                     <small>Feriados</small>
                 </span>
+            </div>
+            <div class="calendar-highlights">
+                <section class="calendar-highlight">
+                    <header class="calendar-highlight__header">
+                        <span class="calendar-highlight__icon calendar-highlight__icon--vacation" aria-hidden="true">
+                            <i class="bi bi-umbrella-fill"></i>
+                        </span>
+                        <div>
+                            <h4>Férias previstas</h4>
+                            <p class="muted">Acompanhe colaboradores com períodos liberados neste mês.</p>
+                        </div>
+                    </header>
+                    <?php if ($vacationAlerts === []): ?>
+                        <p class="calendar-highlight__empty muted">Nenhuma férias prevista para o mês selecionado.</p>
+                    <?php else: ?>
+                        <ul class="calendar-highlight__list">
+                            <?php foreach ($vacationAlerts as $alert): ?>
+                                <?php
+                                /** @var Holerite\Models\Employee $vacationEmployee */
+                                $vacationEmployee = $alert['employee'];
+                                $availableFrom = $alert['available_from'];
+                                $concessionEnd = $alert['concession_end'] ?? null;
+                                $noticeFrom = $alert['notice_from'] ?? null;
+                                $details = [];
+
+                                if ($availableFrom instanceof DateTimeImmutable) {
+                                    $details[] = 'Disponível em ' . $availableFrom->format('d/m');
+                                }
+
+                                if ($concessionEnd instanceof DateTimeImmutable) {
+                                    $details[] = 'Concessão até ' . $concessionEnd->format('d/m');
+                                }
+
+                                if (
+                                    $noticeFrom instanceof DateTimeImmutable
+                                    && $availableFrom instanceof DateTimeImmutable
+                                    && $noticeFrom < $availableFrom
+                                ) {
+                                    $details[] = 'Aviso a partir de ' . $noticeFrom->format('d/m');
+                                }
+                                ?>
+                                <li class="calendar-highlight__item">
+                                    <strong><?= htmlspecialchars($vacationEmployee->getName()); ?></strong>
+                                    <span class="muted"><?= htmlspecialchars(implode(' • ', $details)); ?></span>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+                </section>
+                <section class="calendar-highlight">
+                    <header class="calendar-highlight__header">
+                        <span class="calendar-highlight__icon calendar-highlight__icon--birthday" aria-hidden="true">
+                            <i class="bi bi-cake2"></i>
+                        </span>
+                        <div>
+                            <h4>Aniversariantes de <?= htmlspecialchars($currentMonthLabel); ?></h4>
+                            <p class="muted">Celebre o mês atual e antecipe os próximos aniversários.</p>
+                        </div>
+                    </header>
+                    <div class="calendar-highlight__columns">
+                        <div class="calendar-highlight__column">
+                            <h5>Este mês</h5>
+                            <?php if ($birthdayAlerts === []): ?>
+                                <p class="calendar-highlight__empty muted">Nenhum aniversário registrado neste mês.</p>
+                            <?php else: ?>
+                                <ul class="calendar-highlight__list">
+                                    <?php foreach ($birthdayAlerts as $birthdayAlert): ?>
+                                        <?php
+                                        /** @var Holerite\Models\Employee $birthdayEmployee */
+                                        $birthdayEmployee = $birthdayAlert['employee'];
+                                        $birthdayDate = $birthdayAlert['date'];
+                                        ?>
+                                        <li class="calendar-highlight__item">
+                                            <strong><?= htmlspecialchars($birthdayEmployee->getName()); ?></strong>
+                                            <span class="muted"><?= htmlspecialchars($birthdayDate->format('d/m')); ?></span>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php endif; ?>
+                        </div>
+                        <div class="calendar-highlight__column">
+                            <h5>Próximos — <?= htmlspecialchars($nextMonthLabel); ?></h5>
+                            <?php if ($nextMonthBirthdayAlerts === []): ?>
+                                <p class="calendar-highlight__empty muted">Nenhum aniversário previsto para o próximo mês.</p>
+                            <?php else: ?>
+                                <ul class="calendar-highlight__list">
+                                    <?php foreach ($nextMonthBirthdayAlerts as $upcomingBirthday): ?>
+                                        <?php
+                                        /** @var Holerite\Models\Employee $upcomingEmployee */
+                                        $upcomingEmployee = $upcomingBirthday['employee'];
+                                        $upcomingDate = $upcomingBirthday['date'];
+                                        ?>
+                                        <li class="calendar-highlight__item">
+                                            <strong><?= htmlspecialchars($upcomingEmployee->getName()); ?></strong>
+                                            <span class="muted"><?= htmlspecialchars($upcomingDate->format('d/m')); ?></span>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </section>
             </div>
         </div>
         <div class="dashboard-status">

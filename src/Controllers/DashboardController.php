@@ -37,6 +37,23 @@ final class DashboardController extends Controller
         }
 
         $currentMonth = new DateTimeImmutable('first day of this month');
+        $monthParam = $_GET['month'] ?? null;
+
+        if (is_string($monthParam)) {
+            $normalizedMonth = trim($monthParam);
+
+            if ($normalizedMonth !== '' && preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $normalizedMonth) === 1) {
+                $customMonth = DateTimeImmutable::createFromFormat('Y-m-d', $normalizedMonth . '-01');
+
+                if ($customMonth instanceof DateTimeImmutable) {
+                    $currentMonth = $customMonth;
+                }
+            }
+        }
+
+        $currentMonth = $currentMonth->setTime(0, 0);
+        $previousMonth = $currentMonth->modify('-1 month');
+        $nextMonthDate = $currentMonth->modify('+1 month');
         $currentMonthKey = $currentMonth->format('Y-m');
         $currentYearKey = $currentMonth->format('Y');
         $monthEnd = $currentMonth->modify('last day of this month');
@@ -115,6 +132,10 @@ final class DashboardController extends Controller
         $calendarYearNumber = (int) $currentMonth->format('Y');
         $calendarMonthNumber = (int) $currentMonth->format('m');
         $daysInCalendarMonth = (int) $currentMonth->format('t');
+        $nextMonthBirthdayAlerts = [];
+        $nextMonthMonthNumber = (int) $nextMonthDate->format('m');
+        $nextMonthYearNumber = (int) $nextMonthDate->format('Y');
+        $daysInNextMonth = (int) $nextMonthDate->format('t');
 
         foreach ($allPayrolls as $calendarPayroll) {
             $paymentDate = $calendarPayroll->getPaymentDate();
@@ -224,35 +245,43 @@ final class DashboardController extends Controller
 
             $birthDate = $employee->getBirthDate();
             $birthMonth = (int) $birthDate->format('m');
-
-            if ($birthMonth !== $calendarMonthNumber) {
-                continue;
-            }
-
             $birthDay = (int) $birthDate->format('d');
-            $targetDay = min($birthDay, $daysInCalendarMonth);
-            $birthdayDate = $currentMonth->setDate($calendarYearNumber, $calendarMonthNumber, $targetDay);
-            $dateKey = $birthdayDate->format('Y-m-d');
 
-            if (!isset($calendarEvents[$dateKey])) {
-                $calendarEvents[$dateKey] = [
-                    'payrolls' => [],
-                    'birthdays' => [],
-                    'vacations' => [],
-                    'holidays' => [],
-                ];
-            }
+            if ($birthMonth === $calendarMonthNumber) {
+                $targetDay = min($birthDay, $daysInCalendarMonth);
+                $birthdayDate = $currentMonth->setDate($calendarYearNumber, $calendarMonthNumber, $targetDay);
+                $dateKey = $birthdayDate->format('Y-m-d');
 
-            $calendarEvents[$dateKey]['birthdays'][] = $employee;
-            $birthdayAlerts[] = [
-                'employee' => $employee,
-                'date' => $birthdayDate,
-            ];
+                if (!isset($calendarEvents[$dateKey])) {
+                    $calendarEvents[$dateKey] = [
+                        'payrolls' => [],
+                        'birthdays' => [],
+                        'vacations' => [],
+                        'holidays' => [],
+                    ];
+                }
 
-            if ($birthdayDate->format('Y-m-d') === $todayKey) {
-                $birthdayPopupAlerts[] = [
+                $calendarEvents[$dateKey]['birthdays'][] = $employee;
+                $birthdayAlerts[] = [
                     'employee' => $employee,
                     'date' => $birthdayDate,
+                ];
+
+                if ($birthdayDate->format('Y-m-d') === $todayKey) {
+                    $birthdayPopupAlerts[] = [
+                        'employee' => $employee,
+                        'date' => $birthdayDate,
+                    ];
+                }
+            }
+
+            if ($birthMonth === $nextMonthMonthNumber) {
+                $nextTargetDay = min($birthDay, $daysInNextMonth);
+                $nextBirthdayDate = $nextMonthDate->setDate($nextMonthYearNumber, $nextMonthMonthNumber, $nextTargetDay);
+
+                $nextMonthBirthdayAlerts[] = [
+                    'employee' => $employee,
+                    'date' => $nextBirthdayDate,
                 ];
             }
 
@@ -310,6 +339,20 @@ final class DashboardController extends Controller
         });
 
         usort($birthdayAlerts, static function (array $a, array $b): int {
+            $dateA = $a['date'] ?? null;
+            $dateB = $b['date'] ?? null;
+
+            if ($dateA instanceof DateTimeImmutable && $dateB instanceof DateTimeImmutable) {
+                $comparison = $dateA <=> $dateB;
+                if ($comparison !== 0) {
+                    return $comparison;
+                }
+            }
+
+            return strcasecmp($a['employee']->getName(), $b['employee']->getName());
+        });
+
+        usort($nextMonthBirthdayAlerts, static function (array $a, array $b): int {
             $dateA = $a['date'] ?? null;
             $dateB = $b['date'] ?? null;
 
@@ -433,6 +476,21 @@ final class DashboardController extends Controller
 
         usort($pendingMonthlyEmployees, static fn ($a, $b): int => strcasecmp($a->getName(), $b->getName()));
 
+        $calendarNavigation = [
+            'current' => [
+                'label' => sprintf('%s de %s', $this->getMonthDisplayName($currentMonth), $currentMonth->format('Y')),
+                'month' => $currentMonth->format('Y-m'),
+            ],
+            'previous' => [
+                'label' => sprintf('%s de %s', $this->getMonthDisplayName($previousMonth), $previousMonth->format('Y')),
+                'month' => $previousMonth->format('Y-m'),
+            ],
+            'next' => [
+                'label' => sprintf('%s de %s', $this->getMonthDisplayName($nextMonthDate), $nextMonthDate->format('Y')),
+                'month' => $nextMonthDate->format('Y-m'),
+            ],
+        ];
+
         $this->render('dashboard/index', [
             'title' => 'Dashboard',
             'totalEmployees' => count($employees),
@@ -462,6 +520,7 @@ final class DashboardController extends Controller
             'pendingMonthlyEmployees' => $pendingMonthlyEmployees,
             'vacationAlerts' => $vacationAlerts,
             'birthdayAlerts' => $birthdayAlerts,
+            'nextMonthBirthdayAlerts' => $nextMonthBirthdayAlerts,
             'vacationPopupAlerts' => $vacationPopupAlerts,
             'birthdayPopupAlerts' => $birthdayPopupAlerts,
             'serviceAnniversaryPopupAlerts' => $serviceAnniversaryPopupAlerts,
@@ -487,8 +546,10 @@ final class DashboardController extends Controller
             ],
             'currentMonthNet' => $currentMonthNet,
             'currentMonthLabel' => $this->getMonthDisplayName($currentMonth),
+            'nextMonthLabel' => $this->getMonthDisplayName($nextMonthDate),
             'thirteenthFirstInstallments' => $thirteenthFirstInstallments,
             'thirteenthSecondInstallments' => $thirteenthSecondInstallments,
+            'calendarNavigation' => $calendarNavigation,
         ]);
     }
 
