@@ -461,13 +461,48 @@
                     return;
                 }
 
+                const rawYears = typeof entry.years === 'number'
+                    ? entry.years
+                    : parseInt(entry.years, 10);
+                const years = Number.isFinite(rawYears) ? rawYears : null;
+                const yearsLabel = typeof entry.years_label === 'string' && entry.years_label.trim() !== ''
+                    ? entry.years_label.trim()
+                    : null;
+                const hireLabel = typeof entry.hire_label === 'string' && entry.hire_label.trim() !== ''
+                    ? entry.hire_label.trim()
+                    : '';
+
+                const metaParts = [];
+                const dayLabel = typeof entry.label === 'string' && entry.label.trim() !== ''
+                    ? entry.label.trim()
+                    : '';
+                if (dayLabel) {
+                    metaParts.push('Hoje • ' + dayLabel);
+                } else {
+                    metaParts.push('Hoje');
+                }
+
+                let message;
+                if (years !== null && years > 0) {
+                    const displayYears = yearsLabel || (years === 1 ? '1 ano' : years + ' anos');
+                    message = 'Parabéns pelos ' + displayYears + ' de empresa! 🎉';
+                    metaParts.push('Tempo de casa: ' + displayYears);
+                } else {
+                    message = 'Parabéns pelo primeiro ano na empresa! 🎉';
+                    metaParts.push('Primeiro ano na empresa');
+                }
+
+                if (hireLabel) {
+                    metaParts.push('Desde ' + hireLabel);
+                }
+
                 queue.push({
                     type: 'birthday',
                     icon: 'bi-cake2',
                     title: 'Feliz aniversário!',
                     subtitle: entry.name,
-                    message: 'Que o seu dia seja repleto de conquistas e alegria.',
-                    meta: entry.label ? 'Hoje • ' + entry.label : 'Hoje',
+                    message: message,
+                    meta: metaParts.join(' • '),
                     duration: 7000,
                 });
             });
@@ -481,11 +516,19 @@
 
                 const availableLabel = typeof entry.available_label === 'string' ? entry.available_label : '';
                 const noticeLabel = typeof entry.notice_label === 'string' ? entry.notice_label : '';
+                const baseOrigin = typeof entry.base_origin === 'string' ? entry.base_origin : 'admission';
+                const baseOriginLabel = typeof entry.base_origin_label === 'string' && entry.base_origin_label.trim() !== ''
+                    ? entry.base_origin_label.trim()
+                    : (baseOrigin === 'manual' ? 'data base ajustada' : 'data de admissão');
+                const baseLabel = typeof entry.base_label === 'string' ? entry.base_label : '';
                 const status = typeof entry.status === 'string' && entry.status.trim() !== ''
                     ? entry.status.trim()
                     : null;
 
                 const metaParts = [];
+                if (availableLabel) {
+                    metaParts.push('Disponível a partir de ' + availableLabel);
+                }
                 if (noticeLabel) {
                     metaParts.push('Aviso iniciado em ' + noticeLabel);
                 }
@@ -493,14 +536,18 @@
                     metaParts.push(status);
                 }
 
+                let message = 'Aviso exibido 1 mês antes da ' + baseOriginLabel;
+                if (baseLabel) {
+                    message += ' (' + baseLabel + ')';
+                }
+                message += '.';
+
                 queue.push({
                     type: 'vacation',
                     icon: 'bi-umbrella-fill',
                     title: 'Férias chegando!',
                     subtitle: entry.name,
-                    message: availableLabel
-                        ? 'Período previsto a partir de ' + availableLabel + '.'
-                        : 'Período de férias em preparação.',
+                    message: message,
                     meta: metaParts.join(' • '),
                     duration: 9000,
                 });

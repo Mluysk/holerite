@@ -153,6 +153,13 @@ final class DashboardController extends Controller
             $employeePayrolls = $employeeId !== null ? ($payrollsByEmployee[$employeeId] ?? []) : [];
             $benefits = $this->benefitService->summarize($employee, $employeePayrolls, $today);
             $vacations = $benefits['vacations'] ?? [];
+            $vacationBaseStart = $vacations['base_start'] ?? null;
+            $customVacationBase = $employee->getVacationBaseDate();
+            $vacationBaseOrigin = $customVacationBase instanceof DateTimeImmutable ? 'manual' : 'admission';
+            $vacationBaseLabel = $vacationBaseStart instanceof DateTimeImmutable ? $vacationBaseStart : null;
+            $vacationBaseOriginLabel = $vacationBaseOrigin === 'manual'
+                ? 'data base ajustada'
+                : 'data de admissão';
             $nextCycle = $vacations['next_cycle'] ?? null;
 
             if (is_array($nextCycle) && isset($nextCycle['available_from']) && $nextCycle['available_from'] instanceof DateTimeImmutable) {
@@ -185,6 +192,9 @@ final class DashboardController extends Controller
                             'available_from' => $availableFrom,
                             'notice_from' => $noticeFrom,
                             'status' => (string) ($nextCycle['status'] ?? ''),
+                            'base_origin' => $vacationBaseOrigin,
+                            'base_origin_label' => $vacationBaseOriginLabel,
+                            'base_start' => $vacationBaseLabel,
                         ];
                     }
                 }
@@ -233,15 +243,21 @@ final class DashboardController extends Controller
             }
 
             $calendarEvents[$dateKey]['birthdays'][] = $employee;
+            $hireDate = $employee->getHireDate();
+            $serviceYears = $hireDate instanceof DateTimeImmutable ? $hireDate->diff($birthdayDate)->y : null;
             $birthdayAlerts[] = [
                 'employee' => $employee,
                 'date' => $birthdayDate,
+                'years' => $serviceYears,
+                'hire_date' => $hireDate,
             ];
 
             if ($birthdayDate->format('Y-m-d') === $todayKey) {
                 $birthdayPopupAlerts[] = [
                     'employee' => $employee,
                     'date' => $birthdayDate,
+                    'years' => $serviceYears,
+                    'hire_date' => $hireDate,
                 ];
             }
         }

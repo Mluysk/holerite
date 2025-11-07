@@ -32,8 +32,8 @@
 /** @var Holerite\Models\Employee[] $pendingMonthlyEmployees */
 /** @var array<int, array{employee: Holerite\Models\Employee, available_from: DateTimeImmutable|null, concession_end: DateTimeImmutable|null, status: string, eligible: bool, notice_from: DateTimeImmutable|null}> $vacationAlerts */
 /** @var array<int, array{employee: Holerite\Models\Employee, date: DateTimeImmutable}> $birthdayAlerts */
-/** @var array<int, array{employee: Holerite\Models\Employee, available_from: DateTimeImmutable, notice_from: DateTimeImmutable, status: string}> $vacationPopupAlerts */
-/** @var array<int, array{employee: Holerite\Models\Employee, date: DateTimeImmutable}> $birthdayPopupAlerts */
+/** @var array<int, array{employee: Holerite\Models\Employee, available_from: DateTimeImmutable, notice_from: DateTimeImmutable, status: string, base_origin: string, base_origin_label: string, base_start: DateTimeImmutable|null}> $vacationPopupAlerts */
+/** @var array<int, array{employee: Holerite\Models\Employee, date: DateTimeImmutable, years: int|null, hire_date: DateTimeImmutable|null}> $birthdayPopupAlerts */
 /** @var DateTimeImmutable $today */
 /**
  * @var array{
@@ -696,7 +696,12 @@ $pageScripts[] = [
                                                                 data-marker-info="<?= $infoJson; ?>"
                                                                 aria-expanded="false"
                                                                 aria-label="<?= htmlspecialchars($ariaLabel); ?>"
-                                                            ></button>
+                                                            >
+                                                                <?php if ($groupType === 'holiday'): ?>
+                                                                    <i class="bi bi-flag-fill" aria-hidden="true"></i>
+                                                                    <span class="visually-hidden">Feriado</span>
+                                                                <?php endif; ?>
+                                                            </button>
                                                             <span class="calendar-day__marker-label <?= htmlspecialchars($labelClass); ?>"><?= htmlspecialchars($labelText); ?></span>
                                                         </span>
                                                     <?php endif; ?>
@@ -737,7 +742,9 @@ $pageScripts[] = [
                     <small>Aniversários</small>
                 </span>
                 <span class="calendar-legend__item">
-                    <span class="calendar-legend__marker calendar-day__marker calendar-day__marker--holiday" aria-hidden="true"></span>
+                    <span class="calendar-legend__marker calendar-day__marker calendar-day__marker--holiday" aria-hidden="true">
+                        <i class="bi bi-flag-fill"></i>
+                    </span>
                     <small>Feriados</small>
                 </span>
             </div>
@@ -1410,10 +1417,18 @@ $pageScripts[] = [
         <?php
         $birthdayPopupData = array_map(
             static function (array $alert): array {
+                $years = isset($alert['years']) && is_int($alert['years']) ? $alert['years'] : null;
+                $hireDate = $alert['hire_date'] ?? null;
+
                 return [
                     'name' => $alert['employee']->getName(),
                     'date' => $alert['date']->format('Y-m-d'),
                     'label' => $alert['date']->format('d/m'),
+                    'years' => $years,
+                    'years_label' => $years !== null
+                        ? ($years === 1 ? '1 ano' : sprintf('%d anos', $years))
+                        : null,
+                    'hire_label' => $hireDate instanceof DateTimeImmutable ? $hireDate->format('d/m/Y') : null,
                 ];
             },
             $birthdayPopupAlerts
@@ -1423,6 +1438,7 @@ $pageScripts[] = [
             static function (array $alert): array {
                 $notice = $alert['notice_from'];
                 $available = $alert['available_from'];
+                $baseStart = $alert['base_start'] ?? null;
 
                 return [
                     'name' => $alert['employee']->getName(),
@@ -1431,6 +1447,9 @@ $pageScripts[] = [
                     'notice_from' => $notice->format('Y-m-d'),
                     'notice_label' => $notice->format('d/m'),
                     'status' => $alert['status'],
+                    'base_origin' => (string) ($alert['base_origin'] ?? 'admission'),
+                    'base_origin_label' => (string) ($alert['base_origin_label'] ?? ''),
+                    'base_label' => $baseStart instanceof DateTimeImmutable ? $baseStart->format('d/m/Y') : null,
                 ];
             },
             $vacationPopupAlerts

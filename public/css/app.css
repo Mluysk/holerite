@@ -2329,6 +2329,12 @@ tr:nth-child(even) td {
     box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.26);
 }
 
+.calendar-day__marker--holiday i {
+    font-size: 0.6rem;
+    line-height: 1;
+    color: #ffffff;
+}
+
 .calendar-day__marker--birthday {
     background: linear-gradient(135deg, #ec4899, #f472b6);
     color: #ffffff;

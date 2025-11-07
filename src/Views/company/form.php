@@ -21,6 +21,8 @@
 use Holerite\Models\AuditLog;
 use Holerite\Models\User;
 
+$today = new DateTimeImmutable('today', new DateTimeZone('America/Sao_Paulo'));
+
 $activeUserId = $currentUser['id'] ?? null;
 $activeUsername = isset($currentUser['username']) ? (string) $currentUser['username'] : '';
 $selectedThemeMode = isset($userThemeMode) && is_string($userThemeMode) ? $userThemeMode : $company->getThemeMode();
